@@ -4,7 +4,7 @@ go 1.24.5
 
 require (
 	github.com/agentplexus/omnillm v0.11.0
-	github.com/bwmarrin/discordgo v0.28.1
+	github.com/bwmarrin/discordgo v0.29.0
 	github.com/go-rod/rod v0.116.2
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
