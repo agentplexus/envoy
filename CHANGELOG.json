@@ -1,0 +1,28 @@
+{
+  "ir_version": "1.0",
+  "project": "envoy",
+  "repository": "https://github.com/agentplexus/envoy",
+  "versioning": "semver",
+  "commit_convention": "conventional",
+  "maintainers": ["agentplexus"],
+  "releases": [
+    {
+      "version": "v0.1.0",
+      "date": "2025-01-30",
+      "highlights": [
+        { "description": "Initial release with WebSocket gateway, agent runtime, and multi-channel support" }
+      ],
+      "added": [
+        { "description": "Initial project scaffold", "commit": "da77c73" },
+        { "description": "WebSocket gateway with client management", "commit": "da77c73" },
+        { "description": "Agent runtime with omnillm integration", "commit": "da77c73" },
+        { "description": "Channel abstraction with Telegram and Discord stubs", "commit": "da77c73" },
+        { "description": "Browser automation tool using Rod", "commit": "da77c73" },
+        { "description": "Shell execution tool", "commit": "da77c73" },
+        { "description": "Cobra-based CLI with gateway, channels, config, and version commands", "commit": "da77c73" },
+        { "description": "YAML/JSON configuration support", "commit": "da77c73" },
+        { "description": "CI/CD pipeline with multi-platform testing", "commit": "da77c73" }
+      ]
+    }
+  ]
+}
