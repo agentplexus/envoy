@@ -442,8 +442,8 @@ github.com/plexusone/ogen-tools v0.2.1 h1:S9QAKhWzjlJD1t5GbRhoxQziORiQZKBo/W0/49
 github.com/plexusone/ogen-tools v0.2.1/go.mod h1:vVWHWJbGjYjowi7aZu3DoZTDK4MVf9x05pk4p+cYnAI=
 github.com/plexusone/omnichat v0.3.0 h1:5gVD0aU2ZUSC2eqlN6uBe0TBo0uuJungHqnNiiVgObk=
 github.com/plexusone/omnichat v0.3.0/go.mod h1:3niGB8KREGwKCnLeKGjn/M+8zZV+fwEHGkjsRQJyNKQ=
-github.com/plexusone/omnillm v0.13.0 h1:9wA0OmRAmPK9D+d+2vircFWXafDajurwUhCWmb3Pc8g=
-github.com/plexusone/omnillm v0.13.0/go.mod h1:PV+UHu6H2EAAmTpVnARRaV70DGoFMuOLxjR9cbboPkI=
+github.com/plexusone/omnillm v0.14.0 h1:e+8NXy5/2iidbFZ/WVmkpHV52LnPJ91pJyocZVFmXLc=
+github.com/plexusone/omnillm v0.14.0/go.mod h1:ukaKWwNIC88Yb4przvwf76bbkEcMvNbsJr5/zea2V/0=
 github.com/plexusone/omniobserve v0.8.0 h1:L+nXU8TZrRwKh4KWzAtHVP/tEqopfEMBn9dIZDlqse4=
 github.com/plexusone/omniobserve v0.8.0/go.mod h1:52TqB66Ns4Zgh4t7/ilMmCBdXcUHqjqRIbSGVBGCmK0=
 github.com/plexusone/omniserp v0.8.0 h1:KG/+sYz67BdCjGyli/9BOLQYL9r50x61jwHySKBehXA=

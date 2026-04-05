@@ -10,7 +10,7 @@ require (
 	github.com/moby/moby/api v1.54.0
 	github.com/moby/moby/client v0.3.0
 	github.com/plexusone/omnichat v0.3.0
-	github.com/plexusone/omnillm v0.13.0
+	github.com/plexusone/omnillm v0.14.0
 	github.com/plexusone/omniobserve v0.8.0
 	github.com/plexusone/omniserp v0.8.0
 	github.com/plexusone/omnivoice v0.7.0
