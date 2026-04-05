@@ -1,10 +1,5 @@
 # OmniAgent
 
-[![Go CI](https://github.com/plexusone/omniagent/actions/workflows/go-ci.yaml/badge.svg?branch=main)](https://github.com/plexusone/omniagent/actions/workflows/go-ci.yaml)
-[![Go Lint](https://github.com/plexusone/omniagent/actions/workflows/go-lint.yaml/badge.svg?branch=main)](https://github.com/plexusone/omniagent/actions/workflows/go-lint.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/plexusone/omniagent)](https://goreportcard.com/report/github.com/plexusone/omniagent)
-[![GoDoc](https://pkg.go.dev/badge/github.com/plexusone/omniagent)](https://pkg.go.dev/github.com/plexusone/omniagent)
-
 Your AI representative across communication channels.
 
 OmniAgent is a personal AI assistant that routes messages across multiple communication platforms, processes them via an AI agent, and responds on your behalf.
