@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/mdp/qrterminal/v3 v3.2.1
-	github.com/moby/moby/api v1.54.0
+	github.com/moby/moby/api v1.54.1
 	github.com/moby/moby/client v0.3.0
 	github.com/plexusone/omnichat v0.5.0
 	github.com/plexusone/omnillm v0.14.0
