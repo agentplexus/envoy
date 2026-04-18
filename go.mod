@@ -9,7 +9,7 @@ require (
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/moby/moby/api v1.54.1
 	github.com/moby/moby/client v0.4.0
-	github.com/plexusone/omnichat v0.5.0
+	github.com/plexusone/omnichat v0.6.0
 	github.com/plexusone/omnillm v0.15.1
 	github.com/plexusone/omniobserve v0.8.0
 	github.com/plexusone/omniserp v0.8.0
@@ -17,7 +17,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/tetratelabs/wazero v1.11.0
 	gopkg.in/yaml.v3 v3.0.1
-	modernc.org/sqlite v1.48.2
+	modernc.org/sqlite v1.49.1
 )
 
 require (
@@ -69,8 +69,8 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
-	github.com/googleapis/gax-go/v2 v2.21.0 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.15 // indirect
+	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/grokify/mogo v0.74.1 // indirect
 	github.com/grokify/sogo v0.14.0 // indirect
@@ -108,7 +108,7 @@ require (
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
-	github.com/twilio/twilio-go v1.30.4 // indirect
+	github.com/twilio/twilio-go v1.30.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.32 // indirect
 	github.com/ysmood/fetchup v0.2.3 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
@@ -116,8 +116,8 @@ require (
 	github.com/ysmood/gson v0.7.3 // indirect
 	github.com/ysmood/leakless v0.9.0 // indirect
 	go.mau.fi/libsignal v0.2.1 // indirect
-	go.mau.fi/util v0.9.7 // indirect
-	go.mau.fi/whatsmeow v0.0.0-20260410162419-b95d92207080 // indirect
+	go.mau.fi/util v0.9.8 // indirect
+	go.mau.fi/whatsmeow v0.0.0-20260416104156-3ff20cd3462a // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
@@ -132,9 +132,9 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/term v0.42.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
-	google.golang.org/api v0.275.0 // indirect
+	google.golang.org/api v0.276.0 // indirect
 	google.golang.org/genai v1.53.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260406210006-6f92a3bedf2d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/telebot.v3 v3.3.8 // indirect
