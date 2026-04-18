@@ -1,232 +1,275 @@
-# Tasks: Skill System Implementation
+# Tasks: OmniAgent Extension Implementation
 
-## Phase 1: Skill Loader (Markdown-Only)
-
-### Setup
-
-- [x] **TASK-001**: Create `skills/` package directory structure
-  - Create `skills/skill.go` with data structures
-  - Create `skills/loader.go` stub
-  - Create `skills/requirements.go` stub
-  - Create `skills/inject.go` stub
-
-- [x] **TASK-002**: Copy test fixtures
-  - Copy `sonoscli` skill from OpenClaw to `testdata/skills/sonoscli/`
-  - Copy `github` skill from OpenClaw to `testdata/skills/github/`
-  - Copy `self-improving-agent` skill to `testdata/skills/self-improving-agent/`
-
-### Core Implementation
-
-- [x] **TASK-003**: Implement SKILL.md parser
-  - Parse YAML frontmatter (between `---` delimiters)
-  - Handle nested JSON in `metadata` field
-  - Extract Markdown body
-  - Write unit tests
-
-- [x] **TASK-004**: Implement skill discovery
-  - Scan directories for `SKILL.md` files
-  - Support multiple search paths
-  - Deduplicate by skill name (first wins)
-  - Write unit tests
-
-- [x] **TASK-005**: Implement requirement checking
-  - Check for required binaries via `exec.LookPath`
-  - Check for required env vars via `os.Getenv`
-  - Support `anyBins` (at least one)
-  - Return structured errors with install instructions
-  - Write unit tests
-
-- [x] **TASK-006**: Implement prompt injection
-  - Append skill content to system prompt
-  - Include emoji if present
-  - Skip skills with missing requirements
-  - Configurable max skills limit
-  - Write unit tests
-
-### CLI Commands
-
-- [x] **TASK-007**: Add `omniagent skills list` command
-  - Show all discovered skills
-  - Indicate status (available/unavailable)
-  - Show emoji and description
-
-- [x] **TASK-008**: Add `omniagent skills info <name>` command
-  - Show full skill details
-  - Show requirements and status
-  - Show install instructions if missing
-
-- [x] **TASK-009**: Add `omniagent skills check` command
-  - Validate all skills
-  - Report missing requirements
-  - Suggest install commands
-
-### Agent Integration
-
-- [x] **TASK-010**: Integrate skill loader into Agent
-  - Load skills on agent startup
-  - Inject into system prompt
-  - Log loaded/skipped skills
-
-- [x] **TASK-011**: Add skill configuration
-  - `skills.paths` - Additional search directories
-  - `skills.disabled` - Skills to skip (TODO: implement filtering)
-  - `skills.maxInjected` - Limit skills in prompt
-
-### Testing
-
-- [x] **TASK-012**: Write integration tests
-  - Load real OpenClaw skills
-  - Verify parsing correctness
-  - Test with agent
-
-- [ ] **TASK-013**: End-to-end test with LLM
-  - Inject skills into prompt
-  - Verify LLM can use skill instructions
-  - Test CLI tool invocation
-
----
-
-## Phase 2: Tool Sandbox (WASM) - PRIORITIZED
-
-> Prioritized over Deno hooks because WASM secures existing tool execution
-> and most skills don't require TypeScript hooks.
+## Phase 1: Compiled Skill Interface
 
 ### Setup
 
-- [x] **TASK-030**: Add wazero dependency
-  - Add `github.com/tetratelabs/wazero` to go.mod
-  - Verify version compatibility (v1.11.0)
+- [ ] **TASK-100**: Create `skills/compiled/` package
+  - Create `skills/compiled/skill.go` with `Skill` interface
+  - Create `skills/compiled/tool.go` with `Tool` type
+  - Create `skills/compiled/registry.go` for skill registration
+  - Create `skills/compiled/parameter.go` for JSON Schema parameters
 
-- [x] **TASK-031**: Create `sandbox/` package
-  - Create `sandbox/sandbox.go` with core types
-  - Create `sandbox/runtime.go` for WASM runtime
-  - Create `sandbox/host.go` for host functions
+- [ ] **TASK-101**: Define core interfaces
+  ```go
+  type Skill interface {
+      Name() string
+      Description() string
+      Tools() []Tool
+      Init(ctx context.Context) error
+      Close() error
+  }
 
-### Implementation
+  type StorageAware interface {
+      SetStorage(s storage.Storage)
+  }
+  ```
 
-- [x] **TASK-032**: Implement WASM runtime wrapper
-  - Initialize wazero runtime with resource limits
-  - Support module compilation and caching
-  - Handle stdin/stdout for tool I/O
+### Integration
 
-- [x] **TASK-033**: Implement capability-based permissions
-  - Define capabilities: `fs_read`, `fs_write`, `net_http`, `exec_run`
-  - Capability checking before host function calls
-  - Per-tool capability configuration
+- [ ] **TASK-102**: Integrate compiled skills with agent
+  - Add `compiledSkills` field to `agent.Agent`
+  - Register compiled skill tools with existing `ToolRegistry`
+  - Call `Init()` on startup, `Close()` on shutdown
 
-- [x] **TASK-034**: Implement resource limits
-  - Memory limit (default 16MB, max 4GB)
-  - Output size limit (default 1MB)
-  - Timeout enforcement via context
+- [ ] **TASK-103**: Add agent options for compiled skills
+  - `WithCompiledSkill(skill compiled.Skill) Option`
+  - `WithCompiledSkills(skills ...compiled.Skill) Option`
 
-- [x] **TASK-035**: Implement host functions
-  - `FSRead(path) -> bytes` - Read file (if fs_read capability)
-  - `FSWrite(path, bytes)` - Write file (if fs_write capability)
-  - `HTTPFetch(url, method, body) -> response` - HTTP request (if net_http capability)
-  - `ExecRun(cmd, args) -> output` - Run command (if exec_run capability)
-
-- [ ] **TASK-036**: Create sandboxed shell tool
-  - Wrap existing shell tool with sandbox host functions
-  - Restrict to allowed commands
-  - Integrate with agent tool registry
+- [ ] **TASK-104**: Add configuration support
+  - List compiled skills in config (documentation only)
+  - Skills are registered via code, config shows which are loaded
 
 ### Testing
 
-- [x] **TASK-037**: Unit tests for sandbox
-  - Test capability enforcement
-  - Test path validation
-  - Test timeout handling
-  - Test command allowlist
+- [ ] **TASK-105**: Create mock skill for testing
+  - Implement `compiled.Skill` with calculator tools
+  - Test tool registration and execution
+  - Test storage injection
 
-- [ ] **TASK-038**: Integration tests
-  - Execute simple WASM module
-  - Test host function calls from WASM
-  - Verify sandbox isolation
-
-- [ ] **TASK-039**: Benchmark WASM vs native
-  - Compare execution time
-  - Measure memory overhead
-
-### Docker Sandbox
-
-- [x] **TASK-040**: Add Docker sandbox support
-  - Add moby/moby SDK dependency (client v0.2.2, api v1.53.0)
-  - Create `sandbox/docker.go` with DockerSandbox implementation
-  - Support volume mounts for filesystem access
-  - Integrate with app-level permission checks
-  - Configure security options (CapDrop, ReadonlyRootfs, etc.)
-  - Add unit tests in `sandbox/docker_test.go`
+- [ ] **TASK-106**: Integration test with agent
+  - Load compiled skill
+  - Verify tools appear in LLM requests
+  - Test tool execution flow
 
 ---
 
-## Test Skills Reference
+## Phase 2: Storage Interface
 
-### Phase 1 Test Skills (Markdown-Only)
+### Setup
 
-| Skill | Source | Requirements | Notes |
-|-------|--------|--------------|-------|
-| `sonoscli` | OpenClaw | `sonos` binary | CLI tool skill |
-| `github` | OpenClaw | `gh` binary | CLI tool skill |
-| `weather` | OpenClaw | TBD | CLI tool skill |
-| `slack` | OpenClaw | None | API-based skill |
+- [ ] **TASK-200**: Create `storage/` package
+  - Create `storage/storage.go` with `Storage` interface
+  - Create `storage/document.go` with `Document` type
+  - Create `storage/errors.go` with common errors
 
-### Phase 2 Test Skills (With Hooks)
+- [ ] **TASK-201**: Define storage interface
+  ```go
+  type Storage interface {
+      Get(ctx context.Context, key string) ([]byte, error)
+      Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
+      Delete(ctx context.Context, key string) error
+      Close() error
+  }
+  ```
 
-| Skill | Source | Requirements | Notes |
-|-------|--------|--------------|-------|
-| `self-improving-agent` | ClawHub | None | Has TS hooks + shell scripts |
+### Implementations
 
-### Skill Locations
+- [ ] **TASK-202**: Implement memory storage
+  - Create `storage/memory/memory.go`
+  - Thread-safe with `sync.RWMutex`
+  - TTL support with background cleanup
+  - Unit tests
 
-```
-OpenClaw skills:
-/Users/johnwang/go/src/github.com/openclaw/openclaw/skills/
+- [ ] **TASK-203**: Implement SQLite storage
+  - Create `storage/sqlite/sqlite.go`
+  - Auto-create tables on init
+  - TTL support via `expires_at` column
+  - Unit tests
 
-ClawHub skill (cloned):
-/Users/johnwang/go/src/github.com/peterskoett/self-improving-agent/
-```
+- [ ] **TASK-204**: (Future) Implement DynamoDB storage
+  - Create `storage/dynamodb/dynamodb.go`
+  - Use AWS SDK v2
+  - TTL via DynamoDB TTL feature
+
+### Integration
+
+- [ ] **TASK-205**: Add storage to agent
+  - Add `storage` field to `agent.Agent`
+  - Add `WithStorage(s storage.Storage) Option`
+  - Inject storage into `StorageAware` skills
+
+- [ ] **TASK-206**: Add storage configuration
+  ```yaml
+  storage:
+    type: sqlite  # sqlite, memory, dynamodb
+    path: /data/omniagent.db
+  ```
+
+---
+
+## Phase 3: Platform Adapters
+
+### Setup
+
+- [ ] **TASK-300**: Create `platform/` package
+  - Create `platform/platform.go` with `Platform` interface
+  - Create `platform/config.go` with platform configuration
+
+- [ ] **TASK-301**: Define platform interface
+  ```go
+  type Platform interface {
+      Run(ctx context.Context, agent *agent.Agent) error
+  }
+
+  type Config struct {
+      Type    string         // standalone, lambda, agentcore
+      Options map[string]any
+  }
+  ```
+
+### Standalone Platform
+
+- [ ] **TASK-302**: Create `platform/standalone/`
+  - Extract current gateway logic into standalone platform
+  - Support HTTP webhooks for omnichat providers
+  - Graceful shutdown handling
+
+- [ ] **TASK-303**: Add webhook server
+  - HTTP server for incoming webhooks
+  - Route to appropriate omnichat provider
+  - Configurable address and TLS
+
+### Lightsail Deployment
+
+- [ ] **TASK-304**: Create `platform/lightsail/` helpers
+  - Systemd service template generation
+  - Caddy configuration template
+  - Deploy script helpers
+
+### Future Platforms
+
+- [ ] **TASK-305**: (Future) Lambda adapter
+  - AWS Lambda handler wrapper
+  - API Gateway event handling
+
+- [ ] **TASK-306**: (Future) AgentCore adapter
+  - Bedrock AgentCore integration
+  - Action group mapping
+
+### Integration
+
+- [ ] **TASK-307**: Add platform to agent startup
+  - Add `WithPlatform(p platform.Platform) Option`
+  - Default to standalone platform
+  - Platform-specific configuration
+
+---
+
+## Phase 4: Remote Skills (Future)
+
+### MCP Client
+
+- [ ] **TASK-400**: Create `skills/remote/mcp/`
+  - MCP client implementation
+  - Tool discovery from MCP server
+  - Tool execution via MCP protocol
+
+- [ ] **TASK-401**: MCP skill wrapper
+  - Implement `compiled.Skill` interface
+  - Lazy connection on first tool call
+  - Reconnection handling
+
+### OpenAPI Loader
+
+- [ ] **TASK-402**: Create `skills/remote/openapi/`
+  - Parse OpenAPI 3.x specs
+  - Generate tools from operations
+  - Handle authentication
+
+- [ ] **TASK-403**: OpenAPI skill wrapper
+  - Implement `compiled.Skill` interface
+  - HTTP client for API calls
+  - Response parsing
+
+### Configuration
+
+- [ ] **TASK-404**: Remote skill configuration
+  ```yaml
+  skills:
+    remote:
+      - name: github
+        type: mcp
+        command: npx -y @modelcontextprotocol/server-github
+      - name: api
+        type: openapi
+        url: https://api.example.com/openapi.json
+  ```
+
+---
+
+## Phase 5: OmniChat Integration
+
+### Provider Wrapper
+
+- [ ] **TASK-500**: Create `provider/` package
+  - Wrap `omnichat.Provider` for agent use
+  - Message routing from multiple providers
+  - Unified message handling
+
+- [ ] **TASK-501**: Provider message handler
+  - Convert omnichat messages to agent format
+  - Send agent responses back via provider
+  - Handle media attachments
+
+### Configuration
+
+- [ ] **TASK-502**: OmniChat provider configuration
+  ```yaml
+  providers:
+    - type: twilio-sms
+      account_sid_env: TWILIO_ACCOUNT_SID
+      phone_number_env: TWILIO_PHONE_NUMBER
+  ```
+
+- [ ] **TASK-503**: Provider factory
+  - Create providers from configuration
+  - Support twilio-go/omnichat
+  - Extensible for other omnichat providers
+
+### Webhook Handling
+
+- [ ] **TASK-504**: Integrate with standalone platform
+  - Mount provider webhooks on HTTP server
+  - Route incoming messages to agent
+  - Send responses back
 
 ---
 
 ## Current Progress
 
-**Started**: 2026-02-22
-**Phase**: 2 - WASM + Docker Sandbox
-**Status**: Core sandbox implemented (7/10 tasks done)
+**Started**: 2026-04-17
+**Phase**: 1 - Compiled Skill Interface
+**Status**: Planning complete, implementation starting
 
-### Phase 1 Complete (Skills)
+### Completed Phases (Previous)
 
-- Created `skills/` package with full implementation
-- SKILL.md parser with YAML frontmatter and metadata support
-- Skill discovery from multiple directories
-- Requirement checking (bins, env vars) with install hints
-- Prompt injection with emoji support
-- CLI commands: `skills list`, `skills info`, `skills check`
-- Agent integration with skill loading on startup
-- Configuration: `skills.enabled`, `skills.paths`, `skills.maxInjected`
+- Phase 1 (Skills): SKILL.md loading, OpenClaw compatibility
+- Phase 2 (Sandbox): WASM + Docker isolation
 
-### Phase 2 In Progress (WASM + Docker Sandbox)
+### Active Tasks
 
-- Added wazero v1.11.0 dependency
-- Created `sandbox/` package with:
-  - `sandbox.go` - Config, Capability, Result types
-  - `runtime.go` - WASM runtime wrapper with memory limits
-  - `host.go` - Host functions (FSRead, FSWrite, HTTPFetch, ExecRun)
-  - `sandbox_test.go` - Unit tests for all capabilities
-- Capability-based permission model
-- Path validation with symlink resolution
-- Command allowlist enforcement
-- Output size limiting
-- **Docker sandbox** (TASK-040 complete):
-  - Added moby/moby SDK (client v0.2.2, api v1.53.0)
-  - `docker.go` - DockerSandbox with container isolation
-  - Volume mounts for filesystem access
-  - App-level + Docker-level security (layered)
-  - Security hardening (CapDrop ALL, ReadonlyRootfs, no-new-privileges)
-  - `docker_test.go` - Unit and integration tests
+Starting with TASK-100 through TASK-106 (Compiled Skill Interface)
+
+### Dependencies
+
+| Package | Status | Notes |
+|---------|--------|-------|
+| `twilio-go` | Ready | omnichat provider available |
 
 ### Next Actions
 
-1. Create sandboxed shell tool (TASK-036)
-2. Integration tests with WASM modules (TASK-038)
-3. Benchmark WASM vs native (TASK-039)
+1. Create `skills/compiled/` package (TASK-100, TASK-101)
+2. Integrate with agent (TASK-102, TASK-103)
+3. Create mock skill and tests (TASK-105, TASK-106)
+4. Move to storage interface (Phase 2)
