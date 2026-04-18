@@ -105,7 +105,8 @@ func (s *Storage) Get(ctx context.Context, key string) ([]byte, error) {
 	// Check expiration
 	if expiresAt.Valid && time.Now().Unix() > expiresAt.Int64 {
 		// Expired, delete and return not found
-		s.Delete(ctx, key)
+		// Error intentionally ignored: cleanup is best-effort, caller gets ErrNotFound regardless
+		_ = s.Delete(ctx, key)
 		return nil, storage.ErrNotFound
 	}
 

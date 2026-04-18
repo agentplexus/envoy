@@ -20,9 +20,9 @@ import (
 type Agent struct {
 	client         *omnillm.ChatClient
 	tools          *ToolRegistry
-	skills         []*skills.Skill        // Markdown skills (SKILL.md)
-	compiledSkills []compiled.Skill       // Compiled Go skills
-	storage        storage.Storage        // Storage backend
+	skills         []*skills.Skill  // Markdown skills (SKILL.md)
+	compiledSkills []compiled.Skill // Compiled Go skills
+	storage        storage.Storage  // Storage backend
 	config         Config
 	logger         *slog.Logger
 	mu             sync.RWMutex

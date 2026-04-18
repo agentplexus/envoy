@@ -47,7 +47,9 @@ func TestStorage_Delete(t *testing.T) {
 
 	ctx := context.Background()
 
-	s.Set(ctx, "key1", []byte("value1"), 0)
+	if err := s.Set(ctx, "key1", []byte("value1"), 0); err != nil {
+		t.Fatalf("Set() error = %v", err)
+	}
 
 	if err := s.Delete(ctx, "key1"); err != nil {
 		t.Fatalf("Delete() error = %v", err)
@@ -89,7 +91,9 @@ func TestStorage_Close(t *testing.T) {
 	s := New()
 
 	ctx := context.Background()
-	s.Set(ctx, "key1", []byte("value1"), 0)
+	if err := s.Set(ctx, "key1", []byte("value1"), 0); err != nil {
+		t.Fatalf("Set() error = %v", err)
+	}
 
 	if err := s.Close(); err != nil {
 		t.Fatalf("Close() error = %v", err)
@@ -111,8 +115,12 @@ func TestStorage_Overwrite(t *testing.T) {
 
 	ctx := context.Background()
 
-	s.Set(ctx, "key1", []byte("value1"), 0)
-	s.Set(ctx, "key1", []byte("value2"), 0)
+	if err := s.Set(ctx, "key1", []byte("value1"), 0); err != nil {
+		t.Fatalf("Set(value1) error = %v", err)
+	}
+	if err := s.Set(ctx, "key1", []byte("value2"), 0); err != nil {
+		t.Fatalf("Set(value2) error = %v", err)
+	}
 
 	got, err := s.Get(ctx, "key1")
 	if err != nil {

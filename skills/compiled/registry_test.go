@@ -38,12 +38,12 @@ func newMockSkill(name string) *mockSkill {
 	}
 }
 
-func (m *mockSkill) Name() string                        { return m.name }
-func (m *mockSkill) Description() string                 { return m.description }
-func (m *mockSkill) Tools() []Tool                       { return m.tools }
-func (m *mockSkill) Init(ctx context.Context) error      { m.initCalled = true; return nil }
-func (m *mockSkill) Close() error                        { m.closeCalled = true; return nil }
-func (m *mockSkill) SetStorage(s Storage)                { m.storage = s }
+func (m *mockSkill) Name() string                   { return m.name }
+func (m *mockSkill) Description() string            { return m.description }
+func (m *mockSkill) Tools() []Tool                  { return m.tools }
+func (m *mockSkill) Init(ctx context.Context) error { m.initCalled = true; return nil }
+func (m *mockSkill) Close() error                   { m.closeCalled = true; return nil }
+func (m *mockSkill) SetStorage(s Storage)           { m.storage = s }
 
 func TestRegistry_Register(t *testing.T) {
 	r := NewRegistry()
@@ -66,7 +66,9 @@ func TestRegistry_Register(t *testing.T) {
 func TestRegistry_Get(t *testing.T) {
 	r := NewRegistry()
 	skill := newMockSkill("test")
-	r.Register(skill)
+	if err := r.Register(skill); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
 
 	got, ok := r.Get("test")
 	if !ok {
@@ -84,8 +86,12 @@ func TestRegistry_Get(t *testing.T) {
 
 func TestRegistry_AllTools(t *testing.T) {
 	r := NewRegistry()
-	r.Register(newMockSkill("skill1"))
-	r.Register(newMockSkill("skill2"))
+	if err := r.Register(newMockSkill("skill1")); err != nil {
+		t.Fatalf("Register(skill1) error = %v", err)
+	}
+	if err := r.Register(newMockSkill("skill2")); err != nil {
+		t.Fatalf("Register(skill2) error = %v", err)
+	}
 
 	tools := r.AllTools()
 	if len(tools) != 2 {
@@ -95,7 +101,9 @@ func TestRegistry_AllTools(t *testing.T) {
 
 func TestRegistry_FindTool(t *testing.T) {
 	r := NewRegistry()
-	r.Register(newMockSkill("skill1"))
+	if err := r.Register(newMockSkill("skill1")); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
 
 	tool, skill, ok := r.FindTool("skill1_tool")
 	if !ok {
@@ -118,8 +126,12 @@ func TestRegistry_InitAll(t *testing.T) {
 	r := NewRegistry()
 	skill1 := newMockSkill("skill1")
 	skill2 := newMockSkill("skill2")
-	r.Register(skill1)
-	r.Register(skill2)
+	if err := r.Register(skill1); err != nil {
+		t.Fatalf("Register(skill1) error = %v", err)
+	}
+	if err := r.Register(skill2); err != nil {
+		t.Fatalf("Register(skill2) error = %v", err)
+	}
 
 	if err := r.InitAll(context.Background()); err != nil {
 		t.Fatalf("InitAll() error = %v", err)
@@ -137,8 +149,12 @@ func TestRegistry_CloseAll(t *testing.T) {
 	r := NewRegistry()
 	skill1 := newMockSkill("skill1")
 	skill2 := newMockSkill("skill2")
-	r.Register(skill1)
-	r.Register(skill2)
+	if err := r.Register(skill1); err != nil {
+		t.Fatalf("Register(skill1) error = %v", err)
+	}
+	if err := r.Register(skill2); err != nil {
+		t.Fatalf("Register(skill2) error = %v", err)
+	}
 
 	if err := r.CloseAll(); err != nil {
 		t.Fatalf("CloseAll() error = %v", err)
