@@ -6,20 +6,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/plexusone/omnillm"
 	"github.com/plexusone/omnillm/provider"
 
 	"github.com/plexusone/omniagent/skills"
+	"github.com/plexusone/omniagent/skills/compiled"
+	"github.com/plexusone/omniagent/storage"
 )
 
 // Agent is the AI agent that processes messages.
 type Agent struct {
-	client *omnillm.ChatClient
-	tools  *ToolRegistry
-	skills []*skills.Skill
-	config Config
-	logger *slog.Logger
+	client         *omnillm.ChatClient
+	tools          *ToolRegistry
+	skills         []*skills.Skill        // Markdown skills (SKILL.md)
+	compiledSkills []compiled.Skill       // Compiled Go skills
+	storage        storage.Storage        // Storage backend
+	config         Config
+	logger         *slog.Logger
+	mu             sync.RWMutex
 }
 
 // Config configures the agent.
@@ -35,8 +41,15 @@ type Config struct {
 	ObservabilityHook omnillm.ObservabilityHook
 }
 
-// New creates a new agent.
-func New(config Config) (*Agent, error) {
+// New creates a new agent with optional configuration.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithStorage(sqliteStorage),
+//	    agent.WithCompiledSkill(investSkill),
+//	)
+func New(config Config, opts ...Option) (*Agent, error) {
 	if config.Logger == nil {
 		config.Logger = slog.Default()
 	}
@@ -60,12 +73,23 @@ func New(config Config) (*Agent, error) {
 		return nil, fmt.Errorf("create llm client: %w", err)
 	}
 
-	return &Agent{
+	a := &Agent{
 		client: client,
 		tools:  NewToolRegistry(),
 		config: config,
 		logger: config.Logger,
-	}, nil
+	}
+
+	// Apply options
+	for _, opt := range opts {
+		if err := opt(a); err != nil {
+			// Close client on error
+			client.Close()
+			return nil, fmt.Errorf("apply option: %w", err)
+		}
+	}
+
+	return a, nil
 }
 
 // Process processes a message and returns a response.
@@ -183,6 +207,18 @@ func (a *Agent) RegisterTool(tool Tool) {
 
 // Close closes the agent and releases resources.
 func (a *Agent) Close() error {
+	// Close compiled skills first
+	if err := a.CloseCompiledSkills(); err != nil {
+		a.logger.Error("failed to close compiled skills", "error", err)
+	}
+
+	// Close storage
+	if a.storage != nil {
+		if err := a.storage.Close(); err != nil {
+			a.logger.Error("failed to close storage", "error", err)
+		}
+	}
+
 	return a.client.Close()
 }
 
