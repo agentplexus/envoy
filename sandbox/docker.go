@@ -229,6 +229,12 @@ func (d *DockerSandbox) Run(ctx context.Context, command string, args []string) 
 
 	var exitCode int
 	select {
+	case <-ctx.Done():
+		// Timeout - stop the container
+		stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, _ = d.cli.ContainerStop(stopCtx, containerID, client.ContainerStopOptions{})
+		return nil, NewTimeoutError(d.config.Timeout)
 	case err := <-waitResult.Error:
 		if err != nil {
 			if ctx.Err() == context.DeadlineExceeded {

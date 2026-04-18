@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -175,8 +176,8 @@ func TestDockerSandbox_Timeout(t *testing.T) {
 	if err == nil {
 		t.Error("expected timeout error")
 	}
-	execErr, ok := err.(*ExecutionError)
-	if !ok {
+	var execErr *ExecutionError
+	if !errors.As(err, &execErr) {
 		t.Errorf("expected ExecutionError, got %T", err)
 	} else if execErr.Kind != "timeout" {
 		t.Errorf("Kind = %q, want %q", execErr.Kind, "timeout")
