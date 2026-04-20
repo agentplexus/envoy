@@ -109,6 +109,71 @@ WHATSAPP_ENABLED=true \
 omniagent gateway run
 ```
 
+## Testing & Debugging
+
+Before connecting messaging channels, verify the agent is running correctly using the WebSocket gateway directly.
+
+### Health Check
+
+```bash
+curl http://localhost:8080/health
+```
+
+Expected response: `{"status":"ok"}`
+
+### WebSocket Smoke Test
+
+Install websocat if needed:
+
+```bash
+brew install websocat  # macOS
+# or: cargo install websocat
+```
+
+Connect to the WebSocket endpoint:
+
+```bash
+websocat ws://localhost:8080/ws
+```
+
+Then send JSON messages interactively:
+
+```json
+{"type":"ping"}
+{"type":"chat","content":"What tools do you have?"}
+{"type":"chat","content":"Search for recent AAPL news"}
+```
+
+### One-Liner Test
+
+For quick validation in scripts or CI:
+
+```bash
+echo '{"type":"chat","content":"Search for recent AAPL news"}' | websocat ws://localhost:8080/ws
+```
+
+This tests the built-in `web_search` tool which supports web, news, and image searches via omniserp.
+
+Expected response format:
+
+```json
+{"id":"...","type":"response","content":"Here are the recent news articles about AAPL...","timestamp":"..."}
+```
+
+### Debugging Tips
+
+1. **Agent not responding?** Check that `OPENAI_API_KEY` (or your provider's key) is set
+2. **Search tool failing?** Set `SERPER_API_KEY` or `SERPAPI_API_KEY` for web search
+3. **Tool calls failing?** Verify compiled skills are registered in the agent logs
+4. **Connection refused?** Ensure `STORAGE_PATH` points to a writable location (default `/data` requires root)
+
+Set environment variables for local development:
+
+```bash
+export STORAGE_PATH="./omniagent.db"
+export SERPER_API_KEY="your_serper_key"  # For web_search tool
+```
+
 ## Next Steps
 
 - [WhatsApp Setup Guide](guides/whatsapp.md) - Detailed WhatsApp configuration

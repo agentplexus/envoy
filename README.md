@@ -206,6 +206,8 @@ runtime, _ := sandbox.NewRuntime(ctx, sandbox.Config{
 | `WHATSAPP_DB_PATH` | WhatsApp session storage path |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token (auto-enables Telegram) |
 | `DISCORD_BOT_TOKEN` | Discord bot token (auto-enables Discord) |
+| `SERPER_API_KEY` | Serper API key for web search |
+| `SERPAPI_API_KEY` | SerpAPI key for web search (alternative) |
 | `DEEPGRAM_API_KEY` | Deepgram API key for voice STT/TTS |
 | `OMNIAGENT_VOICE_ENABLED` | Set to `true` to enable voice processing |
 | `OMNIAGENT_VOICE_RESPONSE_MODE` | Voice response mode: `auto`, `always`, `never` |
