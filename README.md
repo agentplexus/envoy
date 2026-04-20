@@ -101,7 +101,7 @@ channels:
     account_sid: ${TWILIO_ACCOUNT_SID}
     auth_token: ${TWILIO_AUTH_TOKEN}
     phone_number: ${TWILIO_PHONE_NUMBER}
-    webhook_path: /webhook/sms
+    webhook_path: /webhook/twilio/sms
 
 voice:
   enabled: true
@@ -254,7 +254,7 @@ runtime, _ := sandbox.NewRuntime(ctx, sandbox.Config{
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID (auto-enables SMS) |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token |
 | `TWILIO_PHONE_NUMBER` | Twilio phone number in E.164 format |
-| `TWILIO_WEBHOOK_PATH` | SMS webhook path (default: `/webhook/sms`) |
+| `TWILIO_WEBHOOK_PATH` | SMS webhook path (default: `/webhook/twilio/sms`) |
 | `SERPER_API_KEY` | Serper API key for web search |
 | `SERPAPI_API_KEY` | SerpAPI key for web search (alternative) |
 | `DEEPGRAM_API_KEY` | Deepgram API key for voice STT/TTS |

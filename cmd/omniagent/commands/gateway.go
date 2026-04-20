@@ -253,7 +253,7 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		// Register webhook handler
 		webhookPath := cfg.Channels.TwilioSMS.WebhookPath
 		if webhookPath == "" {
-			webhookPath = "/webhook/sms"
+			webhookPath = "/webhook/twilio/sms"
 		}
 		webhookHandlers[webhookPath] = sms.WebhookHandler()
 		logger.Info("twilio sms provider registered", "webhook_path", webhookPath)

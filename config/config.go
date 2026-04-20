@@ -66,7 +66,7 @@ type TwilioSMSConfig struct {
 	AccountSID  string `json:"account_sid" yaml:"account_sid"`
 	AuthToken   string `json:"auth_token" yaml:"auth_token"`   //nolint:gosec // G101: Auth token loaded from config file
 	PhoneNumber string `json:"phone_number" yaml:"phone_number"`
-	WebhookPath string `json:"webhook_path" yaml:"webhook_path"` // Default: /webhook/sms
+	WebhookPath string `json:"webhook_path" yaml:"webhook_path"` // Default: /webhook/twilio/sms
 }
 
 // ToolsConfig configures available tools.
