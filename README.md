@@ -17,7 +17,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 💬 **Multi-Channel Support** - Telegram, Discord, Slack, WhatsApp, and more
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, etc.)
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
-- 🧩 **Skills System** - Extensible skills compatible with OpenClaw/ClawHub
+- 🧩 **Skills System** - Extensible skills compatible with OpenClaw/ClawHub, plus compiled Go skills
 - 🔒 **Secure Sandboxing** - WASM and Docker isolation for tool execution
 - 🌐 **Browser Automation** - Built-in browser control via Rod
 - 🔌 **WebSocket Gateway** - Real-time control plane for device connections
@@ -149,6 +149,24 @@ Skills are discovered from:
 3. Custom paths via `skills.paths` config
 
 Skills with missing requirements (binaries, env vars) are automatically skipped.
+
+### Compiled Skills
+
+For better performance, you can register Go functions directly as skills:
+
+```go
+import "github.com/plexusone/omniagent/skills"
+
+skill := skills.CompiledSkill{
+    Name:        "get_weather",
+    Description: "Get weather for a location",
+    Handler: func(ctx context.Context, args map[string]any) (string, error) {
+        return fetchWeather(args["location"].(string))
+    },
+}
+
+skills.RegisterCompiled(skill)
+```
 
 ## Sandboxing
 
@@ -307,8 +325,8 @@ omniagent version          # Show version information
 | [omnichat](https://github.com/plexusone/omnichat) | Unified messaging (WhatsApp, Telegram, Discord) |
 | [omnillm](https://github.com/plexusone/omnillm) | Multi-provider LLM abstraction |
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
-| [omnivoice-deepgram](https://github.com/plexusone/omnivoice-deepgram) | Deepgram voice provider |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
+| [omniserp](https://github.com/plexusone/omniserp) | Web search via Serper/SerpAPI |
 | [wazero](https://github.com/tetratelabs/wazero) | WASM runtime for sandboxing |
 | [moby](https://github.com/moby/moby) | Docker SDK for container isolation |
 | [Rod](https://github.com/go-rod/rod) | Browser automation |

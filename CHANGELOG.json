@@ -7,6 +7,41 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.5.0",
+      "date": "2026-04-19",
+      "highlights": [
+        { "description": "Compiled skills system with registry for Go-native tool implementations" },
+        { "description": "Storage abstraction layer with SQLite and in-memory backends" },
+        { "description": "Functional options pattern for agent configuration" }
+      ],
+      "added": [
+        { "description": "Compiled skills interface (`CompiledSkill`) and registry for registering Go functions as tools", "commit": "078fc4f" },
+        { "description": "Storage interface with `SQLiteBackend` and `MemoryBackend` implementations", "commit": "f2680b7" },
+        { "description": "Functional options (`WithCompiledSkills`, `WithStorage`, `WithObservability`) for agent creation", "commit": "1d1aedb" },
+        { "description": "PlexusOne unified navigation and theme for MkDocs documentation site", "commit": "fb5c661" },
+        { "description": "Testing & Debugging guide with WebSocket smoke test instructions" }
+      ],
+      "fixed": [
+        { "description": "Docker container timeout handling in sandbox executor", "commit": "87dbcf6" },
+        { "description": "Linting errors for errcheck and gofmt compliance", "commit": "bbd5a9e" }
+      ],
+      "build": [
+        { "description": "Switch to pure-Go SQLite driver (`modernc.org/sqlite`) for better cross-platform support", "commit": "50d7807" },
+        { "description": "Upgrade to omnillm v0.15.1 with thick provider support", "commit": "9864dfe" }
+      ],
+      "test": [
+        { "description": "Add unit tests for compiled skills registry and storage backends", "commit": "82921a4" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omnillm` v0.13.0 → v0.15.2" },
+        { "description": "`github.com/plexusone/omnivoice` v0.5.1 → v0.7.2" },
+        { "description": "`github.com/plexusone/omnichat` v0.3.0 → v0.6.0" },
+        { "description": "`github.com/plexusone/omniobserve` v0.7.0 → v0.8.0" },
+        { "description": "Now using `github.com/plexusone/omni-openai` v0.2.0 (consolidated OpenAI provider)" },
+        { "description": "Now using `github.com/plexusone/twilio-go` v0.4.0 (consolidated Twilio provider)" }
+      ]
+    },
+    {
       "version": "v0.4.0",
       "date": "2026-03-01",
       "highlights": [
