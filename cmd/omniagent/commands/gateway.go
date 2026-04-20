@@ -55,6 +55,19 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	cfg := getConfig()
 	logger := slog.Default()
 
+	// Setup context for graceful shutdown (needed early for skill init)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigCh
+		fmt.Println("\nShutting down...")
+		cancel()
+	}()
+
 	// Override from flag if provided
 	address := cfg.Gateway.Address
 	if gatewayAddress != "" {
@@ -104,12 +117,25 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			agentConfig.ObservabilityHook = observabilityHook
 		}
 		var err error
-		agentInstance, err = agent.New(agentConfig)
+		agentInstance, err = agent.New(agentConfig, getAgentOptions()...)
 		if err != nil {
 			return fmt.Errorf("create agent: %w", err)
 		}
 		defer agentInstance.Close()
-		logger.Info("agent initialized", "provider", cfg.Agent.Provider, "model", cfg.Agent.Model)
+
+		// Log registered options
+		opts := getAgentOptions()
+		logger.Info("agent initialized",
+			"provider", cfg.Agent.Provider,
+			"model", cfg.Agent.Model,
+			"registered_options", len(opts))
+
+		// Initialize compiled skills if any were registered
+		if len(opts) > 0 {
+			if err := agentInstance.InitCompiledSkills(ctx); err != nil {
+				return fmt.Errorf("init compiled skills: %w", err)
+			}
+		}
 
 		// Register search tool if available
 		if searchTool, err := agent.NewSearchTool(); err == nil {
@@ -162,19 +188,6 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			"tts_provider", cfg.Voice.TTS.Provider,
 			"response_mode", cfg.Voice.ResponseMode)
 	}
-
-	// Setup graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigCh
-		fmt.Println("\nShutting down...")
-		cancel()
-	}()
 
 	// Create message router and register channels
 	router := provider.NewRouter(logger)

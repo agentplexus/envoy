@@ -6,12 +6,14 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omniagent/config"
 )
 
 var (
-	cfgFile string
-	cfg     *config.Config
+	cfgFile      string
+	cfg          *config.Config
+	agentOptions []agent.Option // Registered agent options (e.g., compiled skills)
 )
 
 // rootCmd is the base command for omniagent.
@@ -68,4 +70,22 @@ func getConfig() *config.Config {
 		*cfg = config.Default()
 	}
 	return cfg
+}
+
+// RegisterAgentOption registers an agent option to be applied when creating the agent.
+// This allows external packages (like grokify-omniagent) to inject compiled skills
+// and other configuration before calling Execute().
+//
+// Example:
+//
+//	commands.RegisterAgentOption(agent.WithCompiledSkill(investSkill))
+//	commands.RegisterAgentOption(agent.WithStorage(sqliteStorage))
+//	commands.Execute()
+func RegisterAgentOption(opt agent.Option) {
+	agentOptions = append(agentOptions, opt)
+}
+
+// getAgentOptions returns all registered agent options.
+func getAgentOptions() []agent.Option {
+	return agentOptions
 }
