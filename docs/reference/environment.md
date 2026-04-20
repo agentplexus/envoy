@@ -40,6 +40,15 @@ Complete reference for OmniAgent environment variables.
 |----------|-------------|
 | `DISCORD_BOT_TOKEN` | Discord bot token (auto-enables channel) |
 
+### Twilio SMS
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID (auto-enables channel) | - |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token | - |
+| `TWILIO_PHONE_NUMBER` | Twilio phone number in E.164 format | - |
+| `TWILIO_WEBHOOK_PATH` | SMS webhook path | `/webhook/twilio/sms` |
+
 ## Voice
 
 | Variable | Description | Default |
@@ -53,7 +62,21 @@ Complete reference for OmniAgent environment variables.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OMNIAGENT_GATEWAY_ADDRESS` | Gateway address | `127.0.0.1:18789` |
+| `OMNIAGENT_GATEWAY_ADDRESS` | Gateway listen address | `127.0.0.1:18789` |
+
+### Address Format
+
+The gateway address must include a colon and port number:
+
+```bash
+# Valid formats
+OMNIAGENT_GATEWAY_ADDRESS=":8080"           # All interfaces, port 8080
+OMNIAGENT_GATEWAY_ADDRESS="127.0.0.1:8080"  # Localhost only
+OMNIAGENT_GATEWAY_ADDRESS="0.0.0.0:8080"    # All interfaces (explicit)
+
+# Invalid (missing colon)
+OMNIAGENT_GATEWAY_ADDRESS="8080"            # Won't work
+```
 
 ## Usage Examples
 
@@ -64,6 +87,33 @@ export OPENAI_API_KEY="sk-..."
 export WHATSAPP_ENABLED=true
 
 omniagent gateway run
+```
+
+### Twilio SMS Setup
+
+```bash
+# LLM Provider
+export OPENAI_API_KEY="sk-..."
+
+# Twilio SMS
+export TWILIO_ACCOUNT_SID="AC..."
+export TWILIO_AUTH_TOKEN="..."
+export TWILIO_PHONE_NUMBER="+15551234567"
+
+# Gateway (for ngrok)
+export OMNIAGENT_GATEWAY_ADDRESS=":8080"
+
+omniagent gateway run
+```
+
+Configure your Twilio phone number webhook to point to:
+`https://<your-domain>/webhook/twilio/sms` (POST)
+
+For local development, use ngrok:
+
+```bash
+ngrok http 8080
+# Then configure Twilio webhook to: https://<ngrok-subdomain>.ngrok.io/webhook/twilio/sms
 ```
 
 ### Full Setup
@@ -77,6 +127,11 @@ export OMNIAGENT_AGENT_MODEL=claude-sonnet-4-20250514
 # WhatsApp
 export WHATSAPP_ENABLED=true
 export WHATSAPP_DB_PATH=~/.omniagent/whatsapp.db
+
+# Twilio SMS
+export TWILIO_ACCOUNT_SID="AC..."
+export TWILIO_AUTH_TOKEN="..."
+export TWILIO_PHONE_NUMBER="+15551234567"
 
 # Voice
 export DEEPGRAM_API_KEY="..."
@@ -98,6 +153,11 @@ Create a `.envrc` file in your project directory:
 export OPENAI_API_KEY="sk-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 export DEEPGRAM_API_KEY="..."
+
+# Twilio SMS
+export TWILIO_ACCOUNT_SID="AC..."
+export TWILIO_AUTH_TOKEN="..."
+export TWILIO_PHONE_NUMBER="+15551234567"
 
 export OMNIAGENT_AGENT_PROVIDER=anthropic
 export WHATSAPP_ENABLED=true
