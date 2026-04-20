@@ -96,6 +96,13 @@ channels:
     enabled: false
     token: ${DISCORD_BOT_TOKEN}
 
+  twilio_sms:
+    enabled: false
+    account_sid: ${TWILIO_ACCOUNT_SID}
+    auth_token: ${TWILIO_AUTH_TOKEN}
+    phone_number: ${TWILIO_PHONE_NUMBER}
+    webhook_path: /webhook/sms
+
 voice:
   enabled: true
   response_mode: auto        # auto, always, never
@@ -244,6 +251,10 @@ runtime, _ := sandbox.NewRuntime(ctx, sandbox.Config{
 | `WHATSAPP_DB_PATH` | WhatsApp session storage path |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token (auto-enables Telegram) |
 | `DISCORD_BOT_TOKEN` | Discord bot token (auto-enables Discord) |
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID (auto-enables SMS) |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token |
+| `TWILIO_PHONE_NUMBER` | Twilio phone number in E.164 format |
+| `TWILIO_WEBHOOK_PATH` | SMS webhook path (default: `/webhook/sms`) |
 | `SERPER_API_KEY` | Serper API key for web search |
 | `SERPAPI_API_KEY` | SerpAPI key for web search (alternative) |
 | `DEEPGRAM_API_KEY` | Deepgram API key for voice STT/TTS |

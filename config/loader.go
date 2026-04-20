@@ -103,6 +103,21 @@ func loadEnv(cfg *Config) {
 		cfg.Channels.WhatsApp.DBPath = v
 	}
 
+	// Twilio SMS
+	if v := os.Getenv("TWILIO_ACCOUNT_SID"); v != "" {
+		cfg.Channels.TwilioSMS.AccountSID = v
+		cfg.Channels.TwilioSMS.Enabled = true
+	}
+	if v := os.Getenv("TWILIO_AUTH_TOKEN"); v != "" {
+		cfg.Channels.TwilioSMS.AuthToken = v
+	}
+	if v := os.Getenv("TWILIO_PHONE_NUMBER"); v != "" {
+		cfg.Channels.TwilioSMS.PhoneNumber = v
+	}
+	if v := os.Getenv("TWILIO_WEBHOOK_PATH"); v != "" {
+		cfg.Channels.TwilioSMS.WebhookPath = v
+	}
+
 	// Voice
 	if os.Getenv("OMNIAGENT_VOICE_ENABLED") == "true" {
 		cfg.Voice.Enabled = true

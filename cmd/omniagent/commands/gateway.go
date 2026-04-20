@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,6 +18,7 @@ import (
 	"github.com/plexusone/omnichat/provider"
 	"github.com/plexusone/omnichat/providers/discord"
 	"github.com/plexusone/omnichat/providers/telegram"
+	"github.com/plexusone/omnichat/providers/twilio"
 	"github.com/plexusone/omnichat/providers/whatsapp"
 	"github.com/plexusone/omniobserve/integrations/omnillm"
 	"github.com/plexusone/omniobserve/llmops"
@@ -176,6 +178,7 @@ func runGateway(cmd *cobra.Command, args []string) error {
 
 	// Create message router and register channels
 	router := provider.NewRouter(logger)
+	webhookHandlers := make(map[string]http.Handler)
 
 	// Register Telegram if configured
 	if cfg.Channels.Telegram.Enabled {
@@ -234,6 +237,28 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		logger.Info("whatsapp provider registered")
 	}
 
+	// Register Twilio SMS if configured
+	if cfg.Channels.TwilioSMS.Enabled {
+		sms, err := twilio.New(twilio.Config{
+			AccountSID:  cfg.Channels.TwilioSMS.AccountSID,
+			AuthToken:   cfg.Channels.TwilioSMS.AuthToken,
+			PhoneNumber: cfg.Channels.TwilioSMS.PhoneNumber,
+			Logger:      logger,
+		})
+		if err != nil {
+			return fmt.Errorf("create twilio sms provider: %w", err)
+		}
+		router.Register(sms)
+
+		// Register webhook handler
+		webhookPath := cfg.Channels.TwilioSMS.WebhookPath
+		if webhookPath == "" {
+			webhookPath = "/webhook/sms"
+		}
+		webhookHandlers[webhookPath] = sms.WebhookHandler()
+		logger.Info("twilio sms provider registered", "webhook_path", webhookPath)
+	}
+
 	// Check if any channels are configured
 	channels := router.ListProviders()
 	if len(channels) == 0 {
@@ -264,12 +289,13 @@ func runGateway(cmd *cobra.Command, args []string) error {
 
 	// Create and start gateway
 	gw, err := gateway.New(gateway.Config{
-		Address:      address,
-		ReadTimeout:  cfg.Gateway.ReadTimeout,
-		WriteTimeout: cfg.Gateway.WriteTimeout,
-		PingInterval: cfg.Gateway.PingInterval,
-		Agent:        agentInstance,
-		Logger:       logger,
+		Address:         address,
+		ReadTimeout:     cfg.Gateway.ReadTimeout,
+		WriteTimeout:    cfg.Gateway.WriteTimeout,
+		PingInterval:    cfg.Gateway.PingInterval,
+		Agent:           agentInstance,
+		Logger:          logger,
+		WebhookHandlers: webhookHandlers,
 	})
 	if err != nil {
 		return fmt.Errorf("create gateway: %w", err)

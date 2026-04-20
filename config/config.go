@@ -35,9 +35,10 @@ type AgentConfig struct {
 
 // ChannelsConfig configures messaging channels.
 type ChannelsConfig struct {
-	Telegram TelegramConfig `json:"telegram" yaml:"telegram"`
-	Discord  DiscordConfig  `json:"discord" yaml:"discord"`
-	WhatsApp WhatsAppConfig `json:"whatsapp" yaml:"whatsapp"`
+	Telegram  TelegramConfig  `json:"telegram" yaml:"telegram"`
+	Discord   DiscordConfig   `json:"discord" yaml:"discord"`
+	WhatsApp  WhatsAppConfig  `json:"whatsapp" yaml:"whatsapp"`
+	TwilioSMS TwilioSMSConfig `json:"twilio_sms" yaml:"twilio_sms"`
 }
 
 // WhatsAppConfig configures the WhatsApp channel.
@@ -57,6 +58,15 @@ type DiscordConfig struct {
 	Enabled bool   `json:"enabled" yaml:"enabled"`
 	Token   string `json:"token" yaml:"token"`
 	GuildID string `json:"guild_id" yaml:"guild_id"`
+}
+
+// TwilioSMSConfig configures the Twilio SMS channel.
+type TwilioSMSConfig struct {
+	Enabled     bool   `json:"enabled" yaml:"enabled"`
+	AccountSID  string `json:"account_sid" yaml:"account_sid"`
+	AuthToken   string `json:"auth_token" yaml:"auth_token"`   //nolint:gosec // G101: Auth token loaded from config file
+	PhoneNumber string `json:"phone_number" yaml:"phone_number"`
+	WebhookPath string `json:"webhook_path" yaml:"webhook_path"` // Default: /webhook/sms
 }
 
 // ToolsConfig configures available tools.

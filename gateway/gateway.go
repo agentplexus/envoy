@@ -19,12 +19,13 @@ type AgentProcessor interface {
 
 // Config configures the gateway server.
 type Config struct {
-	Address      string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	PingInterval time.Duration
-	Logger       *slog.Logger
-	Agent        AgentProcessor
+	Address         string
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	PingInterval    time.Duration
+	Logger          *slog.Logger
+	Agent           AgentProcessor
+	WebhookHandlers map[string]http.Handler // Path -> Handler for webhook endpoints
 }
 
 // Gateway is the WebSocket control plane server.
@@ -93,6 +94,12 @@ func (g *Gateway) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", g.handleWebSocket)
 	mux.HandleFunc("/health", g.handleHealth)
+
+	// Mount webhook handlers
+	for path, handler := range g.config.WebhookHandlers {
+		g.logger.Info("mounting webhook handler", "path", path)
+		mux.Handle(path, handler)
+	}
 
 	server := &http.Server{
 		Addr:         g.config.Address,
