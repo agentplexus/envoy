@@ -58,6 +58,10 @@ nav:
     - WhatsApp Setup: guides/whatsapp.md
     - Voice Integration: guides/voice.md
     - Skills Development: guides/skills.md
+    - Sessions & Storage: guides/sessions.md
+    - Scheduled Jobs: guides/cron.md
+    - Context Management: guides/context.md
+    - Event Hooks: guides/hooks.md
     - Sandboxing: guides/sandboxing.md
   - Architecture:
     - Overview: architecture/overview.md

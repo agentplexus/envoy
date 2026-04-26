@@ -132,6 +132,74 @@ Tools execute in isolated environments:
 5. Voice response sent
 ```
 
+## Omni* Library Ecosystem
+
+OmniAgent is built on a modular ecosystem of `omni*` libraries. Each library follows a core/provider split pattern where core modules contain interfaces and generic functionality, while provider modules contain SDK-specific implementations.
+
+```
+                         Omni* Library Architecture
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              OmniAgent                                      │
+│                          (Agent Runtime)                                    │
+└───┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬─────────┘
+    │        │        │        │        │        │        │        │
+    ▼        ▼        ▼        ▼        ▼        ▼        ▼        ▼
+┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐┌──────────────────┐
+│omnichat││omnillm ││omnivoice│omniobserve│omniserp││omniretrieve│  omnistorage   │
+│        ││        ││        ││        ││        ││        ││                  │
+│Messaging││  LLM   ││  Voice ││Observability│ Search ││  RAG   ││  File + KVS    │
+└────────┘└───┬────┘└───┬────┘└────────┘└────────┘└────────┘└────────┬─────────┘
+              │         │                                            │
+    ┌─────────┴─────────┴────────────────────────────────────────────┴─────────┐
+    │                           Core Modules                                   │
+    │  ┌─────────────┐  ┌─────────────┐  ┌────────────────────────────────┐    │
+    │  │ omnillm-core│  │omnivoice-core│  │       omnistorage-core         │    │
+    │  │             │  │             │  │  ┌─────────┐  ┌─────────┐      │    │
+    │  │ - Interfaces│  │ - Interfaces│  │  │ /object │  │  /kvs   │      │    │
+    │  │ - Request/  │  │ - STT/TTS   │  │  │         │  │         │      │    │
+    │  │   Response  │  │   types     │  │  │ Files   │  │ Sessions│      │    │
+    │  │ - Tool      │  │ - Streaming │  │  │ Blobs   │  │ Cache   │      │    │
+    │  │   schemas   │  │             │  │  │ Objects │  │ State   │      │    │
+    │  └─────────────┘  └─────────────┘  │  └─────────┘  └─────────┘      │    │
+    │                                    └────────────────────────────────┘    │
+    └──────────────────────────────────────────────────────────────────────────┘
+              │                   │                         │
+    ┌─────────┴───────────────────┴─────────────────────────┴─────────┐
+    │                      Provider Modules                            │
+    │                                                                  │
+    │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+    │  │    omni-aws     │  │   omni-google   │  │   omni-github   │  │
+    │  │                 │  │                 │  │                 │  │
+    │  │ /omnillm        │  │ /omnillm        │  │ /omnistorage    │  │
+    │  │   (Bedrock)     │  │   (Gemini)      │  │   (GitHub API)  │  │
+    │  │                 │  │                 │  │                 │  │
+    │  │ /omnistorage    │  │ /omnistorage    │  └─────────────────┘  │
+    │  │   (S3)          │  │   (GCS)         │                       │
+    │  │                 │  │                 │                       │
+    │  │ /omnivoice      │  │ /omnivoice      │                       │
+    │  │   (future)      │  │   (future)      │                       │
+    │  └─────────────────┘  └─────────────────┘                       │
+    └─────────────────────────────────────────────────────────────────┘
+```
+
+### Module Organization
+
+| Pattern | Description | Example |
+|---------|-------------|---------|
+| `omni*` | Aggregator module, re-exports core + providers | `omnillm`, `omnistorage` |
+| `omni*-core` | Interfaces and generic implementations | `omnillm-core`, `omnistorage-core` |
+| `omni-<provider>/*` | Provider-specific implementations | `omni-aws/omnillm`, `omni-google/omnistorage` |
+
+### Storage Architecture
+
+`omnistorage-core` provides two storage subsystems:
+
+| Subsystem | Import Path | Purpose | Backends |
+|-----------|-------------|---------|----------|
+| Object Storage | `omnistorage-core/object` | Files, blobs, documents | Local FS, S3, GCS, GitHub |
+| Key-Value Storage | `omnistorage-core/kvs` | Sessions, cache, state | Memory, SQLite |
+
 ## Dependencies
 
 ### Core Libraries
@@ -143,6 +211,7 @@ Tools execute in isolated environments:
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omniserp](https://github.com/plexusone/omniserp) | Web search |
+| [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Object and key-value storage |
 
 ### Infrastructure
 

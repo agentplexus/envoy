@@ -9,7 +9,9 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 💬 **Multi-Channel Support** - Telegram, Discord, Slack, WhatsApp, and more
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, etc.)
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
-- 🧩 **Skills System** - Extensible skills compatible with OpenClaw/ClawHub
+- 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
+- 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
+- ⏰ **Scheduled Jobs** - Cron expressions, intervals, and one-time job scheduling
 - 🔒 **Secure Sandboxing** - WASM and Docker isolation for tool execution
 - 🌐 **Browser Automation** - Built-in browser control via Rod
 - 🔌 **WebSocket Gateway** - Real-time control plane for device connections
@@ -74,6 +76,8 @@ A QR code will appear in your terminal. Scan it with WhatsApp to connect.
 | [omnillm](https://github.com/plexusone/omnillm) | Multi-provider LLM abstraction |
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
+| [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Key-value and object storage |
+| [robfig/cron](https://github.com/robfig/cron) | Cron expression parsing and scheduling |
 | [wazero](https://github.com/tetratelabs/wazero) | WASM runtime for sandboxing |
 | [moby](https://github.com/moby/moby) | Docker SDK for container isolation |
 | [Rod](https://github.com/go-rod/rod) | Browser automation |

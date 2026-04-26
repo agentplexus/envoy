@@ -120,6 +120,47 @@ skills:
   max_injected: 20
 ```
 
+## Storage
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `storage.type` | string | `memory` | Backend type: `memory`, `sqlite` |
+| `storage.path` | string | - | Database path (for sqlite) |
+
+```yaml
+storage:
+  type: sqlite
+  path: /data/omniagent.db
+```
+
+### Storage Backends
+
+| Type | Persistence | Use Case |
+|------|-------------|----------|
+| `memory` | None | Development, testing |
+| `sqlite` | Disk | Production, single instance |
+
+## Sessions
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `sessions.enabled` | bool | `true` | Enable session persistence |
+| `sessions.ttl` | duration | `168h` | Session time-to-live (7 days) |
+
+```yaml
+sessions:
+  enabled: true
+  ttl: 168h  # 7 days
+```
+
+!!! note "Programmatic Configuration"
+    Storage and sessions are currently configured programmatically:
+    ```go
+    backend, _ := sqlite.New(sqlite.Config{Path: "data.db"})
+    agent.New(config, agent.WithSessionsFromStorage(backend))
+    ```
+    YAML configuration support is planned.
+
 ## Voice
 
 | Field | Type | Default | Description |
@@ -181,6 +222,14 @@ agent:
   system_prompt: |
     You are OmniAgent, an AI assistant responding on behalf of the user.
     Be helpful, concise, and professional.
+
+storage:
+  type: sqlite
+  path: /data/omniagent.db
+
+sessions:
+  enabled: true
+  ttl: 168h  # 7 days
 
 channels:
   whatsapp:

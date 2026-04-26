@@ -1,10 +1,15 @@
 # Skills Development
 
-OmniAgent supports skills compatible with the [OpenClaw](https://github.com/openclaw/openclaw) SKILL.md format. Skills extend the agent's capabilities by injecting domain-specific instructions into the system prompt.
+OmniAgent supports two types of skills:
+
+1. **Markdown Skills** - SKILL.md files compatible with [OpenClaw](https://github.com/openclaw/openclaw) format
+2. **Compiled Skills** - Go packages that register callable tools with the agent
 
 ## Overview
 
-Skills are Markdown files with YAML frontmatter that teach your agent how to perform specific tasks. They're injected into the LLM's system prompt at runtime.
+**Markdown skills** inject instructions into the system prompt, teaching the agent how to use external tools.
+
+**Compiled skills** register actual Go functions as LLM tools, enabling direct function calling.
 
 ## Skill Format
 
@@ -186,3 +191,153 @@ Or manually clone to your skills directory:
 ```bash
 git clone https://github.com/user/skill ~/.omniagent/skills/skill
 ```
+
+---
+
+## Compiled Skills
+
+Compiled skills are Go packages that register functions as LLM tools. They provide better performance and type safety compared to markdown skills.
+
+### Creating a Compiled Skill
+
+#### 1. Implement the Skill Interface
+
+```go
+package myskill
+
+import (
+    "context"
+    "github.com/plexusone/omniagent/skills/compiled"
+)
+
+type MySkill struct {
+    // skill state
+}
+
+func New() *MySkill {
+    return &MySkill{}
+}
+
+func (s *MySkill) Name() string {
+    return "myskill"
+}
+
+func (s *MySkill) Description() string {
+    return "My custom skill description"
+}
+
+func (s *MySkill) Tools() []compiled.Tool {
+    return []compiled.Tool{
+        {
+            Name:        "myskill_action",
+            Description: "Performs an action",
+            Parameters: map[string]compiled.Parameter{
+                "input": {
+                    Type:        "string",
+                    Description: "The input value",
+                    Required:    true,
+                },
+            },
+            Handler: s.handleAction,
+        },
+    }
+}
+
+func (s *MySkill) Init(ctx context.Context) error {
+    // Initialize resources
+    return nil
+}
+
+func (s *MySkill) Close() error {
+    // Cleanup resources
+    return nil
+}
+
+func (s *MySkill) handleAction(ctx context.Context, params map[string]any) (any, error) {
+    input := params["input"].(string)
+    return map[string]any{"result": "Processed: " + input}, nil
+}
+```
+
+#### 2. Register with Agent
+
+```go
+import "github.com/example/myskill"
+
+skill := myskill.New()
+agent, err := agent.New(config,
+    agent.WithCompiledSkill(skill),
+)
+```
+
+### Storage-Aware Skills
+
+Skills that need persistent storage implement `StorageAware`:
+
+```go
+import "github.com/plexusone/omnistorage-core/kvs"
+
+type MySkill struct {
+    storage kvs.Store
+}
+
+func (s *MySkill) SetStorage(store kvs.Store) {
+    s.storage = store
+}
+```
+
+Storage is automatically injected when using `WithSessionsFromStorage` or `WithStorage`:
+
+```go
+agent.New(config,
+    agent.WithSessionsFromStorage(backend),  // Injects storage
+    agent.WithCompiledSkill(mySkill),        // Receives storage
+)
+```
+
+### Parameter Types
+
+| Type | JSON Schema Type | Go Type |
+|------|------------------|---------|
+| `"string"` | string | `string` |
+| `"integer"` | integer | `int`, `int64` |
+| `"number"` | number | `float64` |
+| `"boolean"` | boolean | `bool` |
+| `"array"` | array | `[]any` |
+| `"object"` | object | `map[string]any` |
+
+### Built-in Compiled Skills
+
+OmniAgent includes these compiled skills:
+
+| Skill | Tools | Description |
+|-------|-------|-------------|
+| `sessions` | `sessions_list`, `sessions_history`, etc. | Session management |
+
+### Skill Lifecycle
+
+```
+agent.New()
+    │
+    ├── WithCompiledSkill(skill)
+    │       └── RegisterCompiledSkill()
+    │               ├── SetStorage() if StorageAware
+    │               └── Register tools with ToolRegistry
+    │
+    ├── InitCompiledSkills()
+    │       └── skill.Init(ctx) for each skill
+    │
+    ... agent runs ...
+    │
+    └── agent.Close()
+            └── CloseCompiledSkills()
+                    └── skill.Close() for each skill
+```
+
+### Best Practices
+
+1. **Return Structured Data** - Return maps or structs, not plain strings
+2. **Handle Errors Gracefully** - Return user-friendly error messages
+3. **Validate Parameters** - Check required parameters before processing
+4. **Use Descriptive Names** - Tool names should be `skillname_action` format
+5. **Document Parameters** - Descriptions help the LLM use tools correctly

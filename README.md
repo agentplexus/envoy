@@ -37,7 +37,9 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 💬 **Multi-Channel Support** - Telegram, Discord, Slack, WhatsApp, and more
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, etc.)
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
-- 🧩 **Skills System** - Extensible skills compatible with OpenClaw/ClawHub, plus compiled Go skills
+- 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
+- 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
+- ⏰ **Scheduled Jobs** - Cron expressions, intervals, and one-time job scheduling
 - 🔒 **Secure Sandboxing** - WASM and Docker isolation for tool execution
 - 🌐 **Browser Automation** - Built-in browser control via Rod
 - 🔌 **WebSocket Gateway** - Real-time control plane for device connections
@@ -179,21 +181,107 @@ Skills with missing requirements (binaries, env vars) are automatically skipped.
 
 ### Compiled Skills
 
-For better performance, you can register Go functions directly as skills:
+For better performance and type safety, register Go functions as LLM tools:
 
 ```go
-import "github.com/plexusone/omniagent/skills"
+import (
+    "github.com/plexusone/omniagent/agent"
+    "github.com/plexusone/omniagent/skills/compiled"
+)
 
-skill := skills.CompiledSkill{
-    Name:        "get_weather",
-    Description: "Get weather for a location",
-    Handler: func(ctx context.Context, args map[string]any) (string, error) {
-        return fetchWeather(args["location"].(string))
-    },
+// Create a skill with tools
+type WeatherSkill struct{}
+
+func (s *WeatherSkill) Name() string        { return "weather" }
+func (s *WeatherSkill) Description() string { return "Weather forecasts" }
+func (s *WeatherSkill) Tools() []compiled.Tool {
+    return []compiled.Tool{{
+        Name:        "get_weather",
+        Description: "Get weather for a location",
+        Parameters: map[string]compiled.Parameter{
+            "location": {Type: "string", Required: true},
+        },
+        Handler: func(ctx context.Context, params map[string]any) (any, error) {
+            return fetchWeather(params["location"].(string))
+        },
+    }}
 }
+func (s *WeatherSkill) Init(ctx context.Context) error { return nil }
+func (s *WeatherSkill) Close() error                   { return nil }
 
-skills.RegisterCompiled(skill)
+// Register with agent
+agent.New(config, agent.WithCompiledSkill(&WeatherSkill{}))
 ```
+
+## Sessions
+
+OmniAgent supports persistent conversation sessions:
+
+```go
+import (
+    "github.com/plexusone/omniagent/agent"
+    "github.com/plexusone/omnistorage-core/kvs/backend/sqlite"
+)
+
+// Create storage backend
+backend, _ := sqlite.New(sqlite.Config{Path: "omniagent.db"})
+
+// Create agent with sessions
+a, _ := agent.New(config,
+    agent.WithSessionsFromStorage(backend),
+)
+
+// Process with conversation history
+response1, _ := a.ProcessWithSession(ctx, "user-123", "My name is Alice")
+response2, _ := a.ProcessWithSession(ctx, "user-123", "What's my name?")
+// Agent remembers: "Your name is Alice"
+```
+
+See [Sessions Guide](docs/guides/sessions.md) for details.
+
+## Scheduled Jobs
+
+OmniAgent supports scheduled job execution via the cron package:
+
+```go
+import (
+    "github.com/plexusone/omniagent/agent"
+    "github.com/plexusone/omnistorage-core/kvs/backend/sqlite"
+)
+
+// Create agent with cron support
+backend, _ := sqlite.New(sqlite.Config{Path: "omniagent.db"})
+a, _ := agent.New(config,
+    agent.WithSessionsFromStorage(backend),
+    agent.WithCronScheduler(),
+)
+```
+
+The LLM can then create scheduled jobs via tool calls:
+
+| Tool | Description |
+|------|-------------|
+| `cron_create` | Create a new scheduled job |
+| `cron_list` | List all jobs (filterable by status) |
+| `cron_get` | Get job details |
+| `cron_delete` | Delete a job |
+| `cron_enable` | Enable a disabled job |
+| `cron_disable` | Disable without deleting |
+| `cron_trigger` | Run job immediately |
+
+Schedule types:
+
+- **Cron expressions**: `0 0 9 * * *` (9am daily, with seconds)
+- **Intervals**: `1h`, `30m`, `24h`
+- **One-time**: RFC3339 timestamp for single execution
+
+Action types:
+
+- `send_message` - Send a message to a session
+- `call_webhook` - Make an HTTP request
+- `call_tool` - Invoke a registered tool
+
+See [Cron Guide](docs/guides/cron.md) for details.
 
 ## Sandboxing
 
@@ -349,7 +437,40 @@ omniagent version          # Show version information
 | `voice.stt.provider` | string | - | STT provider (e.g., `deepgram`) |
 | `voice.tts.provider` | string | - | TTS provider (e.g., `deepgram`) |
 
+## Omni* Library Ecosystem
+
+OmniAgent is built on a modular ecosystem of `omni*` libraries:
+
+```
+                              OmniAgent
+                          (Agent Runtime)
+    ┌────────┬────────┬────────┬────────┬────────┬────────┐
+    ▼        ▼        ▼        ▼        ▼        ▼        ▼
+omnichat  omnillm  omnivoice omniobserve omniserp omnistorage ...
+    │         │         │                           │
+    │    ┌────┴────┐ ┌──┴──┐              ┌─────────┴────────┐
+    │    │         │ │     │              │                  │
+    ▼    ▼         ▼ ▼     ▼              ▼                  ▼
+      omnillm-core   omnivoice-core    omnistorage-core
+                                       ├── /object (files)
+                                       └── /kvs (sessions)
+    │         │         │                           │
+    └─────────┴─────────┴───────────────────────────┘
+                        │
+              Provider Modules
+    ┌───────────────────┼───────────────────┐
+    ▼                   ▼                   ▼
+omni-aws           omni-google         omni-github
+├── /omnillm       ├── /omnillm        └── /omnistorage
+├── /omnistorage   └── /omnistorage
+└── /omnivoice
+```
+
+See [Architecture Overview](docs/architecture/overview.md) for detailed documentation.
+
 ## Dependencies
+
+### Omni* Libraries
 
 | Package | Purpose |
 |---------|---------|
@@ -358,6 +479,12 @@ omniagent version          # Show version information
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omniserp](https://github.com/plexusone/omniserp) | Web search via Serper/SerpAPI |
+| [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Object and key-value storage |
+
+### Infrastructure
+
+| Package | Purpose |
+|---------|---------|
 | [wazero](https://github.com/tetratelabs/wazero) | WASM runtime for sandboxing |
 | [moby](https://github.com/moby/moby) | Docker SDK for container isolation |
 | [Rod](https://github.com/go-rod/rod) | Browser automation |
