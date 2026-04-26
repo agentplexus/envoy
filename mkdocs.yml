@@ -70,6 +70,10 @@ nav:
     - Configuration: reference/configuration.md
     - CLI Commands: reference/cli.md
     - Environment Variables: reference/environment.md
+  - Design:
+    - Voice Notes:
+      - Specification: design/voice_notes/SPEC.md
+      - Case Study: design/voice_notes/CASE_STUDY.md
   - Releases:
     - v0.5.0: releases/v0.5.0.md
     - v0.4.0: releases/v0.4.0.md
