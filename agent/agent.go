@@ -22,12 +22,12 @@ import (
 type Agent struct {
 	client         *omnillm.ChatClient
 	tools          *ToolRegistry
-	skills         []*skills.Skill  // Markdown skills (SKILL.md)
-	compiledSkills []compiled.Skill // Compiled Go skills
-	storage        omnistorage.Store        // Key-value storage backend
-	sessions       *sessions.Store  // Persistent session storage
-	contextEngine  *agentctx.Engine // Context management engine
-	hooks          *hooks.Registry  // Event hook registry
+	skills         []*skills.Skill   // Markdown skills (SKILL.md)
+	compiledSkills []compiled.Skill  // Compiled Go skills
+	storage        omnistorage.Store // Key-value storage backend
+	sessions       *sessions.Store   // Persistent session storage
+	contextEngine  *agentctx.Engine  // Context management engine
+	hooks          *hooks.Registry   // Event hook registry
 	dispatcher     *hooks.Dispatcher
 	config         Config
 	logger         *slog.Logger

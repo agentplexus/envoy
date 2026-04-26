@@ -6,25 +6,26 @@ import (
 	"fmt"
 
 	"github.com/plexusone/omniagent/skills/compiled"
+	"github.com/plexusone/omniskill/skill"
 	"github.com/plexusone/omnistorage"
 )
 
-// compiledToolWrapper wraps a compiled.Tool to implement agent.Tool.
+// compiledToolWrapper wraps a skill.Tool to implement agent.Tool.
 type compiledToolWrapper struct {
-	tool      compiled.Tool
+	tool      skill.Tool
 	skillName string
 }
 
 func (w *compiledToolWrapper) Name() string {
-	return w.tool.Name
+	return w.tool.Name()
 }
 
 func (w *compiledToolWrapper) Description() string {
-	return w.tool.Description
+	return w.tool.Description()
 }
 
 func (w *compiledToolWrapper) Parameters() map[string]interface{} {
-	return w.tool.ToJSONSchema()
+	return skill.ParametersToJSONSchema(w.tool.Parameters())
 }
 
 func (w *compiledToolWrapper) Execute(ctx context.Context, args json.RawMessage) (string, error) {
@@ -34,8 +35,8 @@ func (w *compiledToolWrapper) Execute(ctx context.Context, args json.RawMessage)
 		return "", fmt.Errorf("parse arguments: %w", err)
 	}
 
-	// Execute the handler
-	result, err := w.tool.Handler(ctx, params)
+	// Execute the tool
+	result, err := w.tool.Call(ctx, params)
 	if err != nil {
 		return "", err
 	}
