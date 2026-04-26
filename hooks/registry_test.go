@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/plexusone/omnistorage"
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 func TestNewRegistry(t *testing.T) {
@@ -300,10 +300,10 @@ func TestRegistryRegisterWebhook(t *testing.T) {
 // mockStorageAwareHook implements both Hook and StorageAware.
 type mockStorageAwareHook struct {
 	mockHook
-	storage omnistorage.Store
+	storage kvs.Store
 }
 
-func (h *mockStorageAwareHook) SetStorage(s omnistorage.Store) {
+func (h *mockStorageAwareHook) SetStorage(s kvs.Store) {
 	h.storage = s
 }
 

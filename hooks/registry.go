@@ -7,14 +7,14 @@ import (
 	"sync"
 
 	"github.com/grokify/mogo/log/slogutil"
-	"github.com/plexusone/omnistorage"
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // Registry manages hook registrations and event dispatch.
 type Registry struct {
 	handlers map[EventType][]registeredHandler
 	hooks    []Hook
-	storage  omnistorage.Store
+	storage  kvs.Store
 	mu       sync.RWMutex
 }
 
@@ -68,7 +68,7 @@ func (r *Registry) RegisterWebhook(webhook *WebhookHook) {
 }
 
 // SetStorage sets the storage backend for storage-aware hooks.
-func (r *Registry) SetStorage(s omnistorage.Store) {
+func (r *Registry) SetStorage(s kvs.Store) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/plexusone/omniagent/skills/compiled"
 	"github.com/plexusone/omniskill/skill"
-	"github.com/plexusone/omnistorage"
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // compiledToolWrapper wraps a skill.Tool to implement agent.Tool.
@@ -122,7 +122,7 @@ func (a *Agent) CloseCompiledSkills() error {
 
 // SetStorage sets the storage backend for the agent.
 // This also injects storage into any storage-aware compiled skills.
-func (a *Agent) SetStorage(s omnistorage.Store) {
+func (a *Agent) SetStorage(s kvs.Store) {
 	a.mu.Lock()
 	a.storage = s
 	skills := a.compiledSkills

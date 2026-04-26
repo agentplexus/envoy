@@ -6,7 +6,7 @@ import (
 
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/sessions"
-	"github.com/plexusone/omnistorage/kvs/memory"
+	"github.com/plexusone/omnistorage-core/kvs/backend/memory"
 )
 
 func TestAgent_SessionStore(t *testing.T) {

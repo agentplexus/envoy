@@ -7,7 +7,7 @@ import (
 	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniagent/skills/compiled"
 	mcpskill "github.com/plexusone/omniagent/skills/remote/mcp"
-	"github.com/plexusone/omnistorage"
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // Option configures the agent.
@@ -38,7 +38,7 @@ func WithCompiledSkill(skill compiled.Skill) Option {
 //	    agent.WithStorage(sqliteStore),
 //	    agent.WithCompiledSkill(investSkill),
 //	)
-func WithStorage(s omnistorage.Store) Option {
+func WithStorage(s kvs.Store) Option {
 	return func(a *Agent) error {
 		a.SetStorage(s)
 		return nil
@@ -85,7 +85,7 @@ func WithSessionStore(store *sessions.Store) Option {
 //	agent, err := agent.New(config,
 //	    agent.WithSessionsFromStorage(sqliteStore),
 //	)
-func WithSessionsFromStorage(backend omnistorage.Store) Option {
+func WithSessionsFromStorage(backend kvs.Store) Option {
 	return func(a *Agent) error {
 		a.SetStorage(backend)
 		a.sessions = sessions.NewStore(sessions.StoreConfig{

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/plexusone/omnistorage"
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 const (
@@ -24,7 +24,7 @@ var ErrSessionNotFound = errors.New("session not found")
 
 // Store manages persistent session storage.
 type Store struct {
-	backend omnistorage.Store
+	backend kvs.Store
 	ttl     time.Duration
 	cache   map[string]*Session
 	mu      sync.RWMutex
@@ -33,7 +33,7 @@ type Store struct {
 // StoreConfig configures the session store.
 type StoreConfig struct {
 	// Backend is the KVS storage backend.
-	Backend omnistorage.Store
+	Backend kvs.Store
 
 	// TTL is the session time-to-live. Zero means no expiration.
 	TTL time.Duration
@@ -68,7 +68,7 @@ func (s *Store) Get(ctx context.Context, id string) (*Session, error) {
 	key := sessionKeyPrefix + id
 	data, err := s.backend.Get(ctx, key)
 	if err != nil {
-		if errors.Is(err, omnistorage.ErrKVSNotFound) {
+		if errors.Is(err, kvs.ErrNotFound) {
 			// Create new session
 			session := NewSession(id)
 			if err := s.Save(ctx, session); err != nil {
@@ -107,7 +107,7 @@ func (s *Store) GetIfExists(ctx context.Context, id string) (*Session, error) {
 	key := sessionKeyPrefix + id
 	data, err := s.backend.Get(ctx, key)
 	if err != nil {
-		if errors.Is(err, omnistorage.ErrKVSNotFound) {
+		if errors.Is(err, kvs.ErrNotFound) {
 			return nil, ErrSessionNotFound
 		}
 		return nil, fmt.Errorf("get session: %w", err)
@@ -150,7 +150,7 @@ func (s *Store) Save(ctx context.Context, session *Session) error {
 func (s *Store) Delete(ctx context.Context, id string) error {
 	key := sessionKeyPrefix + id
 	if err := s.backend.Delete(ctx, key); err != nil {
-		if !errors.Is(err, omnistorage.ErrKVSNotFound) {
+		if !errors.Is(err, kvs.ErrNotFound) {
 			return fmt.Errorf("delete session: %w", err)
 		}
 	}
@@ -164,9 +164,9 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 }
 
 // List returns all session IDs.
-// This requires the backend to implement omnistorage.ListableStore.
+// This requires the backend to implement kvs.ListableStore.
 func (s *Store) List(ctx context.Context) ([]string, error) {
-	listable, ok := s.backend.(omnistorage.ListableStore)
+	listable, ok := s.backend.(kvs.ListableStore)
 	if !ok {
 		// Fall back to cached sessions if backend doesn't support listing
 		s.mu.RLock()

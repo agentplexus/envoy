@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/plexusone/omnillm/provider"
-	"github.com/plexusone/omnistorage/kvs/memory"
+	"github.com/plexusone/omnistorage-core/kvs/backend/memory"
 )
 
 func TestSkill_Metadata(t *testing.T) {

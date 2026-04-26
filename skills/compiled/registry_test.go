@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/plexusone/omniskill/skill"
-	"github.com/plexusone/omnistorage"
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // mockSkill is a test skill implementation.
@@ -15,7 +15,7 @@ type mockSkill struct {
 	tools       []skill.Tool
 	initCalled  bool
 	closeCalled bool
-	storage     omnistorage.Store
+	storage     kvs.Store
 }
 
 func newMockSkill(name string) *mockSkill {
@@ -45,8 +45,8 @@ func (m *mockSkill) Name() string                   { return m.name }
 func (m *mockSkill) Description() string            { return m.description }
 func (m *mockSkill) Tools() []skill.Tool            { return m.tools }
 func (m *mockSkill) Init(ctx context.Context) error { m.initCalled = true; return nil }
-func (m *mockSkill) Close() error                   { m.closeCalled = true; return nil }
-func (m *mockSkill) SetStorage(s omnistorage.Store) { m.storage = s }
+func (m *mockSkill) Close() error              { m.closeCalled = true; return nil }
+func (m *mockSkill) SetStorage(s kvs.Store) { m.storage = s }
 
 func TestRegistry_Register(t *testing.T) {
 	r := NewRegistry()

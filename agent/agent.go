@@ -15,7 +15,7 @@ import (
 	"github.com/plexusone/omniagent/skills/compiled"
 	"github.com/plexusone/omnillm"
 	"github.com/plexusone/omnillm/provider"
-	"github.com/plexusone/omnistorage"
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // Agent is the AI agent that processes messages.
@@ -24,7 +24,7 @@ type Agent struct {
 	tools          *ToolRegistry
 	skills         []*skills.Skill   // Markdown skills (SKILL.md)
 	compiledSkills []compiled.Skill  // Compiled Go skills
-	storage        omnistorage.Store // Key-value storage backend
+	storage        kvs.Store // Key-value storage backend
 	sessions       *sessions.Store   // Persistent session storage
 	contextEngine  *agentctx.Engine  // Context management engine
 	hooks          *hooks.Registry   // Event hook registry
