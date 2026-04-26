@@ -7,6 +7,59 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.6.0",
+      "date": "2026-04-26",
+      "highlights": [
+        { "description": "Persistent sessions with automatic history loading and saving" },
+        { "description": "Context engine for token-aware conversation management" },
+        { "description": "Event hook system for agent lifecycle events" },
+        { "description": "Cron scheduler for periodic job execution" },
+        { "description": "MCP remote skill support for external tool servers" },
+        { "description": "Migration from omnistorage to omnistorage-core/kvs" }
+      ],
+      "breaking": [
+        { "description": "Storage imports changed from `github.com/plexusone/omnistorage` to `github.com/plexusone/omnistorage-core/kvs`", "commit": "ac1f5ab" },
+        { "description": "Local `storage/` package removed in favor of `omnistorage-core/kvs` backends", "commit": "74c36c5" },
+        { "description": "Compiled skill tools now use `skill.Tool` interface from omniskill", "commit": "3323e30" }
+      ],
+      "added": [
+        { "description": "`sessions/` package with persistent session storage and tool integrations", "commit": "755ca11" },
+        { "description": "`context/` package with token-aware context management and sliding window support", "commit": "763c61d" },
+        { "description": "`hooks/` package with event dispatcher, registry, and webhook support", "commit": "b2ad5ab" },
+        { "description": "`cron/` package with scheduler, persistent job store, and tool integrations", "commit": "176e6f8" },
+        { "description": "`platform/` package with standalone platform abstraction", "commit": "4ab3b29" },
+        { "description": "`skills/remote/mcp/` package for MCP server integration", "commit": "41ea36f" },
+        { "description": "Twilio SMS channel support with webhook handling", "commit": "0301051" },
+        { "description": "`RegisterAgentOption` for external compiled skill injection", "commit": "16f6fb3" },
+        { "description": "`ProcessWithSession` method for stateful conversation handling", "commit": "f0d0efc" }
+      ],
+      "changed": [
+        { "description": "Compiled skills now use `skill.Tool` interface from omniskill package", "commit": "3323e30" },
+        { "description": "Storage migrated from omnistorage to omnistorage-core/kvs", "commit": "ac1f5ab" },
+        { "description": "MCP skill updated to use omniskill client and types", "commit": "0f372c2" },
+        { "description": "Twilio webhook path changed to `/webhook/twilio/sms`", "commit": "41e210a" }
+      ],
+      "fixed": [
+        { "description": "gofmt linting compliance", "commit": "fccc23d" }
+      ],
+      "docs": [
+        { "description": "Added guides for sessions, context, cron, and hooks", "commit": "f4555a8" },
+        { "description": "Added voice notes specification and case study", "commit": "975b3e3" },
+        { "description": "Added v0.6.0 release notes", "commit": "be22422" },
+        { "description": "Added Twilio SMS and environment variable documentation", "commit": "60d9efe" }
+      ],
+      "test": [
+        { "description": "Session integration tests for conversation continuity", "commit": "7cf19ba" },
+        { "description": "Updated tests for omniskill types", "commit": "60f31a1" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omnistorage-core` v0.3.0 (replaced omnistorage)" },
+        { "description": "`github.com/plexusone/omniskill` v0.6.0 (new)" },
+        { "description": "`github.com/robfig/cron/v3` v3.0.1 (new, for scheduling)" },
+        { "description": "`github.com/moby/moby/client` v0.4.0 → v0.4.1" }
+      ]
+    },
+    {
       "version": "v0.5.0",
       "date": "2026-04-19",
       "highlights": [

@@ -1,6 +1,6 @@
 # Release Notes: v0.6.0
 
-**Release Date:** 2026-04-25
+**Release Date:** 2026-04-26
 
 ## Overview
 
@@ -118,8 +118,8 @@ import "github.com/plexusone/omniagent/storage"
 store := storage.NewSQLiteBackend("./data.db")
 
 // New (v0.6.0)
-import "github.com/plexusone/omnistorage-core/kvs"
-store, _ := kvs.NewSQLite("./data.db")
+import "github.com/plexusone/omnistorage-core/kvs/backend/sqlite"
+store, _ := sqlite.New(sqlite.Config{Path: "./data.db"})
 ```
 
 ## Dependency Changes
