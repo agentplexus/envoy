@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/plexusone/omnistorage-core/kvs"
+	"github.com/plexusone/omnistorage"
 )
 
 const (
@@ -20,7 +20,7 @@ var ErrJobNotFound = errors.New("job not found")
 
 // Store manages persistent job storage.
 type Store struct {
-	backend kvs.Store
+	backend omnistorage.Store
 	cache   map[string]*Job
 	mu      sync.RWMutex
 }
@@ -28,7 +28,7 @@ type Store struct {
 // StoreConfig configures the job store.
 type StoreConfig struct {
 	// Backend is the KVS storage backend.
-	Backend kvs.Store
+	Backend omnistorage.Store
 }
 
 // NewStore creates a new job store.
@@ -54,7 +54,7 @@ func (s *Store) Get(ctx context.Context, id string) (*Job, error) {
 	key := jobKeyPrefix + id
 	data, err := s.backend.Get(ctx, key)
 	if err != nil {
-		if errors.Is(err, kvs.ErrNotFound) {
+		if errors.Is(err, omnistorage.ErrKVSNotFound) {
 			return nil, ErrJobNotFound
 		}
 		return nil, fmt.Errorf("get job: %w", err)
@@ -98,7 +98,7 @@ func (s *Store) Save(ctx context.Context, job *Job) error {
 func (s *Store) Delete(ctx context.Context, id string) error {
 	key := jobKeyPrefix + id
 	if err := s.backend.Delete(ctx, key); err != nil {
-		if !errors.Is(err, kvs.ErrNotFound) {
+		if !errors.Is(err, omnistorage.ErrKVSNotFound) {
 			return fmt.Errorf("delete job: %w", err)
 		}
 	}
@@ -112,9 +112,9 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 }
 
 // List returns all jobs.
-// This requires the backend to implement kvs.ListableStore.
+// This requires the backend to implement omnistorage.ListableStore.
 func (s *Store) List(ctx context.Context) ([]*Job, error) {
-	listable, ok := s.backend.(kvs.ListableStore)
+	listable, ok := s.backend.(omnistorage.ListableStore)
 	if !ok {
 		// Fall back to cached jobs if backend doesn't support listing
 		s.mu.RLock()

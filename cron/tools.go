@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/plexusone/omniagent/skills/compiled"
-	"github.com/plexusone/omnistorage-core/kvs"
+	"github.com/plexusone/omnistorage"
 )
 
 // Skill provides cron job management tools.
@@ -38,7 +38,7 @@ func (s *Skill) Description() string {
 }
 
 // SetStorage implements compiled.StorageAware.
-func (s *Skill) SetStorage(storage kvs.Store) {
+func (s *Skill) SetStorage(storage omnistorage.Store) {
 	s.store = NewStore(StoreConfig{Backend: storage})
 }
 

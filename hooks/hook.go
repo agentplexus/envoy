@@ -3,7 +3,7 @@ package hooks
 import (
 	"context"
 
-	"github.com/plexusone/omnistorage-core/kvs"
+	"github.com/plexusone/omnistorage"
 )
 
 // Hook is the interface for compiled hooks.
@@ -50,5 +50,5 @@ type Hook interface {
 // If a hook implements this interface, the registry will inject the storage
 // backend after registration and before Init() is called.
 type StorageAware interface {
-	SetStorage(s kvs.Store)
+	SetStorage(s omnistorage.Store)
 }

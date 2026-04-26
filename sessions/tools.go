@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/plexusone/omniagent/skills/compiled"
-	"github.com/plexusone/omnistorage-core/kvs"
+	"github.com/plexusone/omnistorage"
 )
 
 // Skill implements the compiled.Skill interface for session management.
@@ -148,7 +148,7 @@ func (s *Skill) Close() error {
 }
 
 // SetStorage implements compiled.StorageAware.
-func (s *Skill) SetStorage(backend kvs.Store) {
+func (s *Skill) SetStorage(backend omnistorage.Store) {
 	s.store = NewStore(StoreConfig{
 		Backend: backend,
 		TTL:     DefaultSessionTTL,

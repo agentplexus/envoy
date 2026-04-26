@@ -19,7 +19,7 @@ package compiled
 import (
 	"context"
 
-	"github.com/plexusone/omnistorage-core/kvs"
+	"github.com/plexusone/omnistorage"
 )
 
 // Skill is the interface that compiled skills implement.
@@ -44,7 +44,7 @@ type Skill interface {
 // If a skill implements this interface, the agent will inject the storage
 // backend after creation and before Init() is called.
 type StorageAware interface {
-	SetStorage(s kvs.Store)
+	SetStorage(s omnistorage.Store)
 }
 
 // SkillInfo provides metadata about a skill for introspection.

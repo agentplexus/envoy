@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/plexusone/omnistorage-core/kvs"
+	"github.com/plexusone/omnistorage"
 )
 
 // mockStore is a simple in-memory kvs.Store for testing.
@@ -23,7 +23,7 @@ func newMockStore() *mockStore {
 func (m *mockStore) Get(_ context.Context, key string) ([]byte, error) {
 	v, ok := m.data[key]
 	if !ok {
-		return nil, kvs.ErrNotFound
+		return nil, omnistorage.ErrKVSNotFound
 	}
 	return v, nil
 }
