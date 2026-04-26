@@ -7,7 +7,13 @@ import (
 	"github.com/plexusone/omnillm/provider"
 )
 
+// Deprecated: Use github.com/plexusone/omniagent/sessions.Session instead.
+// This in-memory session type is kept for backward compatibility.
+// The new sessions package provides persistent storage via omnistorage-core/kvs.
+
 // Session represents a conversation session.
+//
+// Deprecated: Use sessions.Session from github.com/plexusone/omniagent/sessions.
 type Session struct {
 	ID        string
 	Messages  []provider.Message
@@ -18,6 +24,8 @@ type Session struct {
 }
 
 // SessionStore manages conversation sessions.
+//
+// Deprecated: Use sessions.Store from github.com/plexusone/omniagent/sessions.
 type SessionStore struct {
 	sessions map[string]*Session
 	mu       sync.RWMutex

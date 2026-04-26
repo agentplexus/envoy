@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
+
+	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // Registry manages compiled skills.
@@ -117,7 +119,7 @@ func (r *Registry) CloseAll() error {
 }
 
 // InjectStorage injects storage into all storage-aware skills.
-func (r *Registry) InjectStorage(storage Storage) {
+func (r *Registry) InjectStorage(storage kvs.Store) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
