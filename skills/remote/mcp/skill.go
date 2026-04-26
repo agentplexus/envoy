@@ -32,10 +32,10 @@ import (
 	"os/exec"
 	"sync"
 
-	mcpclient "github.com/plexusone/mcpkit/client"
-	"github.com/plexusone/omniagent/skills/compiled"
-
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/plexusone/omniagent/skills/compiled"
+	mcpclient "github.com/plexusone/omniskill/mcp/client"
+	"github.com/plexusone/omniskill/skill"
 )
 
 // Skill wraps an MCP server as a compiled.Skill.
@@ -47,7 +47,7 @@ type Skill struct {
 	config  Config
 	client  *mcpclient.Client
 	session *mcpclient.Session
-	tools   []compiled.Tool
+	tools   []skill.Tool
 	mu      sync.RWMutex
 
 	// For lazy connect
@@ -81,7 +81,7 @@ func (s *Skill) Description() string {
 //
 // If LazyConnect is enabled and the skill hasn't connected yet,
 // this returns an empty slice.
-func (s *Skill) Tools() []compiled.Tool {
+func (s *Skill) Tools() []skill.Tool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -190,7 +190,7 @@ func (s *Skill) discoverTools(ctx context.Context) error {
 		return err
 	}
 
-	s.tools = make([]compiled.Tool, 0, len(mcpTools))
+	s.tools = make([]skill.Tool, 0, len(mcpTools))
 
 	for _, mcpTool := range mcpTools {
 		tool := s.convertTool(mcpTool)
@@ -200,20 +200,20 @@ func (s *Skill) discoverTools(ctx context.Context) error {
 	return nil
 }
 
-// convertTool converts an MCP tool to a compiled.Tool.
-func (s *Skill) convertTool(mcpTool *mcp.Tool) compiled.Tool {
+// convertTool converts an MCP tool to a skill.Tool.
+func (s *Skill) convertTool(mcpTool *mcp.Tool) skill.Tool {
 	params := s.convertInputSchema(mcpTool.InputSchema)
 
-	return compiled.Tool{
-		Name:        mcpTool.Name,
-		Description: mcpTool.Description,
-		Parameters:  params,
-		Handler:     s.makeToolHandler(mcpTool.Name),
-	}
+	return skill.NewTool(
+		mcpTool.Name,
+		mcpTool.Description,
+		params,
+		s.makeToolHandler(mcpTool.Name),
+	)
 }
 
-// convertInputSchema converts an MCP tool's input schema to compiled.Parameter map.
-func (s *Skill) convertInputSchema(schema any) map[string]compiled.Parameter {
+// convertInputSchema converts an MCP tool's input schema to skill.Parameter map.
+func (s *Skill) convertInputSchema(schema any) map[string]skill.Parameter {
 	if schema == nil {
 		return nil
 	}
@@ -238,14 +238,14 @@ func (s *Skill) convertInputSchema(schema any) map[string]compiled.Parameter {
 		}
 	}
 
-	params := make(map[string]compiled.Parameter)
+	params := make(map[string]skill.Parameter)
 	for name, propVal := range properties {
 		prop, ok := propVal.(map[string]any)
 		if !ok {
 			continue
 		}
 
-		param := compiled.Parameter{
+		param := skill.Parameter{
 			Required: required[name],
 		}
 
@@ -269,7 +269,7 @@ func (s *Skill) convertInputSchema(schema any) map[string]compiled.Parameter {
 }
 
 // makeToolHandler creates a handler that proxies tool calls to the MCP server.
-func (s *Skill) makeToolHandler(toolName string) compiled.ToolHandler {
+func (s *Skill) makeToolHandler(toolName string) skill.ToolFunc {
 	return func(ctx context.Context, params map[string]any) (any, error) {
 		// Ensure connected (for lazy connect)
 		if err := s.ensureConnected(ctx); err != nil {
