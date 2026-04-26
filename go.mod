@@ -11,11 +11,11 @@ require (
 	github.com/moby/moby/api v1.54.2
 	github.com/moby/moby/client v0.4.1
 	github.com/modelcontextprotocol/go-sdk v1.5.0
-	github.com/plexusone/mcpkit v0.4.0
 	github.com/plexusone/omnichat v0.6.0
 	github.com/plexusone/omnillm v0.15.2
 	github.com/plexusone/omniobserve v0.8.0
 	github.com/plexusone/omniserp v0.8.0
+	github.com/plexusone/omniskill v0.6.0
 	github.com/plexusone/omnistorage v0.3.0
 	github.com/plexusone/omnivoice v0.7.2
 	github.com/robfig/cron/v3 v3.0.1
@@ -191,9 +191,9 @@ require (
 // supports newer fetchup releases.
 replace github.com/ysmood/fetchup => github.com/ysmood/fetchup v0.2.3
 
-// Local development: use local mcpkit
-// TODO: Remove this replace directive when mcpkit v0.5.0 is released
-replace github.com/plexusone/mcpkit => ../mcpkit
+// Local development: use local omniskill
+// TODO: Remove this replace directive when omniskill v0.6.0 is released
+replace github.com/plexusone/omniskill => ../mcpkit
 
 // Local development: use local omnistorage
 // TODO: Remove this replace directive when omnistorage v0.4.0 is released
