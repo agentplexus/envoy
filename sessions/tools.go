@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/plexusone/omniagent/skills/compiled"
+	"github.com/plexusone/omniskill/skill"
 	"github.com/plexusone/omnistorage"
 )
 
@@ -31,18 +32,18 @@ func (s *Skill) Description() string {
 }
 
 // Tools returns the tools provided by this skill.
-func (s *Skill) Tools() []compiled.Tool {
-	return []compiled.Tool{
-		{
-			Name:        "sessions_list",
-			Description: "List all active conversation sessions",
-			Parameters:  map[string]compiled.Parameter{},
-			Handler:     s.handleList,
-		},
-		{
-			Name:        "sessions_history",
-			Description: "Get the conversation history for a session",
-			Parameters: map[string]compiled.Parameter{
+func (s *Skill) Tools() []skill.Tool {
+	return []skill.Tool{
+		skill.NewTool(
+			"sessions_list",
+			"List all active conversation sessions",
+			map[string]skill.Parameter{},
+			s.handleList,
+		),
+		skill.NewTool(
+			"sessions_history",
+			"Get the conversation history for a session",
+			map[string]skill.Parameter{
 				"session_id": {
 					Type:        "string",
 					Description: "The ID of the session to get history for",
@@ -54,48 +55,48 @@ func (s *Skill) Tools() []compiled.Tool {
 					Required:    false,
 				},
 			},
-			Handler: s.handleHistory,
-		},
-		{
-			Name:        "sessions_get",
-			Description: "Get details about a specific session",
-			Parameters: map[string]compiled.Parameter{
+			s.handleHistory,
+		),
+		skill.NewTool(
+			"sessions_get",
+			"Get details about a specific session",
+			map[string]skill.Parameter{
 				"session_id": {
 					Type:        "string",
 					Description: "The ID of the session to get",
 					Required:    true,
 				},
 			},
-			Handler: s.handleGet,
-		},
-		{
-			Name:        "sessions_clear",
-			Description: "Clear the conversation history for a session",
-			Parameters: map[string]compiled.Parameter{
+			s.handleGet,
+		),
+		skill.NewTool(
+			"sessions_clear",
+			"Clear the conversation history for a session",
+			map[string]skill.Parameter{
 				"session_id": {
 					Type:        "string",
 					Description: "The ID of the session to clear",
 					Required:    true,
 				},
 			},
-			Handler: s.handleClear,
-		},
-		{
-			Name:        "sessions_delete",
-			Description: "Delete a session entirely",
-			Parameters: map[string]compiled.Parameter{
+			s.handleClear,
+		),
+		skill.NewTool(
+			"sessions_delete",
+			"Delete a session entirely",
+			map[string]skill.Parameter{
 				"session_id": {
 					Type:        "string",
 					Description: "The ID of the session to delete",
 					Required:    true,
 				},
 			},
-			Handler: s.handleDelete,
-		},
-		{
-			Name:        "sessions_metadata_set",
-			Description: "Set metadata on a session",
-			Parameters: map[string]compiled.Parameter{
+			s.handleDelete,
+		),
+		skill.NewTool(
+			"sessions_metadata_set",
+			"Set metadata on a session",
+			map[string]skill.Parameter{
 				"session_id": {
 					Type:        "string",
 					Description: "The ID of the session",
@@ -112,12 +113,12 @@ func (s *Skill) Tools() []compiled.Tool {
 					Required:    true,
 				},
 			},
-			Handler: s.handleMetadataSet,
-		},
-		{
-			Name:        "sessions_metadata_get",
-			Description: "Get metadata from a session",
-			Parameters: map[string]compiled.Parameter{
+			s.handleMetadataSet,
+		),
+		skill.NewTool(
+			"sessions_metadata_get",
+			"Get metadata from a session",
+			map[string]skill.Parameter{
 				"session_id": {
 					Type:        "string",
 					Description: "The ID of the session",
@@ -129,8 +130,8 @@ func (s *Skill) Tools() []compiled.Tool {
 					Required:    true,
 				},
 			},
-			Handler: s.handleMetadataGet,
-		},
+			s.handleMetadataGet,
+		),
 	}
 }
 
