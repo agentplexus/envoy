@@ -191,10 +191,6 @@ require (
 // supports newer fetchup releases.
 replace github.com/ysmood/fetchup => github.com/ysmood/fetchup v0.2.3
 
-// Local development: use local omniskill
-// TODO: Remove this replace directive when omniskill v0.6.0 is released
-replace github.com/plexusone/omniskill => ../mcpkit
-
 // Local development: use local omnistorage
 // TODO: Remove this replace directive when omnistorage v0.4.0 is released
 replace github.com/plexusone/omnistorage => ../omnistorage
