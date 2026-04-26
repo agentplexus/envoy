@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/plexusone/omniskill/skill"
 	"github.com/plexusone/omnistorage"
 )
 
@@ -57,11 +58,11 @@ func (r *Registry) All() []Skill {
 }
 
 // AllTools returns all tools from all registered skills.
-func (r *Registry) AllTools() []Tool {
+func (r *Registry) AllTools() []skill.Tool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	var tools []Tool
+	var tools []skill.Tool
 	for _, s := range r.skills {
 		tools = append(tools, s.Tools()...)
 	}
@@ -69,14 +70,14 @@ func (r *Registry) AllTools() []Tool {
 }
 
 // FindTool finds a tool by name across all skills.
-func (r *Registry) FindTool(name string) (*Tool, Skill, bool) {
+func (r *Registry) FindTool(name string) (skill.Tool, Skill, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	for _, s := range r.skills {
 		for _, t := range s.Tools() {
-			if t.Name == name {
-				return &t, s, true
+			if t.Name() == name {
+				return t, s, true
 			}
 		}
 	}

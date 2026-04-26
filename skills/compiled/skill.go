@@ -1,28 +1,14 @@
-// Package compiled provides interfaces for compiled Go skills.
-//
-// Compiled skills are Go packages that implement the Skill interface,
-// providing callable tools that the agent can use. Unlike markdown skills
-// (SKILL.md files) which inject instructions into the system prompt,
-// compiled skills register actual functions that the LLM can invoke.
-//
-// # Example Usage
-//
-//	// Import your skill package
-//	import "example.com/myskill"
-//
-//	skill, _ := myskill.New(myskill.Config{...})
-//	agent, _ := agent.New(config,
-//	    agent.WithCompiledSkill(skill),
-//	)
 package compiled
 
 import (
 	"context"
 
+	"github.com/plexusone/omniskill/skill"
 	"github.com/plexusone/omnistorage"
 )
 
 // Skill is the interface that compiled skills implement.
+// This is compatible with skill.Skill from omniskill.
 type Skill interface {
 	// Name returns the skill identifier (e.g., "invest", "weather").
 	Name() string
@@ -31,7 +17,7 @@ type Skill interface {
 	Description() string
 
 	// Tools returns the tools provided by this skill.
-	Tools() []Tool
+	Tools() []skill.Tool
 
 	// Init initializes the skill. Called once when the agent starts.
 	Init(ctx context.Context) error
@@ -61,8 +47,8 @@ func Info(s Skill) SkillInfo {
 	toolInfos := make([]ToolInfo, len(tools))
 	for i, t := range tools {
 		toolInfos[i] = ToolInfo{
-			Name:        t.Name,
-			Description: t.Description,
+			Name:        t.Name(),
+			Description: t.Description(),
 		}
 	}
 
