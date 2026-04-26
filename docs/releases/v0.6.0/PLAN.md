@@ -528,3 +528,42 @@ New features are additive:
 - Storage is optional (in-memory default)
 - Platform defaults to standalone (current behavior)
 - OmniChat providers supplement built-in channels
+
+---
+
+## v0.6.0 Completion Summary
+
+This section documents what was actually implemented in v0.6.0 vs the original plan.
+
+### Implemented in v0.6.0
+
+| Phase | Component | Status | Notes |
+|-------|-----------|--------|-------|
+| Phase 1 | `skills/compiled/` | ✅ | Core interface and registry |
+| Phase 2 | Storage | ✅ | Migrated to `omnistorage-core/kvs` instead of local package |
+| Phase 3 | `platform/standalone/` | ✅ | Basic platform adapter |
+| Additional | `sessions/` | ✅ | Not in original plan |
+| Additional | `context/` | ✅ | Not in original plan |
+| Additional | `hooks/` | ✅ | Not in original plan |
+| Additional | `cron/` | ✅ | Not in original plan |
+
+### Deferred from v0.6.0
+
+| Phase | Component | Status | Notes |
+|-------|-----------|--------|-------|
+| Phase 3 | `platform/lightsail/` | ⏸️ | Deferred |
+| Phase 3 | `platform/lambda/` | ⏸️ | Deferred |
+| Phase 3 | `platform/agentcore/` | ⏸️ | Deferred |
+| Phase 4 | `skills/remote/mcp/` | ⏸️ | Moved to future release |
+| Phase 4 | `skills/remote/openapi/` | ⏸️ | Moved to future release |
+| Phase 5 | `provider/` (OmniChat) | ⏸️ | Moved to future release |
+
+### Architecture Changes from Plan
+
+1. **Storage**: The plan called for a local `storage/` package. Instead, storage was implemented in `omnistorage-core/kvs` as a shared library.
+
+2. **Additional packages**: The plan didn't originally include sessions, context, hooks, or cron packages. These were added during implementation to provide complete infrastructure for v0.6.0.
+
+3. **Configuration**: YAML configuration support for skills and storage was deferred in favor of programmatic configuration via functional options.
+
+See [TASKS.md](TASKS.md) for detailed task-level completion status.
