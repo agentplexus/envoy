@@ -18,15 +18,15 @@ Additional v0.6.0 packages: `sessions/`, `context/`, `hooks/`, `cron/`
 
 ### MCP Client
 
-- [ ] **TASK-400**: Create `skills/remote/mcp/`
-  - MCP client implementation
+- [x] **TASK-400**: Create `skills/remote/mcp/`
+  - MCP client implementation via `mcpkit/client/`
   - Tool discovery from MCP server
   - Tool execution via MCP protocol
 
-- [ ] **TASK-401**: MCP skill wrapper
+- [x] **TASK-401**: MCP skill wrapper
   - Implement `compiled.Skill` interface
-  - Lazy connection on first tool call
-  - Reconnection handling
+  - Lazy connection on first tool call (`LazyConnect: true`)
+  - `WithMCPSkill()` convenience option in `agent/options.go`
 
 ### OpenAPI Loader
 
@@ -104,11 +104,10 @@ Additional v0.6.0 packages: `sessions/`, `context/`, `hooks/`, `cron/`
 | Package | Status | Notes |
 |---------|--------|-------|
 | `twilio-go` | Ready | omnichat provider available |
-| MCP SDK | TBD | Need Go MCP client |
+| MCP SDK | ✅ Ready | `mcpkit/client/` wraps `github.com/modelcontextprotocol/go-sdk` |
 
 ### Next Actions
 
-1. Evaluate Go MCP client options
-2. Create `skills/remote/mcp/` package (TASK-400, TASK-401)
-3. Create `skills/remote/openapi/` package (TASK-402, TASK-403)
-4. Move to OmniChat integration (Phase 5)
+1. Create `skills/remote/openapi/` package (TASK-402, TASK-403)
+2. Add remote skill configuration support (TASK-404)
+3. Move to OmniChat integration (Phase 5)
