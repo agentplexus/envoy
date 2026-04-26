@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/plexusone/omniskill/skill"
 	"github.com/plexusone/omnistorage"
 )
 
@@ -11,7 +12,7 @@ import (
 type mockSkill struct {
 	name        string
 	description string
-	tools       []Tool
+	tools       []skill.Tool
 	initCalled  bool
 	closeCalled bool
 	storage     omnistorage.Store
@@ -21,31 +22,31 @@ func newMockSkill(name string) *mockSkill {
 	return &mockSkill{
 		name:        name,
 		description: "Mock skill for testing",
-		tools: []Tool{
-			{
-				Name:        name + "_tool",
-				Description: "A mock tool",
-				Parameters: map[string]Parameter{
+		tools: []skill.Tool{
+			skill.NewTool(
+				name+"_tool",
+				"A mock tool",
+				map[string]skill.Parameter{
 					"input": {
 						Type:        "string",
 						Description: "Input value",
 						Required:    true,
 					},
 				},
-				Handler: func(ctx context.Context, params map[string]any) (any, error) {
+				func(ctx context.Context, params map[string]any) (any, error) {
 					return map[string]any{"result": "ok"}, nil
 				},
-			},
+			),
 		},
 	}
 }
 
 func (m *mockSkill) Name() string                   { return m.name }
 func (m *mockSkill) Description() string            { return m.description }
-func (m *mockSkill) Tools() []Tool                  { return m.tools }
+func (m *mockSkill) Tools() []skill.Tool            { return m.tools }
 func (m *mockSkill) Init(ctx context.Context) error { m.initCalled = true; return nil }
 func (m *mockSkill) Close() error                   { m.closeCalled = true; return nil }
-func (m *mockSkill) SetStorage(s omnistorage.Store)         { m.storage = s }
+func (m *mockSkill) SetStorage(s omnistorage.Store) { m.storage = s }
 
 func TestRegistry_Register(t *testing.T) {
 	r := NewRegistry()
@@ -107,15 +108,15 @@ func TestRegistry_FindTool(t *testing.T) {
 		t.Fatalf("Register() error = %v", err)
 	}
 
-	tool, skill, ok := r.FindTool("skill1_tool")
+	tool, sk, ok := r.FindTool("skill1_tool")
 	if !ok {
 		t.Fatal("FindTool() should find registered tool")
 	}
-	if tool.Name != "skill1_tool" {
-		t.Errorf("FindTool() tool name = %q, want %q", tool.Name, "skill1_tool")
+	if tool.Name() != "skill1_tool" {
+		t.Errorf("FindTool() tool name = %q, want %q", tool.Name(), "skill1_tool")
 	}
-	if skill.Name() != "skill1" {
-		t.Errorf("FindTool() skill name = %q, want %q", skill.Name(), "skill1")
+	if sk.Name() != "skill1" {
+		t.Errorf("FindTool() skill name = %q, want %q", sk.Name(), "skill1")
 	}
 
 	_, _, ok = r.FindTool("nonexistent")
@@ -171,10 +172,10 @@ func TestRegistry_CloseAll(t *testing.T) {
 }
 
 func TestTool_ToJSONSchema(t *testing.T) {
-	tool := Tool{
-		Name:        "test_tool",
-		Description: "A test tool",
-		Parameters: map[string]Parameter{
+	tool := skill.NewTool(
+		"test_tool",
+		"A test tool",
+		map[string]skill.Parameter{
 			"required_param": {
 				Type:        "string",
 				Description: "A required parameter",
@@ -187,7 +188,8 @@ func TestTool_ToJSONSchema(t *testing.T) {
 				Default:     42,
 			},
 		},
-	}
+		nil,
+	)
 
 	schema := tool.ToJSONSchema()
 

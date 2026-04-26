@@ -36,8 +36,8 @@ func TestSkill_Metadata(t *testing.T) {
 	}
 
 	for i, expected := range expectedTools {
-		if tools[i].Name != expected {
-			t.Errorf("tool[%d].Name = %q, want %q", i, tools[i].Name, expected)
+		if tools[i].Name() != expected {
+			t.Errorf("tool[%d].Name() = %q, want %q", i, tools[i].Name(), expected)
 		}
 	}
 }

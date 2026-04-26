@@ -57,7 +57,7 @@ func TestSkill_Tools(t *testing.T) {
 
 	toolNames := make(map[string]bool)
 	for _, tool := range tools {
-		toolNames[tool.Name] = true
+		toolNames[tool.Name()] = true
 	}
 
 	for _, name := range expectedTools {
