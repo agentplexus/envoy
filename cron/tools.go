@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/plexusone/omniagent/skills/compiled"
+	"github.com/plexusone/omniskill/skill"
 	"github.com/plexusone/omnistorage"
 )
 
@@ -78,8 +79,8 @@ func (s *Skill) GetScheduler() *Scheduler {
 }
 
 // Tools returns the tools provided by this skill.
-func (s *Skill) Tools() []compiled.Tool {
-	return []compiled.Tool{
+func (s *Skill) Tools() []skill.Tool {
+	return []skill.Tool{
 		s.createTool(),
 		s.listTool(),
 		s.getTool(),
@@ -90,11 +91,11 @@ func (s *Skill) Tools() []compiled.Tool {
 	}
 }
 
-func (s *Skill) createTool() compiled.Tool {
-	return compiled.Tool{
-		Name:        "cron_create",
-		Description: "Create a new scheduled job. Use cron expressions (e.g., '0 0 9 * * *' for 9am daily), interval (e.g., '1h' for hourly), or a specific time for one-time execution.",
-		Parameters: map[string]compiled.Parameter{
+func (s *Skill) createTool() skill.Tool {
+	return skill.NewTool(
+		"cron_create",
+		"Create a new scheduled job. Use cron expressions (e.g., '0 0 9 * * *' for 9am daily), interval (e.g., '1h' for hourly), or a specific time for one-time execution.",
+		map[string]skill.Parameter{
 			"name": {
 				Type:        "string",
 				Description: "Human-readable name for the job",
@@ -147,8 +148,8 @@ func (s *Skill) createTool() compiled.Tool {
 				Description: "Tool parameters (for call_tool action)",
 			},
 		},
-		Handler: s.handleCreate,
-	}
+		s.handleCreate,
+	)
 }
 
 func (s *Skill) handleCreate(ctx context.Context, params map[string]any) (any, error) {
@@ -221,19 +222,19 @@ func (s *Skill) handleCreate(ctx context.Context, params map[string]any) (any, e
 	}, nil
 }
 
-func (s *Skill) listTool() compiled.Tool {
-	return compiled.Tool{
-		Name:        "cron_list",
-		Description: "List all scheduled jobs, optionally filtered by status",
-		Parameters: map[string]compiled.Parameter{
+func (s *Skill) listTool() skill.Tool {
+	return skill.NewTool(
+		"cron_list",
+		"List all scheduled jobs, optionally filtered by status",
+		map[string]skill.Parameter{
 			"status": {
 				Type:        "string",
 				Description: "Filter by status",
 				Enum:        []any{"enabled", "disabled", "running"},
 			},
 		},
-		Handler: s.handleList,
-	}
+		s.handleList,
+	)
 }
 
 func (s *Skill) handleList(ctx context.Context, params map[string]any) (any, error) {
@@ -266,19 +267,19 @@ func (s *Skill) handleList(ctx context.Context, params map[string]any) (any, err
 	return result, nil
 }
 
-func (s *Skill) getTool() compiled.Tool {
-	return compiled.Tool{
-		Name:        "cron_get",
-		Description: "Get detailed information about a specific job",
-		Parameters: map[string]compiled.Parameter{
+func (s *Skill) getTool() skill.Tool {
+	return skill.NewTool(
+		"cron_get",
+		"Get detailed information about a specific job",
+		map[string]skill.Parameter{
 			"id": {
 				Type:        "string",
 				Description: "Job ID",
 				Required:    true,
 			},
 		},
-		Handler: s.handleGet,
-	}
+		s.handleGet,
+	)
 }
 
 func (s *Skill) handleGet(ctx context.Context, params map[string]any) (any, error) {
@@ -295,19 +296,19 @@ func (s *Skill) handleGet(ctx context.Context, params map[string]any) (any, erro
 	return job, nil
 }
 
-func (s *Skill) deleteTool() compiled.Tool {
-	return compiled.Tool{
-		Name:        "cron_delete",
-		Description: "Delete a scheduled job",
-		Parameters: map[string]compiled.Parameter{
+func (s *Skill) deleteTool() skill.Tool {
+	return skill.NewTool(
+		"cron_delete",
+		"Delete a scheduled job",
+		map[string]skill.Parameter{
 			"id": {
 				Type:        "string",
 				Description: "Job ID",
 				Required:    true,
 			},
 		},
-		Handler: s.handleDelete,
-	}
+		s.handleDelete,
+	)
 }
 
 func (s *Skill) handleDelete(ctx context.Context, params map[string]any) (any, error) {
@@ -326,19 +327,19 @@ func (s *Skill) handleDelete(ctx context.Context, params map[string]any) (any, e
 	}, nil
 }
 
-func (s *Skill) enableTool() compiled.Tool {
-	return compiled.Tool{
-		Name:        "cron_enable",
-		Description: "Enable a disabled job to resume scheduling",
-		Parameters: map[string]compiled.Parameter{
+func (s *Skill) enableTool() skill.Tool {
+	return skill.NewTool(
+		"cron_enable",
+		"Enable a disabled job to resume scheduling",
+		map[string]skill.Parameter{
 			"id": {
 				Type:        "string",
 				Description: "Job ID",
 				Required:    true,
 			},
 		},
-		Handler: s.handleEnable,
-	}
+		s.handleEnable,
+	)
 }
 
 func (s *Skill) handleEnable(ctx context.Context, params map[string]any) (any, error) {
@@ -360,19 +361,19 @@ func (s *Skill) handleEnable(ctx context.Context, params map[string]any) (any, e
 	}, nil
 }
 
-func (s *Skill) disableTool() compiled.Tool {
-	return compiled.Tool{
-		Name:        "cron_disable",
-		Description: "Disable a job without deleting it",
-		Parameters: map[string]compiled.Parameter{
+func (s *Skill) disableTool() skill.Tool {
+	return skill.NewTool(
+		"cron_disable",
+		"Disable a job without deleting it",
+		map[string]skill.Parameter{
 			"id": {
 				Type:        "string",
 				Description: "Job ID",
 				Required:    true,
 			},
 		},
-		Handler: s.handleDisable,
-	}
+		s.handleDisable,
+	)
 }
 
 func (s *Skill) handleDisable(ctx context.Context, params map[string]any) (any, error) {
@@ -391,19 +392,19 @@ func (s *Skill) handleDisable(ctx context.Context, params map[string]any) (any, 
 	}, nil
 }
 
-func (s *Skill) triggerTool() compiled.Tool {
-	return compiled.Tool{
-		Name:        "cron_trigger",
-		Description: "Run a job immediately, regardless of its schedule",
-		Parameters: map[string]compiled.Parameter{
+func (s *Skill) triggerTool() skill.Tool {
+	return skill.NewTool(
+		"cron_trigger",
+		"Run a job immediately, regardless of its schedule",
+		map[string]skill.Parameter{
 			"id": {
 				Type:        "string",
 				Description: "Job ID",
 				Required:    true,
 			},
 		},
-		Handler: s.handleTrigger,
-	}
+		s.handleTrigger,
+	)
 }
 
 func (s *Skill) handleTrigger(ctx context.Context, params map[string]any) (any, error) {
