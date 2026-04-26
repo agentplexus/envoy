@@ -1,0 +1,200 @@
+// Copyright 2025 John Wang. All rights reserved.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file.
+
+package mcp
+
+import (
+	"testing"
+)
+
+func TestNewSkill(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:    "test",
+		Command: []string{"echo", "hello"},
+	})
+
+	if skill == nil {
+		t.Fatal("expected non-nil skill")
+	}
+
+	if skill.Name() != "test" {
+		t.Fatalf("expected name 'test', got %q", skill.Name())
+	}
+
+	if skill.Description() != "MCP skill: test" {
+		t.Fatalf("unexpected description: %q", skill.Description())
+	}
+}
+
+func TestNewSkillWithDescription(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:        "github",
+		Description: "GitHub operations via MCP",
+		Command:     []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+	})
+
+	if skill.Description() != "GitHub operations via MCP" {
+		t.Fatalf("unexpected description: %q", skill.Description())
+	}
+}
+
+func TestConfigDefaults(t *testing.T) {
+	cfg := Config{
+		Name:    "test",
+		Command: []string{"echo"},
+	}
+	cfg.setDefaults()
+
+	if cfg.Description == "" {
+		t.Error("expected description to be set")
+	}
+
+	if cfg.ClientName != "omniagent" {
+		t.Errorf("expected ClientName 'omniagent', got %q", cfg.ClientName)
+	}
+
+	if cfg.ClientVersion != "v1.0.0" {
+		t.Errorf("expected ClientVersion 'v1.0.0', got %q", cfg.ClientVersion)
+	}
+}
+
+func TestToolsBeforeInit(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:    "test",
+		Command: []string{"echo"},
+	})
+
+	tools := skill.Tools()
+	if len(tools) != 0 {
+		t.Fatalf("expected 0 tools before init, got %d", len(tools))
+	}
+}
+
+func TestCloseBeforeInit(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:    "test",
+		Command: []string{"echo"},
+	})
+
+	// Close should not error even if never initialized
+	if err := skill.Close(); err != nil {
+		t.Fatalf("Close failed: %v", err)
+	}
+}
+
+func TestLazyConnectInit(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:        "test",
+		Command:     []string{"echo"},
+		LazyConnect: true,
+	})
+
+	// With lazy connect, Init should return immediately
+	ctx := t.Context()
+	if err := skill.Init(ctx); err != nil {
+		t.Fatalf("Init failed: %v", err)
+	}
+
+	// Session should not be created yet
+	skill.mu.RLock()
+	hasSession := skill.session != nil
+	skill.mu.RUnlock()
+
+	if hasSession {
+		t.Error("expected no session with lazy connect")
+	}
+}
+
+func TestConvertInputSchema(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:    "test",
+		Command: []string{"echo"},
+	})
+
+	schema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"query": map[string]any{
+				"type":        "string",
+				"description": "The search query",
+			},
+			"limit": map[string]any{
+				"type":    "integer",
+				"default": 10,
+			},
+		},
+		"required": []any{"query"},
+	}
+
+	params := skill.convertInputSchema(schema)
+
+	if params == nil {
+		t.Fatal("expected non-nil params")
+	}
+
+	if len(params) != 2 {
+		t.Fatalf("expected 2 params, got %d", len(params))
+	}
+
+	queryParam, ok := params["query"]
+	if !ok {
+		t.Fatal("expected 'query' param")
+	}
+
+	if queryParam.Type != "string" {
+		t.Errorf("expected type 'string', got %q", queryParam.Type)
+	}
+
+	if !queryParam.Required {
+		t.Error("expected 'query' to be required")
+	}
+
+	limitParam, ok := params["limit"]
+	if !ok {
+		t.Fatal("expected 'limit' param")
+	}
+
+	if limitParam.Required {
+		t.Error("expected 'limit' to not be required")
+	}
+
+	// The default value should be 10 (could be int or float64 depending on source)
+	switch v := limitParam.Default.(type) {
+	case int:
+		if v != 10 {
+			t.Errorf("expected default 10, got %d", v)
+		}
+	case float64:
+		if v != 10.0 {
+			t.Errorf("expected default 10.0, got %f", v)
+		}
+	default:
+		t.Errorf("expected numeric default, got %T", limitParam.Default)
+	}
+}
+
+func TestConvertInputSchemaNil(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:    "test",
+		Command: []string{"echo"},
+	})
+
+	params := skill.convertInputSchema(nil)
+	if params != nil {
+		t.Errorf("expected nil params for nil schema, got %v", params)
+	}
+}
+
+func TestConvertInputSchemaInvalid(t *testing.T) {
+	skill := NewSkill(Config{
+		Name:    "test",
+		Command: []string{"echo"},
+	})
+
+	// Invalid schema type
+	params := skill.convertInputSchema("not a map")
+	if params != nil {
+		t.Errorf("expected nil params for invalid schema, got %v", params)
+	}
+}

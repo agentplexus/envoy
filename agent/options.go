@@ -6,6 +6,7 @@ import (
 	"github.com/plexusone/omniagent/hooks"
 	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniagent/skills/compiled"
+	mcpskill "github.com/plexusone/omniagent/skills/remote/mcp"
 	"github.com/plexusone/omnistorage"
 )
 
@@ -162,6 +163,26 @@ func WithMaxMessages(max int) Option {
 func WithCronScheduler() Option {
 	return func(a *Agent) error {
 		return a.RegisterCompiledSkill(cron.NewSkill())
+	}
+}
+
+// WithMCPSkill registers an MCP server as a compiled skill.
+// This spawns the MCP server as a subprocess and exposes its tools to the agent.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithMCPSkill(mcpskill.Config{
+//	        Name:    "github",
+//	        Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+//	        Env: map[string]string{
+//	            "GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN"),
+//	        },
+//	    }),
+//	)
+func WithMCPSkill(cfg mcpskill.Config) Option {
+	return func(a *Agent) error {
+		return a.RegisterCompiledSkill(mcpskill.NewSkill(cfg))
 	}
 }
 
