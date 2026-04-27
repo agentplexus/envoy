@@ -16,7 +16,7 @@ The following repositories are in scope for modifications:
 | `github.com/plexusone/omnichat` | WhatsApp audio download/upload |
 | `github.com/plexusone/omnivoice` | Core STT/TTS interfaces (if needed) |
 | `github.com/plexusone/omnivoice-deepgram` | Deepgram provider (if needed) |
-| `github.com/grokify/*` | Any grokify libraries (if needed) |
+| `github.com/plexusone/*` | Other plexusone libraries (if needed) |
 
 ## Architecture
 

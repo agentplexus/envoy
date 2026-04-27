@@ -101,7 +101,7 @@ OmniAgent uses abstraction libraries for reusability and independent testing. Th
 | `omniobserve` | Observability/tracing | ✅ In use |
 | `omniserp` | Web search | ✅ In use |
 | `omniretrieve` | RAG (vector & graph retrieval) | ✅ Exists |
-| `omnistorage` | File/object storage (rclone-style) | ✅ Exists at grokify/, move to plexusone/ |
+| `omnistorage-core` | KVS storage interfaces | ✅ At plexusone/ |
 
 ### Planned Extractions
 
@@ -122,7 +122,7 @@ Three distinct data access patterns, unified under `omnistorage` and `omniretrie
 | `omniretrieve` | `/vector` | `Embed/Query/Retrieve` | Vector RAG (LanceDB, Pinecone) |
 | `omniretrieve` | `/graph` | `Store/Traverse/Query` | Graph RAG (Neo4j, wiki-style) |
 
-**omnistorage** (at `github.com/grokify/omnistorage`, move to `plexusone/`):
+**omnistorage-core** (at `github.com/plexusone/omnistorage-core`):
 - `/object` - File/object storage (existing): Memory, File, S3, SFTP
 - `/kvs` - Key-value storage (new): Memory, SQLite, Redis, DynamoDB
 
@@ -208,25 +208,25 @@ You can use the `gh` CLI to interact with GitHub...
 Go packages implementing `skill.CompiledSkill`. Provide callable tools.
 
 ```go
-// github.com/grokify/agent-team-invest/omniagent/skill
+// github.com/plexusone/agent-a11y/skill
 package skill
 
 type Skill struct { ... }
 
-func (s *Skill) Name() string { return "invest" }
+func (s *Skill) Name() string { return "a11y" }
 func (s *Skill) Tools() []skill.Tool {
     return []skill.Tool{
-        {Name: "analyze_stock", Handler: s.analyzeStock},
+        {Name: "audit_page", Handler: s.auditPage},
     }
 }
 ```
 
 Usage:
 ```go
-import investskill "github.com/grokify/agent-team-invest/omniagent/skill"
+import a11yskill "github.com/plexusone/agent-a11y/skill"
 
 agent := omniagent.New(
-    omniagent.WithCompiledSkill(investskill.New(cfg)),
+    omniagent.WithCompiledSkill(a11yskill.New(cfg)),
 )
 ```
 
@@ -344,7 +344,7 @@ skills:
 
   # New: compiled skills (configured via code, listed here for visibility)
   compiled:
-    - invest
+    - a11y
 
   # New: remote skills
   remote:
