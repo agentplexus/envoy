@@ -25,11 +25,11 @@ type ManagerConfig struct {
 
 // Manager handles loading and managing skills from multiple sources.
 type Manager struct {
-	config  ManagerConfig
-	skills  []*Skill
-	byName  map[string]*Skill
-	mu      sync.RWMutex
-	loaded  bool
+	config ManagerConfig
+	skills []*Skill
+	byName map[string]*Skill
+	mu     sync.RWMutex
+	loaded bool
 }
 
 // NewManager creates a new skill manager with the given configuration.
