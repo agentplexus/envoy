@@ -15,7 +15,7 @@ require (
 	github.com/plexusone/omnillm v0.15.3
 	github.com/plexusone/omniobserve v0.8.0
 	github.com/plexusone/omniserp v0.8.0
-	github.com/plexusone/omniskill v0.6.0
+	github.com/plexusone/omniskill v0.7.0
 	github.com/plexusone/omnistorage-core v0.3.0
 	github.com/plexusone/omnivoice v0.7.2
 	github.com/robfig/cron/v3 v3.0.1

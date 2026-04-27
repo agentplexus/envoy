@@ -503,8 +503,8 @@ github.com/plexusone/omniobserve v0.8.0 h1:L+nXU8TZrRwKh4KWzAtHVP/tEqopfEMBn9dIZ
 github.com/plexusone/omniobserve v0.8.0/go.mod h1:52TqB66Ns4Zgh4t7/ilMmCBdXcUHqjqRIbSGVBGCmK0=
 github.com/plexusone/omniserp v0.8.0 h1:KG/+sYz67BdCjGyli/9BOLQYL9r50x61jwHySKBehXA=
 github.com/plexusone/omniserp v0.8.0/go.mod h1:smdvBD6VjjE8PU76BN83x88prKcIM1Mw8WPscEWl378=
-github.com/plexusone/omniskill v0.6.0 h1:hIRXv1qoccjIQE3G+eHqXXcKuzgIMGiA7zWltV5KdXI=
-github.com/plexusone/omniskill v0.6.0/go.mod h1:bM9/D9LfGYWlMiSlOk7uR1rhDokHmJuU4zgfaGafj3c=
+github.com/plexusone/omniskill v0.7.0 h1:zH4SkKirNOatQT5/E8Z7I4AkaF3GjR2Vm36183s0AEw=
+github.com/plexusone/omniskill v0.7.0/go.mod h1:bM9/D9LfGYWlMiSlOk7uR1rhDokHmJuU4zgfaGafj3c=
 github.com/plexusone/omnistorage-core v0.3.0 h1:bdobNqlJuOKUgM512hmyqS3ZqTnix4Zmkq1fQf0Qk/U=
 github.com/plexusone/omnistorage-core v0.3.0/go.mod h1:Q/+IjtnYjtP1CEXT/u/uZxcIc4iAyri/oVmXSZRVjRY=
 github.com/plexusone/omnivoice v0.7.2 h1:lBrL0C4O7OJLUEWG/4viio0K7QJpDuW7OrVvLdBiVB4=
