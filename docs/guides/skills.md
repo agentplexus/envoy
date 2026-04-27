@@ -46,11 +46,94 @@ curl "wttr.in/London"
 ```
 ```
 
+## Skill Packs
+
+Skill packs are pre-bundled collections of markdown skills embedded via `go:embed`. They provide a convenient way to distribute and share skills.
+
+### Using a Skill Pack
+
+```go
+import (
+    "github.com/plexusone/omniagent/agent"
+    skills "github.com/plexusone/omniagent-skills"
+)
+
+// Load all skills from a skill pack
+agent, err := agent.New(config,
+    agent.WithSkillPack(skills.Default().FS()),
+)
+```
+
+### Filtering Skills
+
+Load only specific skills using includes:
+
+```go
+agent, err := agent.New(config,
+    agent.WithSkillPack(skills.Default().FS()),
+    agent.WithSkillIncludes("github", "weather", "tmux"),
+)
+```
+
+Or exclude specific skills:
+
+```go
+agent, err := agent.New(config,
+    agent.WithSkillPack(skills.Default().FS()),
+    agent.WithSkillExcludes("notion", "slack"),
+)
+```
+
+### Configuration File
+
+Control skill loading via config:
+
+```yaml
+skills:
+  enabled: true
+  packs:
+    - omniagent-skills  # Informational only
+  paths:
+    - ~/.omniagent/skills
+  includes:
+    - github
+    - weather
+  excludes:
+    - deprecated-skill
+  max_injected: 20
+```
+
+### Directory Override
+
+Skills from directories take precedence over embedded pack skills with the same name. This allows customizing bundled skills:
+
+```
+~/.omniagent/skills/
+└── github/
+    └── SKILL.md  # Overrides the github skill from the pack
+```
+
+### Available Skill Packs
+
+| Pack | Description | Skills |
+|------|-------------|--------|
+| [omniagent-skills](https://github.com/plexusone/omniagent-skills) | Default skill pack | 18 OpenClaw-compatible skills |
+
+### Agent Options
+
+| Option | Description |
+|--------|-------------|
+| `WithSkillPack(fs.FS)` | Register an embedded skill pack |
+| `WithSkillDirs(...string)` | Set skill directories |
+| `WithSkillIncludes(...string)` | Only load named skills |
+| `WithSkillExcludes(...string)` | Skip named skills |
+| `WithSkillManager(*Manager)` | Use a custom skill manager |
+
 ## Skill Discovery
 
 Skills are discovered from:
 
-1. Built-in skills directory
+1. Embedded skill packs (via `WithSkillPack`)
 2. `~/.omniagent/skills/`
 3. Custom paths via `skills.paths` config
 
