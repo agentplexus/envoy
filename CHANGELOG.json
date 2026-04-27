@@ -7,6 +7,35 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.7.0",
+      "date": "2026-04-27",
+      "highlights": [
+        { "description": "Skill pack support for loading embedded markdown skills from fs.FS" },
+        { "description": "Configurable skill filtering with includes/excludes" }
+      ],
+      "added": [
+        { "description": "`WithSkillPack(fs.FS)` option for registering embedded skill packs", "commit": "be5bb95" },
+        { "description": "`WithSkillDirs(...string)` option for setting skill directories", "commit": "be5bb95" },
+        { "description": "`WithSkillIncludes(...string)` option to only load named skills", "commit": "be5bb95" },
+        { "description": "`WithSkillExcludes(...string)` option to skip named skills", "commit": "be5bb95" },
+        { "description": "`WithSkillManager(*Manager)` option for custom skill manager", "commit": "be5bb95" },
+        { "description": "`skills.Manager` type for unified skill loading from packs and directories", "commit": "be5bb95" },
+        { "description": "`skills.DiscoverFromFS()` for loading skills from embedded filesystems", "commit": "be5bb95" },
+        { "description": "Config options: `skills.packs`, `skills.includes`, `skills.excludes`", "commit": "be5bb95" }
+      ],
+      "changed": [
+        { "description": "Skills from directories override embedded pack skills with the same name", "commit": "be5bb95" },
+        { "description": "Config options merge with programmatically registered options", "commit": "be5bb95" }
+      ],
+      "docs": [
+        { "description": "Skills system design documents (PRD, TRD, PLAN, TASKS)", "commit": "136c718" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omniskill` v0.6.0 → v0.7.0 (adds pack/ package)" },
+        { "description": "`github.com/plexusone/omnillm` v0.15.2 → v0.15.3" }
+      ]
+    },
+    {
       "version": "v0.6.0",
       "date": "2026-04-26",
       "highlights": [
