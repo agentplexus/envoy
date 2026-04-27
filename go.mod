@@ -12,7 +12,7 @@ require (
 	github.com/moby/moby/client v0.4.1
 	github.com/modelcontextprotocol/go-sdk v1.5.0
 	github.com/plexusone/omnichat v0.6.0
-	github.com/plexusone/omnillm v0.15.2
+	github.com/plexusone/omnillm v0.15.3
 	github.com/plexusone/omniobserve v0.8.0
 	github.com/plexusone/omniserp v0.8.0
 	github.com/plexusone/omniskill v0.6.0
@@ -30,7 +30,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/anthropics/anthropic-sdk-go v1.37.0 // indirect
+	github.com/anthropics/anthropic-sdk-go v1.38.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.6 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.9 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.16 // indirect
@@ -47,7 +47,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.20 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.0 // indirect
 	github.com/aws/smithy-go v1.25.1 // indirect
+	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/beeper/argo-go v1.1.2 // indirect
+	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/bwmarrin/discordgo v0.29.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
@@ -81,6 +83,8 @@ require (
 	github.com/grokify/sogo v0.14.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/invopop/jsonschema v0.13.0 // indirect
+	github.com/mailru/easyjson v0.9.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.21 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -93,11 +97,11 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/plexusone/elevenlabs-go v0.10.0 // indirect
 	github.com/plexusone/ogen-tools v0.2.1 // indirect
+	github.com/plexusone/omni-anthropic v0.2.0 // indirect
+	github.com/plexusone/omni-aws v0.7.0 // indirect
+	github.com/plexusone/omni-google v0.3.0 // indirect
 	github.com/plexusone/omni-openai v0.2.0 // indirect
-	github.com/plexusone/omnillm-anthropic v0.1.0 // indirect
-	github.com/plexusone/omnillm-bedrock v0.5.0 // indirect
 	github.com/plexusone/omnillm-core v0.15.0 // indirect
-	github.com/plexusone/omnillm-gemini v0.1.0 // indirect
 	github.com/plexusone/omnivoice-core v0.8.0 // indirect
 	github.com/plexusone/omnivoice-deepgram v0.5.0 // indirect
 	github.com/plexusone/omnivoice-telnyx v0.1.1 // indirect
@@ -116,6 +120,7 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/twilio/twilio-go v1.30.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.32 // indirect
+	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/ysmood/fetchup v0.2.3 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
