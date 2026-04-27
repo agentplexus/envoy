@@ -85,7 +85,32 @@ func RegisterAgentOption(opt agent.Option) {
 	agentOptions = append(agentOptions, opt)
 }
 
-// getAgentOptions returns all registered agent options.
+// getAgentOptions returns all registered agent options plus config-derived options.
 func getAgentOptions() []agent.Option {
-	return agentOptions
+	opts := make([]agent.Option, len(agentOptions))
+	copy(opts, agentOptions)
+
+	// Add skill options from config
+	if cfg != nil && cfg.Skills.Enabled {
+		// Skill directories from config
+		if len(cfg.Skills.Paths) > 0 {
+			opts = append(opts, agent.WithSkillDirs(cfg.Skills.Paths...))
+		}
+
+		// Skill includes from config
+		if len(cfg.Skills.Includes) > 0 {
+			opts = append(opts, agent.WithSkillIncludes(cfg.Skills.Includes...))
+		}
+
+		// Skill excludes from config (merge Excludes and deprecated Disabled)
+		excludes := cfg.Skills.Excludes
+		if len(cfg.Skills.Disabled) > 0 {
+			excludes = append(excludes, cfg.Skills.Disabled...)
+		}
+		if len(excludes) > 0 {
+			opts = append(opts, agent.WithSkillExcludes(excludes...))
+		}
+	}
+
+	return opts
 }

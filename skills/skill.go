@@ -1,6 +1,16 @@
 // Package skills provides OpenClaw/ClawHub skill loading and management.
 package skills
 
+// SkillSource indicates where a skill was loaded from.
+type SkillSource string
+
+const (
+	// SourceDirectory indicates the skill was loaded from a filesystem directory.
+	SourceDirectory SkillSource = "directory"
+	// SourceEmbedded indicates the skill was loaded from an embedded skill pack.
+	SourceEmbedded SkillSource = "embedded"
+)
+
 // Skill represents a loaded SKILL.md file.
 type Skill struct {
 	// From YAML frontmatter
@@ -10,10 +20,11 @@ type Skill struct {
 	Metadata    SkillMeta `yaml:"metadata"`
 
 	// Parsed from file
-	Content    string `yaml:"-"` // Markdown body
-	Path       string `yaml:"-"` // Directory path
-	HasHooks   bool   `yaml:"-"` // Has hooks/ directory
-	HasScripts bool   `yaml:"-"` // Has scripts/ directory
+	Content    string      `yaml:"-"` // Markdown body
+	Path       string      `yaml:"-"` // Directory path (empty if embedded)
+	Source     SkillSource `yaml:"-"` // Where the skill was loaded from
+	HasHooks   bool        `yaml:"-"` // Has hooks/ directory
+	HasScripts bool        `yaml:"-"` // Has scripts/ directory
 }
 
 // SkillMeta contains platform-specific metadata.

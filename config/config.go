@@ -92,8 +92,11 @@ type ShellToolConfig struct {
 // SkillsConfig configures skill loading.
 type SkillsConfig struct {
 	Enabled     bool     `json:"enabled" yaml:"enabled"`
-	Paths       []string `json:"paths" yaml:"paths"`
-	Disabled    []string `json:"disabled" yaml:"disabled"`
+	Packs       []string `json:"packs" yaml:"packs"`             // Skill pack names (e.g., "omniagent-skills")
+	Paths       []string `json:"paths" yaml:"paths"`             // Directories to search (alias: dirs)
+	Includes    []string `json:"includes" yaml:"includes"`       // Only load these skills
+	Excludes    []string `json:"excludes" yaml:"excludes"`       // Skip these skills
+	Disabled    []string `json:"disabled" yaml:"disabled"`       // Deprecated: use excludes
 	MaxInjected int      `json:"max_injected" yaml:"max_injected"`
 }
 

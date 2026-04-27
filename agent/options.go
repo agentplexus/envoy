@@ -1,10 +1,13 @@
 package agent
 
 import (
+	"io/fs"
+
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/cron"
 	"github.com/plexusone/omniagent/hooks"
 	"github.com/plexusone/omniagent/sessions"
+	"github.com/plexusone/omniagent/skills"
 	"github.com/plexusone/omniagent/skills/compiled"
 	mcpskill "github.com/plexusone/omniagent/skills/remote/mcp"
 	"github.com/plexusone/omnistorage-core/kvs"
@@ -271,6 +274,93 @@ func WithCompiledHook(hook hooks.Hook) Option {
 func WithWebhookHook(webhook *hooks.WebhookHook) Option {
 	return func(a *Agent) error {
 		a.hooks.RegisterWebhook(webhook)
+		return nil
+	}
+}
+
+// WithSkillPack registers an embedded skill pack with the agent.
+// Skills from packs are loaded after directory skills, so directory
+// skills with the same name will override pack skills.
+//
+// Example:
+//
+//	import skills "github.com/plexusone/omniagent-skills"
+//
+//	agent, err := agent.New(config,
+//	    agent.WithSkillPack(skills.Default().FS()),
+//	)
+func WithSkillPack(pack fs.FS) Option {
+	return func(a *Agent) error {
+		a.skillPacks = append(a.skillPacks, pack)
+		return nil
+	}
+}
+
+// WithSkillDirs sets the directories to search for skills.
+// Directory skills override embedded skills with the same name.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithSkillDirs("./skills", "~/.omniagent/skills"),
+//	)
+func WithSkillDirs(dirs ...string) Option {
+	return func(a *Agent) error {
+		a.skillDirs = dirs
+		return nil
+	}
+}
+
+// WithSkillIncludes limits loaded skills to only those with matching names.
+// If not set, all discovered skills are included.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithSkillPack(skills.Default().FS()),
+//	    agent.WithSkillIncludes("github", "weather"),
+//	)
+func WithSkillIncludes(names ...string) Option {
+	return func(a *Agent) error {
+		a.skillIncludes = names
+		return nil
+	}
+}
+
+// WithSkillExcludes prevents skills with matching names from being loaded.
+// Applied after includes.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithSkillPack(skills.Default().FS()),
+//	    agent.WithSkillExcludes("slack", "trello"),
+//	)
+func WithSkillExcludes(names ...string) Option {
+	return func(a *Agent) error {
+		a.skillExcludes = names
+		return nil
+	}
+}
+
+// WithSkillManager sets a custom skill manager for the agent.
+// Use this for advanced skill loading scenarios.
+//
+// Example:
+//
+//	mgr := skills.NewManager(skills.ManagerConfig{
+//	    Packs:    []fs.FS{skills.Default().FS()},
+//	    Dirs:     []string{"./custom-skills"},
+//	    Includes: []string{"github"},
+//	})
+//	mgr.Load()
+//
+//	agent, err := agent.New(config,
+//	    agent.WithSkillManager(mgr),
+//	)
+func WithSkillManager(mgr *skills.Manager) Option {
+	return func(a *Agent) error {
+		a.skillManager = mgr
 		return nil
 	}
 }

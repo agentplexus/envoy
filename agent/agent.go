@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"sync"
 
@@ -23,6 +24,11 @@ type Agent struct {
 	client         *omnillm.ChatClient
 	tools          *ToolRegistry
 	skills         []*skills.Skill  // Markdown skills (SKILL.md)
+	skillManager   *skills.Manager  // Skill manager (if using packs)
+	skillPacks     []fs.FS          // Embedded skill packs
+	skillDirs      []string         // Skill directories
+	skillIncludes  []string         // Include only these skills
+	skillExcludes  []string         // Exclude these skills
 	compiledSkills []compiled.Skill // Compiled Go skills
 	storage        kvs.Store        // Key-value storage backend
 	sessions       *sessions.Store  // Persistent session storage
@@ -98,7 +104,49 @@ func New(config Config, opts ...Option) (*Agent, error) {
 		}
 	}
 
+	// Initialize skill manager if packs or dirs are configured
+	if err := a.initSkillManager(); err != nil {
+		client.Close()
+		return nil, fmt.Errorf("init skill manager: %w", err)
+	}
+
 	return a, nil
+}
+
+// initSkillManager initializes the skill manager from configured options.
+func (a *Agent) initSkillManager() error {
+	// Skip if a custom manager was provided
+	if a.skillManager != nil {
+		a.skills = a.skillManager.Available()
+		a.logger.Info("using custom skill manager",
+			"total", a.skillManager.Count(),
+			"available", len(a.skills))
+		return nil
+	}
+
+	// Skip if no packs configured (use legacy LoadSkills behavior)
+	if len(a.skillPacks) == 0 && len(a.skillDirs) == 0 &&
+		len(a.skillIncludes) == 0 && len(a.skillExcludes) == 0 {
+		return nil
+	}
+
+	// Create and load manager
+	a.skillManager = skills.NewManager(skills.ManagerConfig{
+		Packs:    a.skillPacks,
+		Dirs:     a.skillDirs,
+		Includes: a.skillIncludes,
+		Excludes: a.skillExcludes,
+	})
+
+	if err := a.skillManager.Load(); err != nil {
+		return err
+	}
+
+	a.skills = a.skillManager.Available()
+	a.logger.Info("skills loaded from manager",
+		"total", a.skillManager.Count(),
+		"available", len(a.skills))
+	return nil
 }
 
 // Process processes a message and returns a response.
@@ -458,6 +506,11 @@ func (a *Agent) LoadSkills(dirs []string) error {
 // GetSkills returns the loaded skills.
 func (a *Agent) GetSkills() []*skills.Skill {
 	return a.skills
+}
+
+// SkillManager returns the skill manager, or nil if not configured.
+func (a *Agent) SkillManager() *skills.Manager {
+	return a.skillManager
 }
 
 // buildSystemPrompt builds the system prompt with injected skills.

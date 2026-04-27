@@ -145,8 +145,9 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			logger.Debug("search tool not available", "error", err)
 		}
 
-		// Load skills if enabled
-		if cfg.Skills.Enabled {
+		// Load skills if enabled and not using skill manager
+		// (skill manager is configured via options like WithSkillPack)
+		if cfg.Skills.Enabled && agentInstance.SkillManager() == nil {
 			searchPaths := cfg.Skills.Paths
 			if len(searchPaths) == 0 {
 				searchPaths = nil // Use defaults

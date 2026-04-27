@@ -3,6 +3,7 @@ package skills
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,61 @@ func DefaultSearchPaths() []string {
 	}
 
 	return paths
+}
+
+// DiscoverFromFS finds all skills in an embedded filesystem.
+// Skills are expected at skills/<name>/SKILL.md.
+// The seen map is used to track already-loaded skills for deduplication.
+func DiscoverFromFS(fsys fs.FS, seen map[string]bool) ([]*Skill, error) {
+	var skills []*Skill
+
+	entries, err := fs.ReadDir(fsys, "skills")
+	if err != nil {
+		return nil, fmt.Errorf("reading skills directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		skillPath := "skills/" + entry.Name()
+		skillMD := skillPath + "/SKILL.md"
+
+		content, err := fs.ReadFile(fsys, skillMD)
+		if err != nil {
+			continue // No SKILL.md or read error
+		}
+
+		skill, err := Parse(string(content))
+		if err != nil {
+			continue // Invalid skill
+		}
+
+		// Skip if already seen (directory skills override embedded)
+		if seen != nil && seen[skill.Name] {
+			continue
+		}
+		if seen != nil {
+			seen[skill.Name] = true
+		}
+
+		// Mark source as embedded (no filesystem path)
+		skill.Path = ""
+		skill.Source = SourceEmbedded
+
+		// Check for hooks/scripts in embedded FS
+		if _, err := fs.Stat(fsys, skillPath+"/hooks"); err == nil {
+			skill.HasHooks = true
+		}
+		if _, err := fs.Stat(fsys, skillPath+"/scripts"); err == nil {
+			skill.HasScripts = true
+		}
+
+		skills = append(skills, skill)
+	}
+
+	return skills, nil
 }
 
 // Discover finds all skills in the given directories.
@@ -79,6 +135,7 @@ func Load(skillDir string) (*Skill, error) {
 	}
 
 	skill.Path = skillDir
+	skill.Source = SourceDirectory
 
 	// Check for hooks/scripts directories
 	if _, err := os.Stat(filepath.Join(skillDir, "hooks")); err == nil {
