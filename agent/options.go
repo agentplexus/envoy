@@ -10,6 +10,7 @@ import (
 	"github.com/plexusone/omniagent/skills"
 	"github.com/plexusone/omniagent/skills/compiled"
 	mcpskill "github.com/plexusone/omniagent/skills/remote/mcp"
+	openapiskill "github.com/plexusone/omniagent/skills/remote/openapi"
 	"github.com/plexusone/omnistorage-core/kvs"
 )
 
@@ -186,6 +187,27 @@ func WithCronScheduler() Option {
 func WithMCPSkill(cfg mcpskill.Config) Option {
 	return func(a *Agent) error {
 		return a.RegisterCompiledSkill(mcpskill.NewSkill(cfg))
+	}
+}
+
+// WithOpenAPISkill registers an OpenAPI spec as a compiled skill.
+// This parses the OpenAPI specification and exposes operations as tools.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithOpenAPISkill(openapiskill.Config{
+//	        Name:    "petstore",
+//	        SpecURL: "https://petstore3.swagger.io/api/v3/openapi.json",
+//	        Auth: openapiskill.AuthConfig{
+//	            Type:   openapiskill.AuthAPIKey,
+//	            APIKey: os.Getenv("PETSTORE_API_KEY"),
+//	        },
+//	    }),
+//	)
+func WithOpenAPISkill(cfg openapiskill.Config) Option {
+	return func(a *Agent) error {
+		return a.RegisterCompiledSkill(openapiskill.NewSkill(cfg))
 	}
 }
 
