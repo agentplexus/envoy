@@ -7,6 +7,31 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.8.0",
+      "date": "2026-05-03",
+      "highlights": [
+        { "description": "OpenAPI remote skill support for connecting to any OpenAPI 3.x API" }
+      ],
+      "added": [
+        { "description": "`WithOpenAPISkill()` option for registering OpenAPI specs as agent tools", "commit": "5419ae8" },
+        { "description": "OpenAPI skill loader with kin-openapi for spec parsing", "commit": "5419ae8" },
+        { "description": "Auth support: API key (header/query), Bearer token, Basic auth", "commit": "5419ae8" },
+        { "description": "Operation filtering by ID, tags, or include/exclude lists", "commit": "5419ae8" }
+      ],
+      "documentation": [
+        { "description": "Remote skills guide with MCP and OpenAPI documentation", "commit": "1d96e37" },
+        { "description": "Remote skills section in README", "commit": "c84c70d" },
+        { "description": "Skill packs usage documentation", "commit": "bdff390" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omnichat` v0.6.0 → v0.6.1 (Gmail provider uses omni-google)" },
+        { "description": "`github.com/plexusone/omnivoice` v0.7.2 → v0.8.0 (migrates to omni-twilio, omni-deepgram, omni-telnyx)" },
+        { "description": "`github.com/plexusone/omniserp` v0.8.0 → v0.8.1 (omni-keyring migration)" },
+        { "description": "`github.com/modelcontextprotocol/go-sdk` v1.5.0 → v1.6.0" },
+        { "description": "`github.com/getkin/kin-openapi` v0.137.0 (new, for OpenAPI parsing)" }
+      ]
+    },
+    {
       "version": "v0.7.0",
       "date": "2026-04-27",
       "highlights": [
