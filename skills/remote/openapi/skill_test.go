@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grokify/mogo/encoding/jsonutil"
+	"github.com/grokify/mogo/net/http/httputilmore"
 	"github.com/plexusone/omniagent/skills/compiled"
 	skilltypes "github.com/plexusone/omniskill/skill"
 )
@@ -298,8 +300,7 @@ func TestSkillHTTPExecution(t *testing.T) {
 		switch r.URL.Path {
 		case "/v1/pets":
 			if r.Method == "GET" {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode([]map[string]any{
+				httputilmore.MustWriteJSON(w, []map[string]any{
 					{"id": "1", "name": "Fluffy"},
 					{"id": "2", "name": "Buddy"},
 				})
@@ -307,8 +308,7 @@ func TestSkillHTTPExecution(t *testing.T) {
 			}
 		case "/v1/pets/123":
 			if r.Method == "GET" {
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]any{
+				httputilmore.MustWriteJSON(w, map[string]any{
 					"id":   "123",
 					"name": "Max",
 				})
@@ -375,96 +375,75 @@ func TestSkillHTTPExecution(t *testing.T) {
 	}
 }
 
-func TestSkillAuthAPIKey(t *testing.T) {
-	var receivedAPIKey string
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedAPIKey = r.Header.Get("X-API-Key")
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]any{})
-	}))
-	defer server.Close()
-
-	tmpDir := t.TempDir()
-	specFile := filepath.Join(tmpDir, "spec.json")
-	if err := os.WriteFile(specFile, []byte(testSpec), 0o600); err != nil {
-		t.Fatalf("Failed to write spec file: %v", err)
-	}
-
-	skill := NewSkill(Config{
-		Name:     "petstore",
-		SpecFile: specFile,
-		BaseURL:  server.URL + "/v1",
-		Auth: AuthConfig{
-			Type:   AuthAPIKey,
-			APIKey: "test-api-key-123",
+func TestSkillAuth(t *testing.T) {
+	tests := []struct {
+		name       string
+		header     string
+		auth       AuthConfig
+		wantHeader string
+	}{
+		{
+			name:   "api_key",
+			header: "X-API-Key",
+			auth: AuthConfig{
+				Type:   AuthAPIKey,
+				APIKey: "test-api-key-123",
+			},
+			wantHeader: "test-api-key-123",
 		},
-	})
-
-	ctx := context.Background()
-	if err := skill.Init(ctx); err != nil {
-		t.Fatalf("Init() error: %v", err)
-	}
-
-	// Call any tool to trigger auth
-	for _, tool := range skill.Tools() {
-		if tool.Name() == "listPets" {
-			_, err := tool.Call(ctx, map[string]any{})
-			if err != nil {
-				t.Fatalf("listPets call error: %v", err)
-			}
-			break
-		}
-	}
-
-	if receivedAPIKey != "test-api-key-123" {
-		t.Errorf("API key = %q, want %q", receivedAPIKey, "test-api-key-123")
-	}
-}
-
-func TestSkillAuthBearer(t *testing.T) {
-	var receivedAuth string
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedAuth = r.Header.Get("Authorization")
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]any{})
-	}))
-	defer server.Close()
-
-	tmpDir := t.TempDir()
-	specFile := filepath.Join(tmpDir, "spec.json")
-	if err := os.WriteFile(specFile, []byte(testSpec), 0o600); err != nil {
-		t.Fatalf("Failed to write spec file: %v", err)
-	}
-
-	skill := NewSkill(Config{
-		Name:     "petstore",
-		SpecFile: specFile,
-		BaseURL:  server.URL + "/v1",
-		Auth: AuthConfig{
-			Type:  AuthBearer,
-			Token: "my-bearer-token",
+		{
+			name:   "bearer",
+			header: "Authorization",
+			auth: AuthConfig{
+				Type:  AuthBearer,
+				Token: "my-bearer-token",
+			},
+			wantHeader: "Bearer my-bearer-token",
 		},
-	})
-
-	ctx := context.Background()
-	if err := skill.Init(ctx); err != nil {
-		t.Fatalf("Init() error: %v", err)
 	}
 
-	for _, tool := range skill.Tools() {
-		if tool.Name() == "listPets" {
-			_, err := tool.Call(ctx, map[string]any{})
-			if err != nil {
-				t.Fatalf("listPets call error: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var receivedHeader string
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				receivedHeader = r.Header.Get(tt.header)
+				httputilmore.MustWriteJSON(w, []any{})
+			}))
+			defer server.Close()
+
+			tmpDir := t.TempDir()
+			specFile := filepath.Join(tmpDir, "spec.json")
+			if err := os.WriteFile(specFile, []byte(testSpec), 0o600); err != nil {
+				t.Fatalf("Failed to write spec file: %v", err)
 			}
-			break
-		}
-	}
 
-	if receivedAuth != "Bearer my-bearer-token" {
-		t.Errorf("Authorization = %q, want %q", receivedAuth, "Bearer my-bearer-token")
+			skill := NewSkill(Config{
+				Name:     "petstore",
+				SpecFile: specFile,
+				BaseURL:  server.URL + "/v1",
+				Auth:     tt.auth,
+			})
+
+			ctx := context.Background()
+			if err := skill.Init(ctx); err != nil {
+				t.Fatalf("Init() error: %v", err)
+			}
+
+			for _, tool := range skill.Tools() {
+				if tool.Name() == "listPets" {
+					_, err := tool.Call(ctx, map[string]any{})
+					if err != nil {
+						t.Fatalf("listPets call error: %v", err)
+					}
+					break
+				}
+			}
+
+			if receivedHeader != tt.wantHeader {
+				t.Errorf("%s = %q, want %q", tt.header, receivedHeader, tt.wantHeader)
+			}
+		})
 	}
 }
 
@@ -605,7 +584,7 @@ func TestSkillInitFromURL(t *testing.T) {
 	// Serve the spec from a mock server
 	specServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(testSpec))
+		httputilmore.MustWriteBytes(w, []byte(testSpec))
 	}))
 	defer specServer.Close()
 
@@ -630,8 +609,7 @@ func TestSkillAuthBasic(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedAuth = r.Header.Get("Authorization")
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]any{})
+		httputilmore.MustWriteJSON(w, []any{})
 	}))
 	defer server.Close()
 
@@ -679,8 +657,7 @@ func TestSkillAuthAPIKeyQuery(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedAPIKey = r.URL.Query().Get("api_key")
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]any{})
+		httputilmore.MustWriteJSON(w, []any{})
 	}))
 	defer server.Close()
 
@@ -690,13 +667,15 @@ func TestSkillAuthAPIKeyQuery(t *testing.T) {
 		t.Fatalf("Failed to write spec file: %v", err)
 	}
 
+	//nolint:gosec // G101: Test credential for unit test validation
+	testAPIKey := "query-api-key-456"
 	skill := NewSkill(Config{
 		Name:     "petstore",
 		SpecFile: specFile,
 		BaseURL:  server.URL + "/v1",
 		Auth: AuthConfig{
 			Type:     AuthAPIKey,
-			APIKey:   "query-api-key-456",
+			APIKey:   testAPIKey,
 			APIKeyIn: "query",
 		},
 	})
@@ -716,7 +695,7 @@ func TestSkillAuthAPIKeyQuery(t *testing.T) {
 		}
 	}
 
-	if receivedAPIKey != "query-api-key-456" {
+	if receivedAPIKey != testAPIKey {
 		t.Errorf("API key = %q, want %q", receivedAPIKey, "query-api-key-456")
 	}
 }
@@ -728,13 +707,15 @@ func TestSkillPOSTWithBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/pets" && r.Method == "POST" {
 			receivedContentType = r.Header.Get("Content-Type")
-			json.NewDecoder(r.Body).Decode(&receivedBody)
+			jsonutil.MustUnmarshalReader(r.Body, &receivedBody)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]any{
+			if err := json.NewEncoder(w).Encode(map[string]any{
 				"id":   "new-pet-id",
 				"name": receivedBody["name"],
-			})
+			}); err != nil {
+				panic("encode error: " + err.Error())
+			}
 			return
 		}
 		http.NotFound(w, r)
@@ -797,10 +778,12 @@ func TestSkillAPIErrorResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"error":   "not_found",
 			"message": "Pet not found",
-		})
+		}); err != nil {
+			panic("encode error: " + err.Error())
+		}
 	}))
 	defer server.Close()
 
@@ -839,7 +822,7 @@ func TestSkillAPIErrorResponse(t *testing.T) {
 func TestSkillServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		httputilmore.MustWriteBytes(w, []byte("Internal Server Error"))
 	}))
 	defer server.Close()
 
@@ -877,7 +860,7 @@ func TestSkillServerError(t *testing.T) {
 func TestSkillTextResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Plain text response"))
+		httputilmore.MustWriteBytes(w, []byte("Plain text response"))
 	}))
 	defer server.Close()
 
@@ -921,8 +904,7 @@ func TestSkillTextResponse(t *testing.T) {
 func TestSkillUseSpecServerURL(t *testing.T) {
 	// Create API server
 	apiServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]any{"pet1", "pet2"})
+		httputilmore.MustWriteJSON(w, []any{"pet1", "pet2"})
 	}))
 	defer apiServer.Close()
 
@@ -981,8 +963,7 @@ func TestSkillRequestTimeout(t *testing.T) {
 	// Server that delays response
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(2 * time.Second)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]any{})
+		httputilmore.MustWriteJSON(w, []any{})
 	}))
 	defer server.Close()
 
@@ -1075,8 +1056,7 @@ func TestSkillHeaderParameter(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedHeader = r.Header.Get("X-Custom-Header")
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]any{})
+		httputilmore.MustWriteJSON(w, []any{})
 	}))
 	defer server.Close()
 
