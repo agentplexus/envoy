@@ -424,3 +424,161 @@ agent.New()
 3. **Validate Parameters** - Check required parameters before processing
 4. **Use Descriptive Names** - Tool names should be `skillname_action` format
 5. **Document Parameters** - Descriptions help the LLM use tools correctly
+
+---
+
+## Remote Skills
+
+Remote skills connect to external services and expose their capabilities as agent tools. OmniAgent supports two types of remote skills:
+
+### MCP Skills
+
+MCP (Model Context Protocol) skills spawn external MCP servers and expose their tools to the agent.
+
+```go
+import "github.com/plexusone/omniagent/agent"
+
+agent, err := agent.New(config,
+    agent.WithMCPSkill(mcp.Config{
+        Name:    "github",
+        Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+        Env: map[string]string{
+            "GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN"),
+        },
+    }),
+)
+```
+
+#### MCP Configuration
+
+| Field | Description |
+|-------|-------------|
+| `Name` | Skill identifier (must be unique) |
+| `Description` | Human-readable description |
+| `Command` | Command to spawn the MCP server |
+| `Env` | Environment variables for the command |
+| `LazyConnect` | Defer connection until first tool call |
+| `ClientName` | Client identifier sent to server |
+| `ClientVersion` | Client version sent to server |
+
+#### Popular MCP Servers
+
+| Server | Install Command |
+|--------|-----------------|
+| GitHub | `npx -y @modelcontextprotocol/server-github` |
+| Filesystem | `npx -y @modelcontextprotocol/server-filesystem` |
+| Brave Search | `npx -y @anthropic/brave-search-mcp` |
+
+### OpenAPI Skills
+
+OpenAPI skills parse OpenAPI 3.x specifications and expose operations as tools.
+
+```go
+import (
+    "github.com/plexusone/omniagent/agent"
+    openapi "github.com/plexusone/omniagent/skills/remote/openapi"
+)
+
+agent, err := agent.New(config,
+    agent.WithOpenAPISkill(openapi.Config{
+        Name:    "petstore",
+        SpecURL: "https://petstore3.swagger.io/api/v3/openapi.json",
+        Auth: openapi.AuthConfig{
+            Type:   openapi.AuthAPIKey,
+            APIKey: os.Getenv("PETSTORE_API_KEY"),
+        },
+    }),
+)
+```
+
+#### OpenAPI Configuration
+
+| Field | Description |
+|-------|-------------|
+| `Name` | Skill identifier (must be unique) |
+| `Description` | Human-readable description |
+| `SpecURL` | URL to fetch OpenAPI spec |
+| `SpecFile` | Path to local OpenAPI spec file |
+| `BaseURL` | Override the server URL from spec |
+| `Auth` | Authentication configuration |
+| `IncludeOperations` | Filter to specific operation IDs |
+| `ExcludeOperations` | Exclude specific operation IDs |
+| `IncludeTags` | Filter to operations with tags |
+| `LazyLoad` | Defer spec loading until first use |
+| `RequestTimeout` | Timeout for API requests (seconds) |
+
+#### Authentication Types
+
+```go
+// API Key (header)
+Auth: openapi.AuthConfig{
+    Type:       openapi.AuthAPIKey,
+    APIKey:     "your-api-key",
+    APIKeyName: "X-API-Key",  // default
+    APIKeyIn:   "header",     // or "query"
+}
+
+// Bearer Token
+Auth: openapi.AuthConfig{
+    Type:  openapi.AuthBearer,
+    Token: "your-bearer-token",
+}
+
+// Basic Auth
+Auth: openapi.AuthConfig{
+    Type:     openapi.AuthBasic,
+    Username: "user",
+    Password: "pass",
+}
+```
+
+#### Filtering Operations
+
+Include only specific operations:
+
+```go
+agent.WithOpenAPISkill(openapi.Config{
+    Name:              "api",
+    SpecURL:           "https://api.example.com/openapi.json",
+    IncludeOperations: []string{"getUser", "listUsers"},
+})
+```
+
+Filter by tags:
+
+```go
+agent.WithOpenAPISkill(openapi.Config{
+    Name:        "api",
+    SpecURL:     "https://api.example.com/openapi.json",
+    IncludeTags: []string{"users", "accounts"},
+})
+```
+
+Exclude operations:
+
+```go
+agent.WithOpenAPISkill(openapi.Config{
+    Name:              "api",
+    SpecURL:           "https://api.example.com/openapi.json",
+    ExcludeOperations: []string{"deleteUser", "adminEndpoint"},
+})
+```
+
+### Remote Skill Lifecycle
+
+```
+agent.New()
+    │
+    ├── WithMCPSkill() / WithOpenAPISkill()
+    │       └── RegisterCompiledSkill()
+    │
+    ├── InitCompiledSkills()
+    │       ├── MCP: Spawn server, discover tools
+    │       └── OpenAPI: Load spec, generate tools
+    │
+    ... agent runs ...
+    │
+    └── agent.Close()
+            ├── MCP: Terminate server process
+            └── OpenAPI: No cleanup needed
+```
