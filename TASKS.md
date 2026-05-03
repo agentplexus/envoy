@@ -30,29 +30,23 @@ Additional v0.6.0 packages: `sessions/`, `context/`, `hooks/`, `cron/`
 
 ### OpenAPI Loader
 
-- [ ] **TASK-402**: Create `skills/remote/openapi/`
-  - Parse OpenAPI 3.x specs
+- [x] **TASK-402**: Create `skills/remote/openapi/`
+  - Parse OpenAPI 3.x specs via kin-openapi
   - Generate tools from operations
-  - Handle authentication
+  - Handle API key, Bearer, Basic authentication
 
-- [ ] **TASK-403**: OpenAPI skill wrapper
+- [x] **TASK-403**: OpenAPI skill wrapper
   - Implement `compiled.Skill` interface
-  - HTTP client for API calls
-  - Response parsing
+  - HTTP client for API calls with auth
+  - Response parsing (JSON/text)
+  - `WithOpenAPISkill()` convenience option
 
 ### Configuration
 
-- [ ] **TASK-404**: Remote skill configuration
-  ```yaml
-  skills:
-    remote:
-      - name: github
-        type: mcp
-        command: npx -y @modelcontextprotocol/server-github
-      - name: api
-        type: openapi
-        url: https://api.example.com/openapi.json
-  ```
+- [x] **TASK-404**: Remote skill configuration
+  - `WithOpenAPISkill()` in `agent/options.go`
+  - Supports filtering by operation ID, tags
+  - Supports include/exclude operations
 
 ---
 
@@ -108,6 +102,6 @@ Additional v0.6.0 packages: `sessions/`, `context/`, `hooks/`, `cron/`
 
 ### Next Actions
 
-1. Create `skills/remote/openapi/` package (TASK-402, TASK-403)
-2. Add remote skill configuration support (TASK-404)
+1. ~~Create `skills/remote/openapi/` package (TASK-402, TASK-403)~~ ✅
+2. ~~Add remote skill configuration support (TASK-404)~~ ✅
 3. Move to OmniChat integration (Phase 5)
