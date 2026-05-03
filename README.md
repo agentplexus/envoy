@@ -213,6 +213,45 @@ func (s *WeatherSkill) Close() error                   { return nil }
 agent.New(config, agent.WithCompiledSkill(&WeatherSkill{}))
 ```
 
+### Remote Skills
+
+Remote skills connect to external services and expose their capabilities as agent tools.
+
+**MCP Skills** - Spawn external MCP servers and expose their tools:
+
+```go
+import "github.com/plexusone/omniagent/skills/remote/mcp"
+
+agent, err := agent.New(config,
+    agent.WithMCPSkill(mcp.Config{
+        Name:    "github",
+        Command: []string{"npx", "-y", "@modelcontextprotocol/server-github"},
+        Env: map[string]string{
+            "GITHUB_TOKEN": os.Getenv("GITHUB_TOKEN"),
+        },
+    }),
+)
+```
+
+**OpenAPI Skills** - Parse OpenAPI 3.x specs and expose operations as tools:
+
+```go
+import openapi "github.com/plexusone/omniagent/skills/remote/openapi"
+
+agent, err := agent.New(config,
+    agent.WithOpenAPISkill(openapi.Config{
+        Name:    "petstore",
+        SpecURL: "https://petstore3.swagger.io/api/v3/openapi.json",
+        Auth: openapi.AuthConfig{
+            Type:   openapi.AuthBearer,
+            Token:  os.Getenv("API_TOKEN"),
+        },
+    }),
+)
+```
+
+See the [Skills Guide](docs/guides/skills.md#remote-skills) for configuration options.
+
 ## Sessions
 
 OmniAgent supports persistent conversation sessions:
