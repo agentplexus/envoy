@@ -12,10 +12,13 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
 - ⏰ **Scheduled Jobs** - Cron expressions, intervals, and one-time job scheduling
-- 🔒 **Secure Sandboxing** - WASM and Docker isolation for tool execution
-- 🌐 **Browser Automation** - Built-in browser control via Rod
-- 🔌 **WebSocket Gateway** - Real-time control plane for device connections
+- 🔒 **Secure Sandboxing** - WASM and Docker isolation with GPU passthrough
+- 🌐 **Browser Automation** - Built-in browser control with dialog handling via Rod
+- 🔌 **WebSocket Gateway** - Real-time control plane with tools RPC endpoint
 - 📊 **Observability** - Integrated tracing via omniobserve
+- 🎭 **Agent Profiles** - Bootstrap profiles and lean mode for resource optimization
+- 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
+- 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, Keeper
 
 ## Quick Start
 
@@ -77,6 +80,8 @@ A QR code will appear in your terminal. Scan it with WhatsApp to connect.
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Key-value and object storage |
+| [omnivault](https://github.com/plexusone/omnivault) | Secure credential storage |
+| [omnitoken](https://github.com/plexusone/omnitoken) | OAuth token management |
 | [robfig/cron](https://github.com/robfig/cron) | Cron expression parsing and scheduling |
 | [wazero](https://github.com/tetratelabs/wazero) | WASM runtime for sandboxing |
 | [moby](https://github.com/moby/moby) | Docker SDK for container isolation |

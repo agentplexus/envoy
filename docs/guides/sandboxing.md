@@ -122,6 +122,79 @@ config := sandbox.DockerConfig{
 }
 ```
 
+### GPU Passthrough
+
+For GPU-accelerated workloads (ML inference, rendering), enable NVIDIA GPU passthrough:
+
+```go
+sandbox, err := sandbox.NewDockerSandbox(ctx, sandbox.DockerConfig{
+    Image: "nvidia/cuda:12.0-base",
+    GPU: &sandbox.GPUConfig{
+        Enabled:      true,
+        DeviceIDs:    []string{"0", "1"},  // Specific GPUs
+        Capabilities: []string{"compute", "utility"},
+        Driver:       "nvidia",
+    },
+})
+```
+
+#### GPU Configuration Options
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Enabled` | bool | Enable GPU passthrough |
+| `DeviceIDs` | []string | GPU device IDs (empty = all) |
+| `Capabilities` | []string | GPU capabilities to enable |
+| `Driver` | string | GPU driver (default: `nvidia`) |
+| `Count` | int | Number of GPUs (-1 = all, 0 = none) |
+
+#### Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| `compute` | CUDA/OpenCL compute |
+| `utility` | nvidia-smi and management |
+| `graphics` | OpenGL/Vulkan rendering |
+| `video` | Video encoding/decoding |
+| `display` | Display output |
+
+#### Examples
+
+Use all available GPUs:
+
+```go
+GPU: &sandbox.GPUConfig{
+    Enabled: true,
+    Count:   -1,  // All GPUs
+}
+```
+
+Use specific GPUs by ID:
+
+```go
+GPU: &sandbox.GPUConfig{
+    Enabled:   true,
+    DeviceIDs: []string{"GPU-abc123", "GPU-def456"},
+}
+```
+
+ML inference workload:
+
+```go
+GPU: &sandbox.GPUConfig{
+    Enabled:      true,
+    Count:        1,
+    Capabilities: []string{"compute"},
+}
+```
+
+!!! note "Requirements"
+    GPU passthrough requires:
+
+    - NVIDIA GPU with supported drivers
+    - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed
+    - Docker configured with nvidia runtime
+
 ## Best Practices
 
 ### Principle of Least Privilege

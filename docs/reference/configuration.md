@@ -194,6 +194,52 @@ voice:
 | `openai` | `whisper-1` | `tts-1`, `tts-1-hd` |
 | `elevenlabs` | - | Various voice IDs |
 
+## Tokens
+
+OAuth token management for services requiring refresh tokens.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `tokens.vault_uri` | string | - | Vault URI for storing tokens |
+| `tokens.services` | map | - | Service configurations |
+
+```yaml
+tokens:
+  vault_uri: "op://MyVault"
+  services:
+    google:
+      credentials_name: "google-oauth"
+      scopes:
+        - "https://www.googleapis.com/auth/calendar"
+    zoom:
+      credentials_name: "zoom-oauth"
+```
+
+### Service Configuration
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `credentials_name` | string | Credential name in vault (defaults to service name) |
+| `scopes` | []string | OAuth scopes to request |
+| `auto_refresh` | bool | Auto-refresh tokens (default: true) |
+
+## Observability
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `observability.enabled` | bool | `false` | Enable observability |
+| `observability.service_name` | string | `omniagent` | Service name for traces |
+| `observability.provider` | string | - | Provider: `otlp`, `jaeger` |
+
+```yaml
+observability:
+  enabled: true
+  service_name: "my-agent"
+  provider: otlp
+  otlp:
+    endpoint: "localhost:4317"
+```
+
 ## Environment Variable Expansion
 
 Configuration values support environment variable expansion:
@@ -203,6 +249,31 @@ agent:
   api_key: ${OPENAI_API_KEY}
   model: ${OMNIAGENT_MODEL:-gpt-4o}  # With default
 ```
+
+## Vault-Backed Credentials
+
+Credentials can be stored in password managers using URI schemes:
+
+| Scheme | Provider | Example |
+|--------|----------|---------|
+| `op://` | 1Password | `op://MyVault/item/field` |
+| `bw://` | Bitwarden | `bw://org-id/item-name` |
+| `keeper://` | Keeper | `keeper://folder/record/field` |
+| `file://` | File | `file:///path/to/secret` |
+| `env://` | Environment | `env://VAR_NAME` |
+
+```yaml
+agent:
+  api_key: "op://MyVault/anthropic/api-key"
+
+channels:
+  telegram:
+    token: "bw://org-id/telegram-bot-token"
+  discord:
+    token: "keeper://Discord/bot-token"
+```
+
+Credentials are resolved once at startup. Plain string values still work.
 
 ## Complete Example
 

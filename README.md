@@ -40,10 +40,12 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
 - ⏰ **Scheduled Jobs** - Cron expressions, intervals, and one-time job scheduling
-- 🔒 **Secure Sandboxing** - WASM and Docker isolation for tool execution
-- 🌐 **Browser Automation** - Built-in browser control via Rod
-- 🔌 **WebSocket Gateway** - Real-time control plane for device connections
+- 🔒 **Secure Sandboxing** - WASM and Docker isolation with GPU passthrough
+- 🌐 **Browser Automation** - Built-in browser control with dialog handling via Rod
+- 🔌 **WebSocket Gateway** - Real-time control plane with tools RPC endpoint
 - 📊 **Observability** - Integrated tracing via omniobserve
+- 🎭 **Agent Profiles** - Bootstrap profiles and lean mode for resource optimization
+- 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
 
 ## Installation
 
@@ -352,6 +354,21 @@ sandbox, _ := sandbox.NewDockerSandbox(ctx, sandbox.DockerConfig{
 result, _ := sandbox.Run(ctx, "cat", []string{"/data/file.txt"})
 ```
 
+### GPU Passthrough
+
+For GPU-accelerated workloads, enable NVIDIA GPU passthrough:
+
+```go
+sandbox, _ := sandbox.NewDockerSandbox(ctx, sandbox.DockerConfig{
+    Image: "nvidia/cuda:12.0-base",
+    GPU: &sandbox.GPUConfig{
+        Enabled:      true,
+        DeviceIDs:    []string{"0"},
+        Capabilities: []string{"compute", "utility"},
+    },
+})
+```
+
 ### WASM Runtime
 
 For lightweight isolation, tools can run in a WASM sandbox (wazero):
@@ -364,6 +381,78 @@ runtime, _ := sandbox.NewRuntime(ctx, sandbox.Config{
     AllowedPaths:  []string{"/tmp/data"},
 })
 ```
+
+## Agent Profiles
+
+Profiles customize agent behavior for different use cases:
+
+```go
+import "github.com/plexusone/omniagent/agent/profiles"
+
+profile := &profiles.BootstrapProfile{
+    Name:               "customer-support",
+    SystemPromptPrefix: "You are a customer support agent.\n",
+    AllowedTools:       []string{"search_kb", "create_ticket"},
+    DeniedTools:        []string{"shell", "browser"},
+}
+
+a, _ := agent.New(config, agent.WithProfile(profile))
+```
+
+### Lean Mode
+
+Optimize for constrained environments:
+
+```go
+leanMode := profiles.NewLeanMode(profiles.LeanLevelModerate)
+a, _ := agent.New(config, agent.WithLeanMode(leanMode))
+```
+
+| Level | Memory Reduction | Use Case |
+|-------|------------------|----------|
+| `Off` | None | Default operation |
+| `Light` | ~15% | Slightly constrained |
+| `Moderate` | ~35% | Mobile/embedded |
+| `Aggressive` | ~60% | Severely constrained |
+
+See [Agent Profiles Guide](docs/guides/profiles.md) for details.
+
+## Access Policies
+
+### Tool Policies
+
+Control which tools are available per sender:
+
+```go
+import "github.com/plexusone/omniagent/tools/policy"
+
+manager := policy.NewManager()
+manager.SetPolicy("guest", &policy.Policy{
+    AllowedTools: []string{"search", "weather"},
+    DeniedTools:  []string{"shell", "browser"},
+    RateLimit: &policy.RateLimit{
+        MaxCalls: 10,
+        Window:   time.Minute,
+    },
+})
+```
+
+### Channel Policies
+
+Validate messages against content rules:
+
+```go
+import "github.com/plexusone/omniagent/channels/policy"
+
+checker := policy.NewConformanceChecker(config)
+checker.AddRule(policy.ConformanceRule{
+    Name:    "rate-limit",
+    Action:  policy.ActionRateLimit,
+    RateLimit: &policy.RateLimit{MaxMessages: 60, Window: time.Minute},
+})
+```
+
+See [Access Policies Guide](docs/guides/policies.md) for details.
 
 ## Environment Variables
 
