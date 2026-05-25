@@ -52,6 +52,7 @@ func TestNewTokenManager_MemoryVault(t *testing.T) {
 	}
 }
 
+//nolint:gosec // G101: Test fixture with credential config names
 func TestTokenConfig_ServicesMap(t *testing.T) {
 	cfg := TokenConfig{
 		VaultURI: "memory://",

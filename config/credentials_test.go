@@ -116,6 +116,7 @@ func TestGetPath(t *testing.T) {
 	}
 }
 
+//nolint:gosec // G101: Test fixtures with fake credentials
 func TestResolveCredentials_NoVaultURIs(t *testing.T) {
 	// Test that plain string values are not modified
 	cfg := &Config{
@@ -175,6 +176,7 @@ func TestResolveCredentials_EmptyValues(t *testing.T) {
 	}
 }
 
+//nolint:gosec // G101: Test fixtures with fake credentials and vault URIs
 func TestResolveCredentials_EnvVault(t *testing.T) {
 	// Set up test environment variables
 	os.Setenv("TEST_AGENT_API_KEY", "test-anthropic-key")
@@ -254,6 +256,7 @@ func TestResolveCredentials_EnvVault(t *testing.T) {
 	}
 }
 
+//nolint:gosec // G101: Test fixtures with vault URIs and fake credentials
 func TestResolveCredentials_MixedVaultAndPlain(t *testing.T) {
 	// Test mixing vault URIs and plain strings
 	os.Setenv("TEST_MIXED_KEY", "vault-resolved-key")
@@ -290,6 +293,7 @@ func TestResolveCredentials_MixedVaultAndPlain(t *testing.T) {
 	}
 }
 
+//nolint:gosec // G101: Test fixture with intentionally invalid vault URI
 func TestResolveCredentials_InvalidVaultURI(t *testing.T) {
 	// Test that invalid vault URIs return errors
 	cfg := &Config{
@@ -305,6 +309,7 @@ func TestResolveCredentials_InvalidVaultURI(t *testing.T) {
 	}
 }
 
+//nolint:gosec // G101: Test fixture with vault URI reference
 func TestResolveCredentials_EnvVarNotSet(t *testing.T) {
 	// Test that missing env var returns error
 	cfg := &Config{

@@ -365,7 +365,7 @@ func (t *Tool) getDialogs() (string, error) {
 }
 
 // dismissDialog dismisses the current dialog.
-func (t *Tool) dismissDialog(ctx context.Context) (string, error) {
+func (t *Tool) dismissDialog(_ context.Context) (string, error) {
 	// Accept the dialog (dismiss with default action)
 	err := proto.PageHandleJavaScriptDialog{
 		Accept: true,
