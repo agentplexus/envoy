@@ -9,14 +9,16 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/plexusone/omnillm"
+	"github.com/plexusone/omnillm/provider"
+	"github.com/plexusone/omnistorage-core/kvs"
+
+	"github.com/plexusone/omniagent/agent/profiles"
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/hooks"
 	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniagent/skills"
 	"github.com/plexusone/omniagent/skills/compiled"
-	"github.com/plexusone/omnillm"
-	"github.com/plexusone/omnillm/provider"
-	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // Agent is the AI agent that processes messages.
@@ -38,6 +40,12 @@ type Agent struct {
 	config         Config
 	logger         *slog.Logger
 	mu             sync.RWMutex
+
+	// Profile-related fields
+	profile          *profiles.BootstrapProfile // Active bootstrap profile
+	profileRegistry  *profiles.ProfileRegistry  // Profile registry for dynamic selection
+	leanMode         *profiles.LeanMode         // Lean mode configuration
+	progressReporter *profiles.ProgressReporter // Tool progress reporter
 }
 
 // Config configures the agent.
@@ -515,9 +523,74 @@ func (a *Agent) SkillManager() *skills.Manager {
 
 // buildSystemPrompt builds the system prompt with injected skills.
 func (a *Agent) buildSystemPrompt() string {
-	if len(a.skills) == 0 {
-		return a.config.SystemPrompt
+	basePrompt := a.config.SystemPrompt
+
+	// Apply profile modifications if active
+	if a.profile != nil {
+		basePrompt = a.profile.BuildSystemPrompt(basePrompt)
 	}
 
-	return skills.InjectIntoPrompt(a.config.SystemPrompt, a.skills, skills.DefaultInjectConfig())
+	if len(a.skills) == 0 {
+		return basePrompt
+	}
+
+	return skills.InjectIntoPrompt(basePrompt, a.skills, skills.DefaultInjectConfig())
+}
+
+// Profile returns the active bootstrap profile, or nil if not set.
+func (a *Agent) Profile() *profiles.BootstrapProfile {
+	return a.profile
+}
+
+// SetProfile sets the active bootstrap profile.
+func (a *Agent) SetProfile(profile *profiles.BootstrapProfile) {
+	a.profile = profile
+}
+
+// ProfileRegistry returns the profile registry, or nil if not configured.
+func (a *Agent) ProfileRegistry() *profiles.ProfileRegistry {
+	return a.profileRegistry
+}
+
+// ActivateProfile activates a profile by name from the registry.
+// Returns an error if the profile is not found.
+func (a *Agent) ActivateProfile(ctx context.Context, name string) error {
+	if a.profileRegistry == nil {
+		return fmt.Errorf("profile registry not configured")
+	}
+
+	profile, ok := a.profileRegistry.Get(name)
+	if !ok {
+		return fmt.Errorf("profile not found: %s", name)
+	}
+
+	// Apply lean mode if configured
+	if a.leanMode != nil && a.leanMode.Enabled {
+		profile = profile.Clone()
+		a.leanMode.Apply(profile)
+	}
+
+	a.profile = profile
+	a.logger.Info("profile activated", "name", name)
+	return nil
+}
+
+// LeanMode returns the lean mode configuration, or nil if not set.
+func (a *Agent) LeanMode() *profiles.LeanMode {
+	return a.leanMode
+}
+
+// SetLeanMode sets the lean mode configuration.
+func (a *Agent) SetLeanMode(mode *profiles.LeanMode) {
+	a.leanMode = mode
+}
+
+// ProgressReporter returns the progress reporter, or nil if not configured.
+func (a *Agent) ProgressReporter() *profiles.ProgressReporter {
+	return a.progressReporter
+}
+
+// SetProgressReporter sets the progress reporter.
+func (a *Agent) SetProgressReporter(reporter *profiles.ProgressReporter) {
+	a.progressReporter = reporter
 }

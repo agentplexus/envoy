@@ -1,8 +1,12 @@
 package agent
 
 import (
+	"io"
 	"io/fs"
 
+	"github.com/plexusone/omnistorage-core/kvs"
+
+	"github.com/plexusone/omniagent/agent/profiles"
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/cron"
 	"github.com/plexusone/omniagent/hooks"
@@ -11,7 +15,6 @@ import (
 	"github.com/plexusone/omniagent/skills/compiled"
 	mcpskill "github.com/plexusone/omniagent/skills/remote/mcp"
 	openapiskill "github.com/plexusone/omniagent/skills/remote/openapi"
-	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 // Option configures the agent.
@@ -383,6 +386,102 @@ func WithSkillExcludes(names ...string) Option {
 func WithSkillManager(mgr *skills.Manager) Option {
 	return func(a *Agent) error {
 		a.skillManager = mgr
+		return nil
+	}
+}
+
+// WithBootstrapProfile sets the bootstrap profile for agent initialization.
+// Profiles customize system prompts, tools, and context limits per-agent.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithBootstrapProfile(profiles.CodeAssistantProfile),
+//	)
+func WithBootstrapProfile(profile *profiles.BootstrapProfile) Option {
+	return func(a *Agent) error {
+		a.profile = profile
+		return nil
+	}
+}
+
+// WithProfileRegistry sets a profile registry for dynamic profile selection.
+// This allows switching profiles at runtime based on context.
+//
+// Example:
+//
+//	registry := profiles.NewProfileRegistry()
+//	registry.Register(profiles.CodeAssistantProfile)
+//	registry.Register(profiles.RestrictedProfile)
+//
+//	agent, err := agent.New(config,
+//	    agent.WithProfileRegistry(registry),
+//	)
+func WithProfileRegistry(registry *profiles.ProfileRegistry) Option {
+	return func(a *Agent) error {
+		a.profileRegistry = registry
+		return nil
+	}
+}
+
+// WithLeanMode enables lean mode for resource optimization.
+// This is especially useful for local models with limited resources.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithLeanMode(profiles.NewLeanMode(profiles.LeanLevelModerate)),
+//	)
+func WithLeanMode(mode *profiles.LeanMode) Option {
+	return func(a *Agent) error {
+		a.leanMode = mode
+		return nil
+	}
+}
+
+// WithLeanLevel enables lean mode at the specified level.
+// This is a convenience function for common lean mode configurations.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithLeanLevel(profiles.LeanLevelLight),
+//	)
+func WithLeanLevel(level profiles.LeanLevel) Option {
+	return func(a *Agent) error {
+		a.leanMode = profiles.NewLeanMode(level)
+		return nil
+	}
+}
+
+// WithProgressReporter sets the progress reporter for tool execution.
+// This controls how tool execution progress is displayed.
+//
+// Example:
+//
+//	reporter := profiles.NewProgressReporter(profiles.ProgressModeVerbose, os.Stderr)
+//
+//	agent, err := agent.New(config,
+//	    agent.WithProgressReporter(reporter),
+//	)
+func WithProgressReporter(reporter *profiles.ProgressReporter) Option {
+	return func(a *Agent) error {
+		a.progressReporter = reporter
+		return nil
+	}
+}
+
+// WithProgressMode sets the progress detail mode for tool execution.
+// This is a convenience function that creates a progress reporter with the given mode.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithProgressMode(profiles.ProgressModeVerbose, os.Stderr),
+//	)
+func WithProgressMode(mode profiles.ProgressDetailMode, output io.Writer) Option {
+	return func(a *Agent) error {
+		a.progressReporter = profiles.NewProgressReporter(mode, output)
 		return nil
 	}
 }
