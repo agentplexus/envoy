@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/plexusone/omnivault"
-	_ "github.com/plexusone/omnivault-desktop" // Register desktop vault providers
 	"github.com/plexusone/omnivault/vault"
 )
 

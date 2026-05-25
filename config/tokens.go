@@ -9,7 +9,6 @@ import (
 
 	"github.com/plexusone/omnitoken"
 	"github.com/plexusone/omnivault"
-	_ "github.com/plexusone/omnivault-desktop" // Register desktop vault providers
 )
 
 // TokenConfig configures OAuth token management for services that require
