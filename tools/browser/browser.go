@@ -22,6 +22,10 @@ type Tool struct {
 	page     *rod.Page
 	headless bool
 	logger   *slog.Logger
+
+	// Dialog tracking
+	dialogs        []Dialog
+	dialogCallback func(Dialog)
 }
 
 // Config configures the browser tool.
@@ -29,6 +33,37 @@ type Config struct {
 	Headless bool
 	UserData string
 	Logger   *slog.Logger
+
+	// EvaluateTimeout is the default timeout for JavaScript evaluation.
+	// Zero means use the action timeout.
+	EvaluateTimeout time.Duration
+
+	// DialogCallback is called when a dialog is observed.
+	DialogCallback func(Dialog)
+}
+
+// Dialog represents a browser dialog (alert, confirm, prompt).
+type Dialog struct {
+	// Type is the dialog type: "alert", "confirm", "prompt", "beforeunload".
+	Type string
+
+	// Message is the dialog message text.
+	Message string
+
+	// DefaultValue is the default value for prompt dialogs.
+	DefaultValue string
+
+	// URL is the page URL where the dialog appeared.
+	URL string
+
+	// Timestamp is when the dialog was observed.
+	Timestamp time.Time
+
+	// Handled indicates if the dialog was automatically handled.
+	Handled bool
+
+	// Response is the response given (for confirm: "true"/"false", for prompt: input text).
+	Response string
 }
 
 // New creates a new browser tool.
@@ -38,8 +73,9 @@ func New(config Config) (*Tool, error) {
 	}
 
 	return &Tool{
-		headless: config.Headless,
-		logger:   config.Logger,
+		headless:       config.Headless,
+		logger:         config.Logger,
+		dialogCallback: config.DialogCallback,
 	}, nil
 }
 
@@ -61,7 +97,7 @@ func (t *Tool) Parameters() map[string]interface{} {
 			"action": map[string]interface{}{
 				"type":        "string",
 				"description": "The browser action to perform",
-				"enum":        []string{"navigate", "click", "type", "screenshot", "get_text", "wait"},
+				"enum":        []string{"navigate", "click", "type", "screenshot", "get_text", "wait", "evaluate", "get_dialogs", "dismiss_dialog"},
 			},
 			"url": map[string]interface{}{
 				"type":        "string",
@@ -74,6 +110,10 @@ func (t *Tool) Parameters() map[string]interface{} {
 			"text": map[string]interface{}{
 				"type":        "string",
 				"description": "Text to type (for type action)",
+			},
+			"script": map[string]interface{}{
+				"type":        "string",
+				"description": "JavaScript code to evaluate (for evaluate action)",
 			},
 			"timeout": map[string]interface{}{
 				"type":        "integer",
@@ -91,6 +131,7 @@ func (t *Tool) Execute(ctx context.Context, args json.RawMessage) (string, error
 		URL      string `json:"url"`
 		Selector string `json:"selector"`
 		Text     string `json:"text"`
+		Script   string `json:"script"`
 		Timeout  int    `json:"timeout"`
 	}
 
@@ -124,6 +165,12 @@ func (t *Tool) Execute(ctx context.Context, args json.RawMessage) (string, error
 		return t.getText(ctx, params.Selector)
 	case "wait":
 		return t.wait(ctx, params.Selector)
+	case "evaluate":
+		return t.evaluate(ctx, params.Script)
+	case "get_dialogs":
+		return t.getDialogs()
+	case "dismiss_dialog":
+		return t.dismissDialog(ctx)
 	default:
 		return "", fmt.Errorf("unknown action: %s", params.Action)
 	}
@@ -151,8 +198,37 @@ func (t *Tool) ensureBrowser() error {
 		return fmt.Errorf("create page: %w", err)
 	}
 
+	// Set up dialog handling
+	t.setupDialogHandler()
+
 	t.logger.Info("browser launched", "headless", t.headless)
 	return nil
+}
+
+// setupDialogHandler sets up JavaScript dialog event handling.
+func (t *Tool) setupDialogHandler() {
+	go t.page.EachEvent(func(e *proto.PageJavascriptDialogOpening) {
+		dialog := Dialog{
+			Type:         string(e.Type),
+			Message:      e.Message,
+			DefaultValue: e.DefaultPrompt,
+			URL:          e.URL,
+			Timestamp:    time.Now(),
+		}
+
+		// Store the dialog
+		t.dialogs = append(t.dialogs, dialog)
+
+		// Call callback if set
+		if t.dialogCallback != nil {
+			t.dialogCallback(dialog)
+		}
+
+		t.logger.Info("dialog observed",
+			"type", e.Type,
+			"message", e.Message,
+			"url", e.URL)
+	})()
 }
 
 // navigate navigates to a URL.
@@ -253,6 +329,111 @@ func (t *Tool) wait(ctx context.Context, selector string) (string, error) {
 	}
 
 	return fmt.Sprintf("Element found: %s", selector), nil
+}
+
+// evaluate executes JavaScript in the page context.
+func (t *Tool) evaluate(ctx context.Context, script string) (string, error) {
+	if script == "" {
+		return "", fmt.Errorf("script required for evaluate action")
+	}
+
+	result, err := t.page.Context(ctx).Eval(script)
+	if err != nil {
+		return "", fmt.Errorf("evaluate script: %w", err)
+	}
+
+	// Convert result to string
+	if result.Value.Nil() {
+		return "undefined", nil
+	}
+
+	return result.Value.String(), nil
+}
+
+// getDialogs returns all observed dialogs.
+func (t *Tool) getDialogs() (string, error) {
+	if len(t.dialogs) == 0 {
+		return "No dialogs observed", nil
+	}
+
+	data, err := json.Marshal(t.dialogs)
+	if err != nil {
+		return "", fmt.Errorf("marshal dialogs: %w", err)
+	}
+
+	return string(data), nil
+}
+
+// dismissDialog dismisses the current dialog.
+func (t *Tool) dismissDialog(ctx context.Context) (string, error) {
+	// Accept the dialog (dismiss with default action)
+	err := proto.PageHandleJavaScriptDialog{
+		Accept: true,
+	}.Call(t.page)
+
+	if err != nil {
+		return "", fmt.Errorf("dismiss dialog: %w", err)
+	}
+
+	// Mark last dialog as handled
+	if len(t.dialogs) > 0 {
+		t.dialogs[len(t.dialogs)-1].Handled = true
+		t.dialogs[len(t.dialogs)-1].Response = "accepted"
+	}
+
+	return "Dialog dismissed", nil
+}
+
+// AcceptDialog accepts a dialog with an optional response.
+func (t *Tool) AcceptDialog(ctx context.Context, response string) error {
+	err := proto.PageHandleJavaScriptDialog{
+		Accept:     true,
+		PromptText: response,
+	}.Call(t.page)
+
+	if err != nil {
+		return fmt.Errorf("accept dialog: %w", err)
+	}
+
+	if len(t.dialogs) > 0 {
+		t.dialogs[len(t.dialogs)-1].Handled = true
+		t.dialogs[len(t.dialogs)-1].Response = response
+	}
+
+	return nil
+}
+
+// DismissDialogWithCancel dismisses a dialog by clicking cancel.
+func (t *Tool) DismissDialogWithCancel(ctx context.Context) error {
+	err := proto.PageHandleJavaScriptDialog{
+		Accept: false,
+	}.Call(t.page)
+
+	if err != nil {
+		return fmt.Errorf("cancel dialog: %w", err)
+	}
+
+	if len(t.dialogs) > 0 {
+		t.dialogs[len(t.dialogs)-1].Handled = true
+		t.dialogs[len(t.dialogs)-1].Response = "cancelled"
+	}
+
+	return nil
+}
+
+// GetObservedDialogs returns the list of observed dialogs.
+func (t *Tool) GetObservedDialogs() []Dialog {
+	return t.dialogs
+}
+
+// ClearDialogs clears the dialog history.
+func (t *Tool) ClearDialogs() {
+	t.dialogs = nil
+}
+
+// SetDialogCallback sets a callback for dialog events.
+func (t *Tool) SetDialogCallback(callback func(Dialog)) {
+	t.dialogCallback = callback
 }
 
 // Close closes the browser.
