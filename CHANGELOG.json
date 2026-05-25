@@ -7,6 +7,57 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.9.0",
+      "date": "2026-05-25",
+      "highlights": [
+        { "description": "Bootstrap profiles and lean mode for agent customization and resource optimization" },
+        { "description": "Per-sender tool and channel policy enforcement with rate limiting" },
+        { "description": "GPU passthrough for Docker sandbox and browser dialog handling" },
+        { "description": "Vault-backed credentials via 1Password, Bitwarden, and environment variables" }
+      ],
+      "added": [
+        { "description": "Bootstrap profiles for customizing agent behavior per use case", "commit": "f34e16c" },
+        { "description": "Lean mode with configurable levels for memory/token reduction", "commit": "f34e16c" },
+        { "description": "Per-sender tool policy enforcement with rate limiting", "commit": "3e35bcd" },
+        { "description": "Channel conformance checker for message validation", "commit": "53f3802" },
+        { "description": "Gateway tools RPC endpoint for HTTP-based tool invocation", "commit": "89071a4" },
+        { "description": "Browser dialog handling (alert, confirm, prompt) with callback support", "commit": "57c58c7" },
+        { "description": "JavaScript evaluation action for browser tool", "commit": "57c58c7" },
+        { "description": "GPU passthrough support for Docker sandbox", "commit": "2b04f11" },
+        { "description": "Vault-backed credential resolution (op://, bw://, env://, file://)", "commit": "02dd9ae" },
+        { "description": "OAuth token management via omnitoken integration", "commit": "02dd9ae" },
+        { "description": "New packages: `agent/profiles`, `tools/policy`, `channels/policy`", "commit": "f34e16c" }
+      ],
+      "fixed": [
+        { "description": "Windows CI build by excluding omnivault-desktop via build tags", "commit": "9df2ed2" },
+        { "description": "gosec G101 warnings in test fixtures with nolint directives", "commit": "154d2f2" },
+        { "description": "unparam warning for unused ctx in browser dismissDialog", "commit": "154d2f2" },
+        { "description": "errcheck and dupl issues in openapi skill tests", "commit": "a8d99b7" }
+      ],
+      "documentation": [
+        { "description": "Agent profiles guide for bootstrap profiles and lean mode", "commit": "e62760e" },
+        { "description": "Access policies guide for tool and channel policies", "commit": "e62760e" },
+        { "description": "Browser automation guide with dialog handling", "commit": "e62760e" },
+        { "description": "GPU passthrough section in sandboxing guide", "commit": "e62760e" },
+        { "description": "Token management in configuration reference", "commit": "e62760e" },
+        { "description": "v0.9.0 release notes", "commit": "e62760e" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/anthropics/anthropic-sdk-go` v1.44.1 → v1.45.0" },
+        { "description": "`github.com/plexusone/omnillm` v0.15.3 → v0.15.4" },
+        { "description": "`github.com/plexusone/omniobserve` v0.9.0 → v0.10.0" },
+        { "description": "`github.com/plexusone/omniskill` v0.7.0 → v0.8.0" },
+        { "description": "`github.com/plexusone/omnistorage-core` v0.3.0 → v0.4.0" },
+        { "description": "`github.com/getkin/kin-openapi` v0.137.0 → v0.139.0" },
+        { "description": "`github.com/modelcontextprotocol/go-sdk` v1.6.0 → v1.6.1" },
+        { "description": "`github.com/grokify/mogo` v0.74.4 → v0.74.5" },
+        { "description": "`github.com/plexusone/omnivault` v0.5.0 (new)" },
+        { "description": "`github.com/plexusone/omnivault-desktop` v0.1.0 (new)" },
+        { "description": "`github.com/plexusone/omnitoken` v0.1.0 (new)" },
+        { "description": "`github.com/invopop/jsonschema` pinned to v0.13.0 for anthropic-sdk-go compatibility" }
+      ]
+    },
+    {
       "version": "v0.8.0",
       "date": "2026-05-03",
       "highlights": [

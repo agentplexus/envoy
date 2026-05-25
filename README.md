@@ -46,6 +46,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 📊 **Observability** - Integrated tracing via omniobserve
 - 🎭 **Agent Profiles** - Bootstrap profiles and lean mode for resource optimization
 - 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
+- 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, Keeper
 
 ## Installation
 
@@ -693,6 +694,8 @@ See [Architecture Overview](docs/architecture/overview.md) for detailed document
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omniserp](https://github.com/plexusone/omniserp) | Web search via Serper/SerpAPI |
 | [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Object and key-value storage |
+| [omnivault](https://github.com/plexusone/omnivault) | Secure credential storage |
+| [omnitoken](https://github.com/plexusone/omnitoken) | OAuth token management |
 
 ### Infrastructure
 
