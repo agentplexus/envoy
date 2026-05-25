@@ -11,12 +11,12 @@ require (
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/moby/moby/api v1.54.2
 	github.com/moby/moby/client v0.4.1
-	github.com/modelcontextprotocol/go-sdk v1.6.0
+	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/plexusone/omnichat v0.6.1
 	github.com/plexusone/omnillm v0.15.3
 	github.com/plexusone/omniobserve v0.9.0
 	github.com/plexusone/omniserp v0.8.1
-	github.com/plexusone/omniskill v0.7.0
+	github.com/plexusone/omniskill v0.8.0
 	github.com/plexusone/omnistorage-core v0.4.0
 	github.com/plexusone/omnivoice v0.8.0
 	github.com/robfig/cron/v3 v3.0.1
@@ -151,10 +151,10 @@ require (
 	go.uber.org/zap v1.28.0 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/api v0.277.0 // indirect
