@@ -66,6 +66,7 @@ nav:
     - Agent Profiles: guides/profiles.md
     - Access Policies: guides/policies.md
     - Browser Automation: guides/browser.md
+    - Vault Credentials: guides/vault-credentials.md
   - Architecture:
     - Overview: architecture/overview.md
     - Skills System: architecture/skills.md
