@@ -388,6 +388,91 @@ runtime, _ := sandbox.NewRuntime(ctx, sandbox.Config{
 | `OMNIAGENT_VOICE_ENABLED` | Set to `true` to enable voice processing |
 | `OMNIAGENT_VOICE_RESPONSE_MODE` | Voice response mode: `auto`, `always`, `never` |
 
+## Vault-Backed Credentials
+
+OmniAgent supports storing credentials in password managers via [omnivault](https://github.com/plexusone/omnivault) and [omnitoken](https://github.com/plexusone/omnitoken).
+
+### Supported Vault Providers
+
+| Provider | URI Scheme | Environment Variable |
+|----------|------------|---------------------|
+| 1Password | `op://` | `OP_SERVICE_ACCOUNT_TOKEN` |
+| Bitwarden | `bw://` | `BW_ACCESS_TOKEN`, `BW_ORGANIZATION_ID` |
+| Keeper | `keeper://` | `KSM_TOKEN` or `KSM_CONFIG` |
+| File | `file://` | - |
+| Environment | `env://` | - |
+
+### Static Credentials
+
+API keys and tokens can be stored in vaults instead of config files:
+
+```yaml
+# omniagent.yaml
+agent:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  api_key: "op://MyVault/anthropic/api-key"  # Resolved from 1Password
+
+channels:
+  telegram:
+    enabled: true
+    token: "bw://org-id/telegram-bot-token"  # Resolved from Bitwarden
+
+  discord:
+    enabled: true
+    token: "keeper://Discord Bot/token"      # Resolved from Keeper
+
+voice:
+  enabled: true
+  stt:
+    provider: deepgram
+    api_key: "op://MyVault/deepgram/api-key"
+  tts:
+    provider: deepgram
+    api_key: "op://MyVault/deepgram/api-key"
+```
+
+Credentials are resolved once at startup. Plain string values still work for development.
+
+### OAuth Token Management
+
+For services requiring OAuth token refresh (Google, Zoom, RingCentral), use the `tokens` configuration:
+
+```yaml
+# omniagent.yaml
+tokens:
+  vault_uri: "op://MyVault"
+  services:
+    google:
+      credentials_name: "google-service-account"
+      scopes:
+        - "https://www.googleapis.com/auth/calendar"
+    zoom:
+      credentials_name: "zoom-oauth"
+    ringcentral:
+      credentials_name: "ringcentral-oauth"
+```
+
+The token manager handles:
+
+1. In-memory token caching
+2. Automatic refresh when tokens expire
+3. Vault coordination for multi-process deployments
+4. Refresh token persistence
+
+### Vault Environment Variables
+
+| Variable | Provider | Description |
+|----------|----------|-------------|
+| `OP_SERVICE_ACCOUNT_TOKEN` | 1Password | Service account token (starts with `ops_`) |
+| `BW_ACCESS_TOKEN` | Bitwarden | Access token |
+| `BW_ORGANIZATION_ID` | Bitwarden | Organization ID |
+| `BW_API_URL` | Bitwarden | Custom API URL (self-hosted) |
+| `BW_IDENTITY_URL` | Bitwarden | Custom Identity URL (self-hosted) |
+| `KSM_TOKEN` | Keeper | One-time token (format: `REGION:TOKEN`) |
+| `KSM_CONFIG` | Keeper | Base64-encoded config JSON |
+| `KSM_CONFIG_FILE` | Keeper | Path to config file |
+
 ## CLI Commands
 
 ```bash

@@ -9,17 +9,19 @@
 | Phase 1 | Compiled Skill Interface | ✅ Complete | v0.6.0 |
 | Phase 2 | Storage Interface | ✅ Complete | v0.6.0 |
 | Phase 3 | Platform Adapters | ✅ Complete | v0.6.0 |
+| Phase 4 | Remote Skills | ✅ Complete | v0.7.0 |
+| Phase 5 | OmniChat Integration | ✅ Complete | v0.6.0 |
 
-Additional v0.6.0 packages: `sessions/`, `context/`, `hooks/`, `cron/`
+Additional v0.6.0 packages: `sessions/`, `context/`, `hooks/`, `cron/`, `gateway/`, `voice/`
 
 ---
 
-## Phase 4: Remote Skills
+## Phase 4: Remote Skills ✅
 
 ### MCP Client
 
 - [x] **TASK-400**: Create `skills/remote/mcp/`
-  - MCP client implementation via `mcpkit/client/`
+  - MCP client implementation via `omniskill/mcp/client/`
   - Tool discovery from MCP server
   - Tool execution via MCP protocol
 
@@ -50,58 +52,78 @@ Additional v0.6.0 packages: `sessions/`, `context/`, `hooks/`, `cron/`
 
 ---
 
-## Phase 5: OmniChat Integration
+## Phase 5: OmniChat Integration ✅
+
+> Already implemented in v0.6.0 via `omnichat` v0.6.0 dependency.
 
 ### Provider Wrapper
 
-- [ ] **TASK-500**: Create `provider/` package
-  - Wrap `omnichat.Provider` for agent use
-  - Message routing from multiple providers
-  - Unified message handling
+- [x] **TASK-500**: Provider integration via `omnichat`
+  - Uses `omnichat/provider.Router` for message routing
+  - Supports Telegram, Discord, WhatsApp, Twilio SMS
+  - Unified message handling via router
 
-- [ ] **TASK-501**: Provider message handler
-  - Convert omnichat messages to agent format
-  - Send agent responses back via provider
-  - Handle media attachments
+- [x] **TASK-501**: Provider message handler
+  - `router.OnMessage()` for message callbacks
+  - `router.ProcessWithAgent()` for AI processing
+  - `router.ProcessWithVoice()` for voice integration
 
 ### Configuration
 
-- [ ] **TASK-502**: OmniChat provider configuration
-  ```yaml
-  providers:
-    - type: twilio-sms
-      account_sid_env: TWILIO_ACCOUNT_SID
-      phone_number_env: TWILIO_PHONE_NUMBER
-  ```
+- [x] **TASK-502**: OmniChat provider configuration
+  - `config/config.go` defines `ChannelsConfig`
+  - Supports Telegram, Discord, WhatsApp, TwilioSMS configs
+  - Environment variable support for tokens
 
-- [ ] **TASK-503**: Provider factory
-  - Create providers from configuration
-  - Support twilio-go/omnichat
-  - Extensible for other omnichat providers
+- [x] **TASK-503**: Provider factory
+  - `cmd/omniagent/commands/gateway.go` initializes providers
+  - Creates providers from configuration
+  - Supports all omnichat providers
 
 ### Webhook Handling
 
-- [ ] **TASK-504**: Integrate with standalone platform
-  - Mount provider webhooks on HTTP server
-  - Route incoming messages to agent
-  - Send responses back
+- [x] **TASK-504**: Gateway integration
+  - `gateway/gateway.go` mounts webhook handlers
+  - Twilio webhook at `/webhook/twilio/sms`
+  - Routes incoming messages to agent
+
+### Implementation Details
+
+**Supported Channels:**
+
+| Channel | Provider Package | Config Type |
+|---------|-----------------|-------------|
+| Telegram | `omnichat/providers/telegram` | `TelegramConfig` |
+| Discord | `omnichat/providers/discord` | `DiscordConfig` |
+| WhatsApp | `omnichat/providers/whatsapp` | `WhatsAppConfig` |
+| Twilio SMS | `omnichat/providers/twilio` | `TwilioSMSConfig` |
+
+**Key Files:**
+
+- `config/config.go` - Channel configuration structs
+- `cmd/omniagent/commands/gateway.go` - Provider initialization
+- `gateway/gateway.go` - WebSocket control plane, webhook mounting
+- `voice/processor.go` - Voice (STT/TTS) integration
 
 ---
 
 ## Current Progress
 
-**Last Release**: v0.6.0 (2026-04-25)
-**Next Phase**: Phase 4 - Remote Skills
+**Last Release**: v0.7.0 (2026-04-27)
+**Status**: Phase 4 & 5 Complete
 
 ### Dependencies
 
 | Package | Status | Notes |
 |---------|--------|-------|
-| `twilio-go` | Ready | omnichat provider available |
-| MCP SDK | ✅ Ready | `mcpkit/client/` wraps `github.com/modelcontextprotocol/go-sdk` |
+| `omnichat` | ✅ v0.6.0 | Provider abstraction for messaging channels |
+| `omniskill` | ✅ v0.7.0 | Skill interface and MCP client |
+| `kin-openapi` | ✅ v0.137.0 | OpenAPI 3.x spec parsing |
+| MCP SDK | ✅ v1.5.0 | Model Context Protocol |
 
 ### Next Actions
 
 1. ~~Create `skills/remote/openapi/` package (TASK-402, TASK-403)~~ ✅
 2. ~~Add remote skill configuration support (TASK-404)~~ ✅
-3. Move to OmniChat integration (Phase 5)
+3. ~~OmniChat integration (Phase 5)~~ ✅ (Already implemented)
+4. Skills Bundle System (see `docs/design/skills/TASKS.md`)

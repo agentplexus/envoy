@@ -1,52 +1,73 @@
 # OmniAgent Extension Plan
 
-> For historical plans, see `docs/releases/v0.6.0/PLAN.md`
+> **Current Release**: v0.9.0 - See [`docs/specs/v0.9.0/ROADMAP.md`](docs/specs/v0.9.0/ROADMAP.md)
+> **Historical Plans**: [`docs/releases/v0.6.0/PLAN.md`](docs/releases/v0.6.0/PLAN.md)
 
 ## OpenClaw Feature Parity Tracking
 
 This project tracks functionality from [OpenClaw](https://github.com/openclaw/openclaw) implemented with alternate approaches (Go, security-focused, etc.).
 
-### Last Compared Commit
+### Sync History
 
-| Date | OpenClaw Commit | Notes |
-|------|-----------------|-------|
-| 2026-04-22 | `d4eb23652362a1b7d3fbcebd633a1c6f2a43c16f` | Initial gap analysis |
+| Date | OpenClaw Commit | Commits | Notes |
+|------|-----------------|---------|-------|
+| 2026-05-21 | `03125c8e132db59152c1b7b512e2a98f001aa26b` | 17,951 | v0.9.0 sync analysis |
+| 2026-04-22 | `d4eb23652362a1b7d3fbcebd633a1c6f2a43c16f` | - | Initial gap analysis |
 
 ### Feature Parity Matrix
 
-| Category | OpenClaw | OmniAgent | Gap |
-|----------|----------|-----------|-----|
-| **Channels** | 24+ | 4 | 20+ missing |
-| **LLM Providers** | 50+ | 4+ (via omnillm) | Most covered |
-| **Tools** | 10+ categories | 4 | 6+ categories |
-| **Skills** | 55+ bundled | SKILL.md + compiled | Feature parity |
-| **Scheduling** | Cron, webhooks | Cron, interval, one-time | Feature parity |
-| **Voice** | Wake word, ElevenLabs | Deepgram (via omnivoice) | Wake word, call handling |
-| **Sandbox** | Docker, SSH, OpenShell | WASM, Docker | SSH backend |
-| **Apps** | macOS, iOS, Android | None | All 3 |
-| **CLI Commands** | 50+ | ~10 | 40+ missing |
-| **Plugins** | 117+ | N/A (Go approach) | Different architecture |
-| **Memory/RAG** | LanceDB, Wiki | omniretrieve | Feature parity (in omniretrieve) |
-| **File Storage** | N/A | N/A | omnistorage integration |
-| **Visual** | Canvas/A2UI | None | Canvas system |
+| Category | OpenClaw | OmniAgent | Gap | v0.9.0 |
+|----------|----------|-----------|-----|--------|
+| **Channels** | 24+ | 4 | 20+ missing | Slack, Telegram, WhatsApp improvements |
+| **LLM Providers** | 50+ | 4+ (omnillm) | Most covered | - |
+| **Tools** | 10+ categories | 4 | 6+ categories | Browser, tool policies |
+| **Skills** | 55+ bundled | SKILL.md + compiled | Feature parity | Git/local installs |
+| **Scheduling** | Cron, webhooks | Cron, interval | Feature parity | - |
+| **Voice** | Wake word, calls | Deepgram (omnivoice) | Wake word, calls | Telnyx, Discord voice |
+| **Sandbox** | Docker, SSH | WASM, Docker | SSH backend | GPU passthrough |
+| **Plugins** | 117+ (JS) | N/A (Go) | Different arch | Embedding provider |
+| **Apps** | macOS, iOS, Android | None | All 3 | Out of scope |
+| **CLI Commands** | 50+ | ~10 | 40+ missing | - |
+| **Memory/RAG** | LanceDB, Wiki | omniretrieve | Feature parity | - |
+| **Visual** | Canvas/A2UI | None | Canvas system | Out of scope |
 
 ---
 
-## Completed (v0.6.0)
+## Release Planning
 
-- [x] **Session Management** - `sessions/`
-- [x] **Cron/Scheduling** - `cron/`
-- [x] **Context Engine** - `context/`
-- [x] **Hooks System** - `hooks/`
-- [x] **Compiled Skills** - `skills/compiled/`
-- [x] **Platform Adapters** - `platform/standalone/`
-- [x] **Storage Migration** - `omnistorage-core/kvs`
+### v0.9.0 (Current)
+
+See [`docs/specs/v0.9.0/ROADMAP.md`](docs/specs/v0.9.0/ROADMAP.md) for detailed planning.
+
+**Focus Areas**:
+
+- Plugin architecture (embedding providers, tool helpers)
+- Channel enhancements (Slack threads, Telegram buttons, WhatsApp newsletters)
+- Voice expansion (Telnyx, Discord realtime voice)
+- Tool policies (per-sender restrictions)
+- Skill management (git installs, global directory)
+
+### v0.8.0 (Completed)
+
+- Vault-backed credentials (omnivault, omnitoken integration)
+- OAuth token management with refresh
+- See [`docs/specs/v0.8.0/ROADMAP.md`](docs/specs/v0.8.0/ROADMAP.md) for implementation details
+
+### v0.7.0 (Completed)
+
+- See [`docs/releases/v0.7.0.md`](docs/releases/v0.7.0.md)
+
+### v0.6.0 (Completed)
+
+- Session Management, Cron/Scheduling, Context Engine, Hooks System
+- Compiled Skills, Platform Adapters, Storage Migration
+- See [`docs/releases/v0.6.0/PLAN.md`](docs/releases/v0.6.0/PLAN.md)
 
 ---
 
-## Remaining Feature Gaps
+## Remaining Feature Gaps (Long-term)
 
-### Priority 2: Tools
+### Tools
 
 - [ ] **Canvas/A2UI** - Visual workspace (different approach for Go)
 - [ ] **Node Tools** - Device control, screen capture, notifications
@@ -55,7 +76,7 @@ This project tracks functionality from [OpenClaw](https://github.com/openclaw/op
 - [ ] **PDF Tool** - PDF reading and generation
 - [ ] **Message Tool** - Cross-channel messaging
 
-### Priority 3: CLI & UX
+### CLI & UX
 
 - [ ] **Agent Management** - Multi-agent routing, agent CRUD
 - [ ] **Doctor Tool** - Diagnostics, auto-repair, health checks
@@ -63,40 +84,27 @@ This project tracks functionality from [OpenClaw](https://github.com/openclaw/op
 - [ ] **TUI** - Terminal user interface
 - [ ] **Daemon Management** - launchd/systemd service management
 
-### Priority 4: Voice
+### Voice
 
-- [ ] **Wake Word** - Voice activation detection (OmniAgent-level)
-- [ ] **Voice Call** - Telephony integration, call handling
-- [ ] **Voice Providers** - ElevenLabs, Deepgram, etc. (in `omnivoice`)
+- [ ] **Wake Word** - Voice activation detection
+- [x] **Voice Call** - Telephony integration (v0.9.0: Telnyx)
 
-### Priority 5: Apps (Future)
+### Apps (Future)
 
 - [ ] **macOS Menu Bar** - Menu bar control app
 - [ ] **iOS Companion** - Device pairing, voice trigger
 - [ ] **Android Node** - Continuous voice, node capabilities
 
-### Priority 6: Channels, LLMs & Voice Providers (User-Request Driven)
-
-Additional integrations implemented in abstraction libraries:
-
-| Library | Purpose |
-|---------|---------|
-| `omnichat` | Channel integrations (Slack, Teams, etc.) |
-| `omnillm` | LLM providers (Groq, Mistral, Ollama, etc.) |
-| `omnivoice` | Voice providers (ElevenLabs, Deepgram, etc.) |
-
 ---
 
-## Upcoming Work
+## Abstraction Libraries
 
-### Remote Skills (Phase 4)
-
-- [ ] MCP client adapter (`skills/remote/mcp/`)
-- [ ] OpenAPI spec loader (`skills/remote/openapi/`)
-- [ ] Configuration-based skill loading
-
-### OmniChat Integration (Phase 5)
-
-- [ ] Provider wrapper (`provider/`)
-- [ ] Webhook handling integration
-- [ ] Multi-provider message routing
+| Library | Purpose | Status |
+|---------|---------|--------|
+| `omnichat` | Channel integrations | Active |
+| `omnillm` | LLM providers | Active |
+| `omnivoice` | Voice providers | Active |
+| `omnivault` | Secret management | Active |
+| `omnitoken` | OAuth token management | Active |
+| `omniretrieve` | RAG/Memory | Active |
+| `omnistorage` | File storage | Active |
