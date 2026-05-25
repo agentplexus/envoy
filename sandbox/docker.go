@@ -55,6 +55,31 @@ type DockerConfig struct {
 
 	// MaxOutputBytes limits output size (default: 1MB).
 	MaxOutputBytes int
+
+	// GPU configuration for GPU passthrough.
+	GPU *GPUConfig
+}
+
+// GPUConfig configures GPU passthrough for Docker containers.
+type GPUConfig struct {
+	// Enabled enables GPU passthrough.
+	Enabled bool
+
+	// DeviceIDs specifies which GPUs to use (e.g., ["0", "1"]).
+	// Empty means all available GPUs.
+	DeviceIDs []string
+
+	// Capabilities specifies GPU capabilities to enable.
+	// Common values: "compute", "utility", "graphics", "video", "display".
+	// Default: ["compute", "utility"]
+	Capabilities []string
+
+	// Driver specifies the GPU driver (default: "nvidia").
+	Driver string
+
+	// Count specifies the number of GPUs to use (-1 = all, 0 = none).
+	// Takes precedence over DeviceIDs if set.
+	Count int
 }
 
 // DockerMount defines a volume mount.
@@ -181,6 +206,26 @@ func (d *DockerSandbox) Run(ctx context.Context, command string, args []string) 
 		})
 	}
 
+	// Build host config
+	hostConfig := &container.HostConfig{
+		NetworkMode:    container.NetworkMode(d.config.NetworkMode),
+		ReadonlyRootfs: d.config.ReadonlyRootfs,
+		CapDrop:        d.config.CapDrop,
+		CapAdd:         d.config.CapAdd,
+		SecurityOpt:    d.config.SecurityOpt,
+		Mounts:         mounts,
+		Resources: container.Resources{
+			Memory:   d.config.MemoryLimit,
+			CPUQuota: d.config.CPUQuota,
+		},
+		// Note: AutoRemove disabled to allow fetching logs before cleanup
+	}
+
+	// Add GPU configuration if enabled
+	if d.config.GPU != nil && d.config.GPU.Enabled {
+		hostConfig.Resources.DeviceRequests = d.buildGPUDeviceRequests()
+	}
+
 	// Create container
 	createResp, err := d.cli.ContainerCreate(ctx, client.ContainerCreateOptions{
 		Config: &container.Config{
@@ -190,19 +235,7 @@ func (d *DockerSandbox) Run(ctx context.Context, command string, args []string) 
 			User:  d.config.User,
 			Tty:   false,
 		},
-		HostConfig: &container.HostConfig{
-			NetworkMode:    container.NetworkMode(d.config.NetworkMode),
-			ReadonlyRootfs: d.config.ReadonlyRootfs,
-			CapDrop:        d.config.CapDrop,
-			CapAdd:         d.config.CapAdd,
-			SecurityOpt:    d.config.SecurityOpt,
-			Mounts:         mounts,
-			Resources: container.Resources{
-				Memory:   d.config.MemoryLimit,
-				CPUQuota: d.config.CPUQuota,
-			},
-			// Note: AutoRemove disabled to allow fetching logs before cleanup
-		},
+		HostConfig:       hostConfig,
 		NetworkingConfig: &network.NetworkingConfig{},
 	})
 	if err != nil {
@@ -323,6 +356,26 @@ func (d *DockerSandbox) RunWithStdin(ctx context.Context, stdin []byte, command 
 		})
 	}
 
+	// Build host config for stdin-enabled container
+	hostConfigStdin := &container.HostConfig{
+		NetworkMode:    container.NetworkMode(d.config.NetworkMode),
+		ReadonlyRootfs: d.config.ReadonlyRootfs,
+		CapDrop:        d.config.CapDrop,
+		CapAdd:         d.config.CapAdd,
+		SecurityOpt:    d.config.SecurityOpt,
+		Mounts:         mounts,
+		Resources: container.Resources{
+			Memory:   d.config.MemoryLimit,
+			CPUQuota: d.config.CPUQuota,
+		},
+		// Note: AutoRemove disabled to allow fetching logs before cleanup
+	}
+
+	// Add GPU configuration if enabled
+	if d.config.GPU != nil && d.config.GPU.Enabled {
+		hostConfigStdin.Resources.DeviceRequests = d.buildGPUDeviceRequests()
+	}
+
 	// Create container with stdin enabled
 	createResp, err := d.cli.ContainerCreate(ctx, client.ContainerCreateOptions{
 		Config: &container.Config{
@@ -337,19 +390,7 @@ func (d *DockerSandbox) RunWithStdin(ctx context.Context, stdin []byte, command 
 			OpenStdin:    true,
 			StdinOnce:    true,
 		},
-		HostConfig: &container.HostConfig{
-			NetworkMode:    container.NetworkMode(d.config.NetworkMode),
-			ReadonlyRootfs: d.config.ReadonlyRootfs,
-			CapDrop:        d.config.CapDrop,
-			CapAdd:         d.config.CapAdd,
-			SecurityOpt:    d.config.SecurityOpt,
-			Mounts:         mounts,
-			Resources: container.Resources{
-				Memory:   d.config.MemoryLimit,
-				CPUQuota: d.config.CPUQuota,
-			},
-			// Note: AutoRemove disabled to allow fetching logs before cleanup
-		},
+		HostConfig:       hostConfigStdin,
 		NetworkingConfig: &network.NetworkingConfig{},
 	})
 	if err != nil {
@@ -450,4 +491,108 @@ func ParseNetworkMode(mode string) (string, error) {
 	default:
 		return "", fmt.Errorf("invalid network mode: %s (must be none, bridge, or host)", mode)
 	}
+}
+
+// buildGPUDeviceRequests builds the GPU device requests for container creation.
+func (d *DockerSandbox) buildGPUDeviceRequests() []container.DeviceRequest {
+	gpu := d.config.GPU
+	if gpu == nil || !gpu.Enabled {
+		return nil
+	}
+
+	// Default capabilities
+	capabilities := gpu.Capabilities
+	if len(capabilities) == 0 {
+		capabilities = []string{"compute", "utility"}
+	}
+
+	// Default driver
+	driver := gpu.Driver
+	if driver == "" {
+		driver = "nvidia"
+	}
+
+	deviceRequest := container.DeviceRequest{
+		Driver:       driver,
+		Capabilities: [][]string{capabilities},
+	}
+
+	// Set device count or specific device IDs
+	if gpu.Count != 0 {
+		deviceRequest.Count = gpu.Count
+	} else if len(gpu.DeviceIDs) > 0 {
+		deviceRequest.DeviceIDs = gpu.DeviceIDs
+	} else {
+		deviceRequest.Count = -1 // All GPUs
+	}
+
+	return []container.DeviceRequest{deviceRequest}
+}
+
+// DefaultGPUConfig returns a default GPU configuration.
+func DefaultGPUConfig() *GPUConfig {
+	return &GPUConfig{
+		Enabled:      true,
+		Capabilities: []string{"compute", "utility"},
+		Driver:       "nvidia",
+		Count:        -1, // All available GPUs
+	}
+}
+
+// WithGPU returns a DockerConfig with GPU enabled.
+func (c DockerConfig) WithGPU(gpu *GPUConfig) DockerConfig {
+	c.GPU = gpu
+	return c
+}
+
+// WithSingleGPU returns a DockerConfig with a single GPU by index.
+func (c DockerConfig) WithSingleGPU(deviceID string) DockerConfig {
+	c.GPU = &GPUConfig{
+		Enabled:      true,
+		DeviceIDs:    []string{deviceID},
+		Capabilities: []string{"compute", "utility"},
+		Driver:       "nvidia",
+	}
+	return c
+}
+
+// WithAllGPUs returns a DockerConfig with all GPUs enabled.
+func (c DockerConfig) WithAllGPUs() DockerConfig {
+	c.GPU = DefaultGPUConfig()
+	return c
+}
+
+// IsGPUAvailable checks if NVIDIA GPU support is available.
+// This checks if Docker is accessible and nvidia-smi is available.
+func IsGPUAvailable(ctx context.Context) bool {
+	cli, err := client.New(client.FromEnv)
+	if err != nil {
+		return false
+	}
+	defer cli.Close()
+
+	// Check if Docker is accessible
+	if _, err := cli.Ping(ctx, client.PingOptions{}); err != nil {
+		return false
+	}
+
+	// Try to run nvidia-smi in a container to verify GPU access
+	// This is a simple check - a more robust check would inspect Docker info
+	config := DefaultDockerConfig()
+	config.Image = "nvidia/cuda:12.0-base"
+	config.GPU = DefaultGPUConfig()
+	config.Timeout = 10 * time.Second
+
+	sandbox, err := NewDockerSandbox(ctx, config, nil)
+	if err != nil {
+		return false
+	}
+	defer sandbox.Close()
+
+	result, err := sandbox.Run(ctx, "nvidia-smi", []string{"--query-gpu=name", "--format=csv,noheader"})
+	if err != nil {
+		return false
+	}
+
+	return result.ExitCode == 0 && len(result.Output) > 0
 }
