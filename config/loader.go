@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,7 +13,13 @@ import (
 
 // Load reads configuration from a file and environment variables.
 // Environment variables override file values.
+// Vault-backed credentials (op://, bw://, keeper://) are resolved automatically.
 func Load(path string) (*Config, error) {
+	return LoadWithContext(context.Background(), path)
+}
+
+// LoadWithContext reads configuration with a context for vault operations.
+func LoadWithContext(ctx context.Context, path string) (*Config, error) {
 	cfg := Default()
 
 	if path != "" {
@@ -22,6 +29,11 @@ func Load(path string) (*Config, error) {
 	}
 
 	loadEnv(&cfg)
+
+	// Resolve vault-backed credentials
+	if err := cfg.ResolveCredentials(ctx); err != nil {
+		return nil, fmt.Errorf("resolve credentials: %w", err)
+	}
 
 	return &cfg, nil
 }

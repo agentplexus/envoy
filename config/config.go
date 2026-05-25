@@ -12,6 +12,7 @@ type Config struct {
 	Skills        SkillsConfig        `json:"skills" yaml:"skills"`
 	Voice         VoiceConfig         `json:"voice" yaml:"voice"`
 	Observability ObservabilityConfig `json:"observability" yaml:"observability"`
+	Tokens        TokenConfig         `json:"tokens" yaml:"tokens"`
 }
 
 // GatewayConfig configures the WebSocket gateway.
