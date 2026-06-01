@@ -25,7 +25,7 @@ require (
 	github.com/plexusone/omnivoice v0.8.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
-	github.com/tetratelabs/wazero v1.11.0
+	github.com/tetratelabs/wazero v1.12.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

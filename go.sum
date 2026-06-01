@@ -654,8 +654,8 @@ github.com/team-telnyx/telnyx-go/v4 v4.71.0 h1:JAie5MieCZvT0qu273QTIFYpRVEGFQIyE
 github.com/team-telnyx/telnyx-go/v4 v4.71.0/go.mod h1:a8Z4CX3XKpxpziKboMKXe3Ds4hZ1ImAnZ1mQm5QxHyw=
 github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834 h1:ZF+QBjOI+tILZjBaFj3HgFonKXUcwgJ4djLb6i42S3Q=
 github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834/go.mod h1:m9ymHTgNSEjuxvw8E7WWe4Pl4hZQHXONY8wE6dMLaRk=
-github.com/tetratelabs/wazero v1.11.0 h1:+gKemEuKCTevU4d7ZTzlsvgd1uaToIDtlQlmNbwqYhA=
-github.com/tetratelabs/wazero v1.11.0/go.mod h1:eV28rsN8Q+xwjogd7f4/Pp4xFxO7uOGbLcD/LzB1wiU=
+github.com/tetratelabs/wazero v1.12.0 h1:DuWcpNu/FzgEXgGBDp8J1Spc+CWOvvtvVyjKlaZopYU=
+github.com/tetratelabs/wazero v1.12.0/go.mod h1:LvKtzl2RqO4gyF27BiXU+nKAjcV8f38U+kP/q2vgxh0=
 github.com/tidwall/gjson v1.14.2/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.19.0 h1:xwxm7n691Uf3u5OFjzngavjGTh55KX5q/9w9xHW88JU=
 github.com/tidwall/gjson v1.19.0/go.mod h1:V37/opeE/JbLUOfH0QTXiNez2l0RUjYUhpT4szFQAfc=
