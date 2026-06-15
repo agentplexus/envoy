@@ -7,6 +7,48 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.10.0",
+      "date": "2026-06-15",
+      "highlights": [
+        { "description": "Full-duplex voice gateway with Twilio and Telnyx support" },
+        { "description": "Semantic memory skill for long-term context via omniretrieve" },
+        { "description": "Auto-reply and commentary profile modes" },
+        { "description": "RCS messaging support via Twilio Messaging Service SID" }
+      ],
+      "added": [
+        { "description": "Voice gateway with Twilio and Telnyx full-duplex phone support", "commit": "a242758" },
+        { "description": "Native voice-to-voice mode via OpenAI Realtime and Gemini Live APIs", "commit": "a242758" },
+        { "description": "Traditional pipeline mode with custom STT/TTS providers", "commit": "a242758" },
+        { "description": "Semantic memory skill with vector retrieval via omniretrieve", "commit": "120ba02" },
+        { "description": "Auto-reply profile mode for automated responses", "commit": "3032443" },
+        { "description": "Commentary profile mode for passive observation", "commit": "3032443" },
+        { "description": "Messaging service SID support for RCS with SMS/MMS fallback", "commit": "fa5183e" },
+        { "description": "`agent.Tools()` accessor for runtime tool access", "commit": "2e40eee" },
+        { "description": "OpenRouter LLM provider support", "commit": "2e40eee" },
+        { "description": "CLI commands: `voice serve`, `voice status`, `voice call`", "commit": "a242758" },
+        { "description": "ngrok integration for local voice development", "commit": "a242758" }
+      ],
+      "changed": [
+        { "description": "Voice gateway uses omnivoice-core registry pattern", "commit": "e52b9b0" },
+        { "description": "Voice providers (omni-google, omni-openai, omni-telnyx, omni-twilio) are now transitive via omnivoice", "commit": "800d721" },
+        { "description": "Gateway configuration uses omnivoice re-exports for tools and handlers", "commit": "a93d40d" }
+      ],
+      "documentation": [
+        { "description": "Voice integration guide with gateway setup", "commit": "231512a" },
+        { "description": "Memory skill guide with semantic retrieval examples", "commit": "231512a" },
+        { "description": "Updated provider documentation with OpenRouter", "commit": "231512a" },
+        { "description": "Pipeline configuration examples for voice gateway", "commit": "0cf9989" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omnivoice` v0.10.0 → v0.11.0 (gateway tool re-exports)" },
+        { "description": "`github.com/plexusone/omnillm` v0.15.5 → v0.16.0 (openrouter transitive)" },
+        { "description": "`github.com/plexusone/omnichat` v0.7.0 → v0.8.0" },
+        { "description": "`github.com/tetratelabs/wazero` v1.11.0 → v1.12.0" },
+        { "description": "`github.com/getkin/kin-openapi` v0.139.0 → v0.140.0" },
+        { "description": "`github.com/grokify/mogo` v0.74.5 → v0.74.6" }
+      ]
+    },
+    {
       "version": "v0.9.0",
       "date": "2026-05-25",
       "highlights": [
