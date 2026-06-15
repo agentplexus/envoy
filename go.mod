@@ -12,11 +12,11 @@ require (
 	github.com/moby/moby/api v1.54.2
 	github.com/moby/moby/client v0.4.1
 	github.com/modelcontextprotocol/go-sdk v1.6.1
-	github.com/plexusone/omni-google v0.5.0
-	github.com/plexusone/omni-openai v0.3.0
+	github.com/plexusone/omni-google v0.6.0
+	github.com/plexusone/omni-openai v0.4.1
 	github.com/plexusone/omni-openrouter v0.1.0
-	github.com/plexusone/omni-telnyx v0.3.0
-	github.com/plexusone/omni-twilio v0.7.0
+	github.com/plexusone/omni-telnyx v0.4.0
+	github.com/plexusone/omni-twilio v0.8.0
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omnillm v0.15.5
 	github.com/plexusone/omnillm-core v0.17.0
@@ -28,8 +28,8 @@ require (
 	github.com/plexusone/omnitoken v0.1.0
 	github.com/plexusone/omnivault v0.5.0
 	github.com/plexusone/omnivault-desktop v0.1.0
-	github.com/plexusone/omnivoice v0.9.1
-	github.com/plexusone/omnivoice-core v0.13.0
+	github.com/plexusone/omnivoice v0.10.0
+	github.com/plexusone/omnivoice-core v0.14.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
 	github.com/tetratelabs/wazero v1.12.0
