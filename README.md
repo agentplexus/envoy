@@ -41,6 +41,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - ⚡ **Native Voice-to-Voice** - Ultra-low latency (~100ms) via OpenAI Realtime or Gemini Live APIs
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
+- 🧠 **Semantic Memory** - Long-term memory with vector retrieval via omniretrieve
 - ⏰ **Scheduled Jobs** - Cron expressions, intervals, and one-time job scheduling
 - 🔒 **Secure Sandboxing** - WASM and Docker isolation with GPU passthrough
 - 🌐 **Browser Automation** - Built-in browser control with dialog handling via Rod
@@ -471,7 +472,8 @@ See [Access Policies Guide](docs/guides/policies.md) for details.
 | `OPENAI_API_KEY` | OpenAI API key |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
 | `GEMINI_API_KEY` | Google Gemini API key |
-| `OMNIAGENT_AGENT_PROVIDER` | LLM provider: `openai`, `anthropic`, `gemini` |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `OMNIAGENT_AGENT_PROVIDER` | LLM provider: `openai`, `anthropic`, `gemini`, `openrouter` |
 | `OMNIAGENT_AGENT_MODEL` | Model name (e.g., `gpt-4o`, `claude-sonnet-4-20250514`) |
 | `WHATSAPP_ENABLED` | Set to `true` to enable WhatsApp |
 | `WHATSAPP_DB_PATH` | WhatsApp session storage path |
