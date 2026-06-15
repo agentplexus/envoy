@@ -12,11 +12,7 @@ require (
 	github.com/moby/moby/api v1.54.2
 	github.com/moby/moby/client v0.4.1
 	github.com/modelcontextprotocol/go-sdk v1.6.1
-	github.com/plexusone/omni-google v0.6.0
-	github.com/plexusone/omni-openai v0.4.1
 	github.com/plexusone/omni-openrouter v0.1.0
-	github.com/plexusone/omni-telnyx v0.4.0
-	github.com/plexusone/omni-twilio v0.8.0
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omnillm v0.15.5
 	github.com/plexusone/omnillm-core v0.17.0
@@ -133,7 +129,11 @@ require (
 	github.com/plexusone/omni-aws v0.8.1 // indirect
 	github.com/plexusone/omni-bitwarden v0.1.0 // indirect
 	github.com/plexusone/omni-deepgram v0.6.1 // indirect
+	github.com/plexusone/omni-google v0.6.0 // indirect
 	github.com/plexusone/omni-onepassword v0.4.0 // indirect
+	github.com/plexusone/omni-openai v0.4.1 // indirect
+	github.com/plexusone/omni-telnyx v0.4.0 // indirect
+	github.com/plexusone/omni-twilio v0.8.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
@@ -202,13 +202,5 @@ replace github.com/ysmood/fetchup => github.com/ysmood/fetchup v0.2.3
 // Force log15/v3 to version compatible with ngrok v1.13.0 (has ext.RandId)
 replace github.com/inconshreveable/log15/v3 => github.com/inconshreveable/log15/v3 v3.0.0-testing.5
 
-// Local development: use local modules with Gateway/Realtime registry support
-replace github.com/plexusone/omnivoice-core => ../omnivoice-core
-
-replace github.com/plexusone/omni-twilio => ../omni-twilio
-
-replace github.com/plexusone/omni-telnyx => ../omni-telnyx
-
-replace github.com/plexusone/omni-openai => ../omni-openai
-
-replace github.com/plexusone/omni-google => ../omni-google
+// Use local omnivoice with gateway tool re-exports
+replace github.com/plexusone/omnivoice => ../omnivoice
