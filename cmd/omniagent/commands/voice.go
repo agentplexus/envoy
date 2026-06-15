@@ -290,8 +290,8 @@ func runVoiceServe(cmd *cobra.Command, args []string) error {
 		TelnyxPhone:        voicePhoneNumber,
 		TelnyxConnectionID: os.Getenv("TELNYX_CONNECTION_ID"),
 		PublicURL:          publicURL,
-		ListenAddr:          voiceListenAddr,
-		Listener:            ngrokListener,
+		ListenAddr:         voiceListenAddr,
+		Listener:           ngrokListener,
 		Config: voice.Config{
 			Enabled:      true,
 			ResponseMode: "always",
