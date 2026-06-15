@@ -262,6 +262,330 @@ omniagent voice call NUM   # Make an outbound call
 | `--realtime` | Native voice-to-voice provider (`openai`, `gemini`) | - |
 | `--realtime-voice` | Voice for realtime API | `alloy` (OpenAI), `Puck` (Gemini) |
 
+## Complete Configuration Examples
+
+This section provides complete `omniagent.yaml` configurations for both voice pipeline modes.
+
+### Native Voice-to-Voice (Recommended)
+
+The realtime pipeline provides the lowest latency (~100-200ms) by using native speech-to-speech APIs.
+
+#### OpenAI Realtime Configuration
+
+```yaml
+# omniagent.yaml - OpenAI Realtime voice-to-voice
+voice:
+  enabled: true
+
+  # Gateway configuration
+  gateway:
+    provider: twilio              # or: telnyx
+    listen_addr: ":8080"
+    public_url: "https://your-server.ngrok.io"  # Required for webhooks
+
+    # Pipeline mode
+    mode: realtime                # Use native voice-to-voice
+
+    # Realtime provider configuration
+    realtime:
+      provider: openai
+      # model: gpt-4o-realtime-preview-2024-12-17  # Optional, uses latest
+      voice: alloy                # Options: alloy, ash, ballad, coral, echo, nova, etc.
+
+    # System prompt for the voice agent
+    system_prompt: |
+      You are a helpful customer service agent for Acme Corp.
+      Keep responses concise and conversational.
+      If you need to look up information, use the available tools.
+
+    # Session limits
+    max_session_duration: 30m
+    interruption_mode: immediate  # Options: immediate, after_sentence, disabled
+
+    # Greeting spoken when call connects
+    greeting: "Hello! Thank you for calling Acme Corp. How can I help you today?"
+
+    # Tools available during voice conversation
+    tools:
+      - name: lookup_order
+        description: Look up an order by order ID
+        parameters:
+          type: object
+          properties:
+            order_id:
+              type: string
+              description: The order ID to look up
+          required: [order_id]
+
+      - name: check_inventory
+        description: Check if a product is in stock
+        parameters:
+          type: object
+          properties:
+            product_name:
+              type: string
+          required: [product_name]
+
+# Twilio credentials (can also use environment variables)
+channels:
+  twilio_sms:
+    enabled: false
+    account_sid: ${TWILIO_ACCOUNT_SID}
+    auth_token: ${TWILIO_AUTH_TOKEN}
+    phone_number: ${TWILIO_PHONE_NUMBER}
+```
+
+#### Gemini Live Configuration
+
+```yaml
+# omniagent.yaml - Gemini Live voice-to-voice
+voice:
+  enabled: true
+
+  gateway:
+    provider: twilio
+    listen_addr: ":8080"
+    public_url: "https://your-server.ngrok.io"
+
+    mode: realtime
+
+    realtime:
+      provider: gemini
+      # model: gemini-2.0-flash-live  # Optional, uses latest
+      voice: Puck                  # Options: Puck, Charon, Kore, Fenrir, Aoede
+
+    system_prompt: |
+      You are a friendly assistant. Keep responses brief and natural.
+
+    greeting: "Hi there! How can I help?"
+```
+
+### Traditional Pipeline (STT → LLM → TTS)
+
+The traditional pipeline offers more flexibility in provider selection at the cost of higher latency (~500-1500ms).
+
+#### Deepgram STT + Claude + ElevenLabs TTS
+
+```yaml
+# omniagent.yaml - Traditional pipeline with premium providers
+voice:
+  enabled: true
+
+  gateway:
+    provider: twilio
+    listen_addr: ":8080"
+    public_url: "https://your-server.ngrok.io"
+
+    mode: text                    # Traditional STT→LLM→TTS pipeline
+
+    # Speech-to-Text configuration
+    stt:
+      provider: deepgram
+      model: nova-2               # Best accuracy
+      language: en-US
+      # api_key: ${DEEPGRAM_API_KEY}  # Or set via environment
+
+    # Text-to-Speech configuration
+    tts:
+      provider: elevenlabs
+      voice_id: 21m00Tcm4TlvDq8ikWAM  # Rachel - natural female voice
+      model: eleven_multilingual_v2
+      # api_key: ${ELEVENLABS_API_KEY}
+
+    # LLM configuration
+    llm:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+      # api_key: ${ANTHROPIC_API_KEY}
+
+    system_prompt: |
+      You are a helpful voice assistant. Keep responses concise (1-3 sentences).
+      Speak naturally - avoid bullet points or markdown formatting.
+
+    greeting: "Hello! How can I assist you today?"
+    max_session_duration: 30m
+    interruption_mode: immediate
+```
+
+#### Whisper STT + GPT-4o + OpenAI TTS (All OpenAI)
+
+```yaml
+# omniagent.yaml - All-OpenAI traditional pipeline
+voice:
+  enabled: true
+
+  gateway:
+    provider: twilio
+    listen_addr: ":8080"
+    public_url: "https://your-server.ngrok.io"
+
+    mode: text
+
+    stt:
+      provider: openai
+      model: whisper-1
+
+    tts:
+      provider: openai
+      model: tts-1
+      voice_id: nova              # Options: alloy, echo, fable, onyx, nova, shimmer
+
+    llm:
+      provider: openai
+      model: gpt-4o
+
+    system_prompt: "You are a helpful assistant. Be concise."
+```
+
+#### Deepgram STT + Deepgram TTS (Budget-Friendly)
+
+```yaml
+# omniagent.yaml - Cost-effective Deepgram-only pipeline
+voice:
+  enabled: true
+
+  gateway:
+    provider: twilio
+    listen_addr: ":8080"
+    public_url: "https://your-server.ngrok.io"
+
+    mode: text
+
+    stt:
+      provider: deepgram
+      model: nova-2
+
+    tts:
+      provider: deepgram
+      model: aura-asteria-en      # Options: aura-asteria-en, aura-luna-en, aura-stella-en
+
+    llm:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+```
+
+### Telnyx Gateway Examples
+
+#### Telnyx + OpenAI Realtime
+
+```yaml
+# omniagent.yaml - Telnyx with OpenAI Realtime
+voice:
+  enabled: true
+
+  gateway:
+    provider: telnyx
+    listen_addr: ":8080"
+    public_url: "https://your-server.ngrok.io"
+
+    # Telnyx-specific configuration
+    telnyx:
+      # api_key: ${TELNYX_API_KEY}
+      phone_number: "+15551234567"
+      connection_id: "your-connection-id"  # From Telnyx portal
+
+    mode: realtime
+
+    realtime:
+      provider: openai
+      voice: coral
+
+    system_prompt: "You are a helpful assistant."
+```
+
+#### Telnyx + Traditional Pipeline
+
+```yaml
+# omniagent.yaml - Telnyx with traditional pipeline
+voice:
+  enabled: true
+
+  gateway:
+    provider: telnyx
+    listen_addr: ":8080"
+    public_url: "https://your-server.ngrok.io"
+
+    telnyx:
+      phone_number: "+15551234567"
+      connection_id: "your-connection-id"
+
+    mode: text
+
+    stt:
+      provider: deepgram
+      model: nova-2
+
+    tts:
+      provider: elevenlabs
+      voice_id: your-voice-id
+
+    llm:
+      provider: anthropic
+      model: claude-sonnet-4-20250514
+```
+
+### Environment Variables Reference
+
+```bash
+# Telephony providers
+export TWILIO_ACCOUNT_SID="AC..."
+export TWILIO_AUTH_TOKEN="..."
+export TWILIO_PHONE_NUMBER="+15551234567"
+
+export TELNYX_API_KEY="KEY..."
+export TELNYX_CONNECTION_ID="..."
+
+# Realtime voice-to-voice
+export OPENAI_API_KEY="sk-..."      # For OpenAI Realtime
+export GOOGLE_API_KEY="..."          # For Gemini Live
+export GEMINI_API_KEY="..."          # Alternative for Gemini
+
+# Traditional pipeline - STT
+export DEEPGRAM_API_KEY="..."
+
+# Traditional pipeline - TTS
+export ELEVENLABS_API_KEY="..."
+
+# Traditional pipeline - LLM
+export ANTHROPIC_API_KEY="..."
+
+# ngrok (for local development)
+export NGROK_AUTHTOKEN="..."
+```
+
+### Local Development with ngrok
+
+```yaml
+# omniagent.yaml - Local development setup
+voice:
+  enabled: true
+
+  gateway:
+    provider: twilio
+    listen_addr: ":8081"          # Local port
+    # public_url not needed - ngrok will provide it
+
+    # Enable ngrok tunnel
+    ngrok:
+      enabled: true
+      # domain: myapp.ngrok.io    # Optional: custom domain (paid plan)
+
+    mode: realtime
+    realtime:
+      provider: openai
+      voice: alloy
+```
+
+Start with:
+
+```bash
+omniagent voice serve --config omniagent.yaml
+# Or with CLI flags:
+omniagent voice serve --provider twilio --realtime openai --listen :8081 --ngrok
+```
+
+---
+
 ### Native Voice-to-Voice Configuration
 
 When using `--realtime`, the STT/TTS flags are ignored - the realtime API handles audio directly.
