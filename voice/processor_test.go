@@ -137,8 +137,8 @@ func TestNew_UnsupportedSTTProvider(t *testing.T) {
 		t.Fatal("expected error for unsupported STT provider")
 	}
 	// Error message includes available providers from registry
-	if !strings.Contains(err.Error(), "unknown STT provider: unsupported") {
-		t.Errorf("error = %q, want error containing 'unknown STT provider: unsupported'", err.Error())
+	if !strings.Contains(err.Error(), "STT provider not registered: unsupported") {
+		t.Errorf("error = %q, want error containing 'STT provider not registered: unsupported'", err.Error())
 	}
 }
 
@@ -158,8 +158,8 @@ func TestNew_UnsupportedTTSProvider(t *testing.T) {
 		t.Fatal("expected error for unsupported TTS provider")
 	}
 	// Error message includes available providers from registry
-	if !strings.Contains(err.Error(), "unknown TTS provider: unsupported") {
-		t.Errorf("error = %q, want error containing 'unknown TTS provider: unsupported'", err.Error())
+	if !strings.Contains(err.Error(), "TTS provider not registered: unsupported") {
+		t.Errorf("error = %q, want error containing 'TTS provider not registered: unsupported'", err.Error())
 	}
 }
 
