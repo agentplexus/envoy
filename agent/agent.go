@@ -13,9 +13,6 @@ import (
 	"github.com/plexusone/omnillm/provider"
 	"github.com/plexusone/omnistorage-core/kvs"
 
-	// Thick providers - imported for side-effect registration
-	_ "github.com/plexusone/omni-openrouter/omnillm"
-
 	"github.com/plexusone/omniagent/agent/profiles"
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/hooks"
