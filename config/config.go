@@ -63,11 +63,12 @@ type DiscordConfig struct {
 
 // TwilioSMSConfig configures the Twilio SMS channel.
 type TwilioSMSConfig struct {
-	Enabled     bool   `json:"enabled" yaml:"enabled"`
-	AccountSID  string `json:"account_sid" yaml:"account_sid"`
-	AuthToken   string `json:"auth_token" yaml:"auth_token"` //nolint:gosec // G101: Auth token loaded from config file
-	PhoneNumber string `json:"phone_number" yaml:"phone_number"`
-	WebhookPath string `json:"webhook_path" yaml:"webhook_path"` // Default: /webhook/twilio/sms
+	Enabled             bool   `json:"enabled" yaml:"enabled"`
+	AccountSID          string `json:"account_sid" yaml:"account_sid"`
+	AuthToken           string `json:"auth_token" yaml:"auth_token"` //nolint:gosec // G101: Auth token loaded from config file
+	PhoneNumber         string `json:"phone_number" yaml:"phone_number"`
+	MessagingServiceSid string `json:"messaging_service_sid" yaml:"messaging_service_sid"` // For RCS
+	WebhookPath         string `json:"webhook_path" yaml:"webhook_path"`                   // Default: /webhook/twilio/sms
 }
 
 // ToolsConfig configures available tools.

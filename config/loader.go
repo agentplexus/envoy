@@ -126,6 +126,9 @@ func loadEnv(cfg *Config) {
 	if v := os.Getenv("TWILIO_PHONE_NUMBER"); v != "" {
 		cfg.Channels.TwilioSMS.PhoneNumber = v
 	}
+	if v := os.Getenv("TWILIO_MESSAGING_SERVICE_SID"); v != "" {
+		cfg.Channels.TwilioSMS.MessagingServiceSid = v
+	}
 	if v := os.Getenv("TWILIO_WEBHOOK_PATH"); v != "" {
 		cfg.Channels.TwilioSMS.WebhookPath = v
 	}

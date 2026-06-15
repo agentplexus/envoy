@@ -254,10 +254,11 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	// Register Twilio SMS if configured
 	if cfg.Channels.TwilioSMS.Enabled {
 		sms, err := twilio.New(twilio.Config{
-			AccountSID:  cfg.Channels.TwilioSMS.AccountSID,
-			AuthToken:   cfg.Channels.TwilioSMS.AuthToken,
-			PhoneNumber: cfg.Channels.TwilioSMS.PhoneNumber,
-			Logger:      logger,
+			AccountSID:          cfg.Channels.TwilioSMS.AccountSID,
+			AuthToken:           cfg.Channels.TwilioSMS.AuthToken,
+			PhoneNumber:         cfg.Channels.TwilioSMS.PhoneNumber,
+			MessagingServiceSid: cfg.Channels.TwilioSMS.MessagingServiceSid,
+			Logger:              logger,
 		})
 		if err != nil {
 			return fmt.Errorf("create twilio sms provider: %w", err)
