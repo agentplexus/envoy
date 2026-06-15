@@ -201,3 +201,14 @@ replace github.com/ysmood/fetchup => github.com/ysmood/fetchup v0.2.3
 
 // Force log15/v3 to version compatible with ngrok v1.13.0 (has ext.RandId)
 replace github.com/inconshreveable/log15/v3 => github.com/inconshreveable/log15/v3 v3.0.0-testing.5
+
+// Local development: use local modules with Gateway/Realtime registry support
+replace github.com/plexusone/omnivoice-core => ../omnivoice-core
+
+replace github.com/plexusone/omni-twilio => ../omni-twilio
+
+replace github.com/plexusone/omni-telnyx => ../omni-telnyx
+
+replace github.com/plexusone/omni-openai => ../omni-openai
+
+replace github.com/plexusone/omni-google => ../omni-google

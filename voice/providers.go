@@ -7,6 +7,9 @@ import (
 
 	"github.com/plexusone/omnivoice-core/gateway"
 
+	// Provider packages - imported for side-effect registration with omnivoice-core registry.
+	// This enables provider discovery via omnivoice.HasGatewayProvider("twilio"), etc.
+	// We also use the concrete types for rich configuration support.
 	googleRealtime "github.com/plexusone/omni-google/omnivoice/realtime"
 	openaiRealtime "github.com/plexusone/omni-openai/omnivoice/realtime"
 	telnyxGateway "github.com/plexusone/omni-telnyx/omnivoice/gateway"
