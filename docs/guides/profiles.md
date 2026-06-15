@@ -258,3 +258,154 @@ customProfile := baseProfile.Clone()
 customProfile.Name = "custom"
 customProfile.DeniedTools = append(customProfile.DeniedTools, "shell")
 ```
+
+## Auto-reply and Commentary
+
+OmniAgent supports auto-reply mode with verbose progress commentary, enabling agents to provide real-time feedback during tool execution.
+
+### Auto-reply Mode
+
+Auto-reply mode allows the agent to continue processing without waiting for user input after each tool call.
+
+```go
+import "github.com/plexusone/omniagent/agent/profiles"
+
+autoReply := profiles.NewAutoReplyConfig(profiles.AutoReplyConfig{
+    Enabled:           true,
+    CommentaryMode:    profiles.CommentaryVerbose,
+    InterToolDelay:    100 * time.Millisecond,
+    PersistCommentary: false,
+})
+
+a, err := agent.New(config,
+    agent.WithAutoReply(autoReply),
+)
+```
+
+### Auto-reply Configuration
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Enabled` | bool | Enable auto-reply mode |
+| `CommentaryMode` | CommentaryMode | Verbosity level for commentary |
+| `InterToolDelay` | time.Duration | Delay between tool calls |
+| `PersistCommentary` | bool | Save commentary to session history |
+
+### Commentary Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `CommentaryNone` | No inter-tool commentary | Silent operation |
+| `CommentaryBrief` | Minimal status updates | Production |
+| `CommentaryVerbose` | Detailed thinking and progress | Development, debugging |
+
+### Commentary System
+
+The commentary system emits events during agent execution:
+
+```go
+import "github.com/plexusone/omniagent/agent/profiles"
+
+emitter := profiles.NewCommentaryEmitter(profiles.CommentaryConfig{
+    Mode: profiles.CommentaryVerbose,
+    Dispatch: func(c *profiles.Commentary) {
+        switch c.Type {
+        case "thinking":
+            fmt.Printf("Thinking: %s\n", c.Content)
+        case "tool_summary":
+            fmt.Printf("Tool %s: %s\n", c.ToolName, c.Content)
+        case "progress":
+            fmt.Printf("Progress: %s\n", c.Content)
+        }
+    },
+})
+
+a, err := agent.New(config,
+    agent.WithCommentaryEmitter(emitter),
+)
+```
+
+### Commentary Events
+
+```go
+type Commentary struct {
+    ID        string    `json:"id"`
+    Type      string    `json:"type"` // thinking, progress, tool_summary
+    Content   string    `json:"content"`
+    ToolName  string    `json:"tool_name,omitempty"`
+    Timestamp time.Time `json:"timestamp"`
+}
+```
+
+| Type | Description |
+|------|-------------|
+| `thinking` | Agent's internal reasoning |
+| `progress` | Progress updates during execution |
+| `tool_summary` | Summary of tool execution results |
+
+### WebSocket Streaming
+
+Commentary can be streamed via the WebSocket gateway:
+
+```go
+// Gateway configuration
+gatewayConfig := gateway.Config{
+    StreamCommentary: true,
+}
+```
+
+Clients receive commentary events:
+
+```json
+{
+  "type": "commentary",
+  "data": {
+    "id": "c_1234567890",
+    "type": "thinking",
+    "content": "I need to search for files matching the pattern...",
+    "timestamp": "2026-06-10T14:30:00Z"
+  }
+}
+```
+
+### Example Output
+
+With `CommentaryVerbose`:
+
+```
+Thinking: The user wants to find Python files containing "async def"...
+Progress: Searching in /home/user/project...
+Tool grep: Found 12 matches across 5 files
+Thinking: I'll summarize the key async functions...
+Progress: Analyzing function signatures...
+```
+
+### Best Practices
+
+#### Use Brief Mode in Production
+
+```go
+autoReply := profiles.NewAutoReplyConfig(profiles.AutoReplyConfig{
+    Enabled:        true,
+    CommentaryMode: profiles.CommentaryBrief,
+})
+```
+
+#### Persist Commentary for Debugging
+
+```go
+autoReply := profiles.NewAutoReplyConfig(profiles.AutoReplyConfig{
+    Enabled:           true,
+    CommentaryMode:    profiles.CommentaryVerbose,
+    PersistCommentary: true, // Save to session for later review
+})
+```
+
+#### Add Inter-tool Delays for Readability
+
+```go
+autoReply := profiles.NewAutoReplyConfig(profiles.AutoReplyConfig{
+    Enabled:        true,
+    InterToolDelay: 200 * time.Millisecond, // Pause between tools
+})
+```

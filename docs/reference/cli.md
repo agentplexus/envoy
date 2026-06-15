@@ -39,6 +39,113 @@ omniagent gateway run --config omniagent.yaml
 omniagent gateway run --address 0.0.0.0:8080
 ```
 
+## Voice
+
+### voice serve
+
+Start the voice gateway server for full-duplex phone calls.
+
+```bash
+omniagent voice serve [flags]
+```
+
+**Flags:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--listen` | Listen address | `:8080` |
+| `--public-url` | Public URL for Twilio webhooks | - |
+| `--ngrok` | Use ngrok tunnel for public URL | `false` |
+| `--ngrok-domain` | Custom ngrok domain (paid plan) | - |
+| `--phone` | Twilio phone number for outbound | - |
+| `--stt` | STT provider: `deepgram`, `whisper`, `google` | `deepgram` |
+| `--tts` | TTS provider: `elevenlabs`, `openai`, `google` | `elevenlabs` |
+| `--voice` | TTS voice ID | - |
+| `--llm` | LLM provider: `anthropic`, `openai` | `anthropic` |
+| `--model` | LLM model | `claude-sonnet-4-20250514` |
+| `--system-prompt` | Custom system prompt | - |
+
+**Examples:**
+
+```bash
+# With public server
+omniagent voice serve \
+  --listen :8081 \
+  --public-url https://your-server.com \
+  --stt deepgram \
+  --tts elevenlabs \
+  --llm anthropic
+
+# With ngrok (local development)
+omniagent voice serve --listen :8081 --ngrok
+
+# With custom ngrok domain
+omniagent voice serve --listen :8081 --ngrok --ngrok-domain myapp.ngrok.io
+
+# With OpenAI
+omniagent voice serve \
+  --listen :8081 \
+  --ngrok \
+  --stt whisper \
+  --tts openai \
+  --llm openai \
+  --model gpt-4o
+```
+
+### voice status
+
+Show voice gateway configuration and provider status.
+
+```bash
+omniagent voice status
+```
+
+**Output:**
+
+```
+Voice Gateway Configuration
+===========================
+
+Twilio:
+  Account SID:  ACxx...xxxx
+  Auth Token:   Configured
+
+Ngrok:
+  Auth Token:   Configured (use --ngrok flag)
+
+STT Providers:
+  Deepgram:     Configured
+  OpenAI:       Configured (Whisper)
+
+TTS Providers:
+  ElevenLabs:   Configured
+  OpenAI:       Configured
+
+LLM Providers:
+  Anthropic:    Configured (Claude)
+  OpenAI:       Configured (GPT-4o)
+```
+
+### voice call
+
+Make an outbound call to a phone number.
+
+```bash
+omniagent voice call <phone-number> [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--public-url` | Public URL for webhooks (required) |
+
+**Examples:**
+
+```bash
+omniagent voice call +1234567890 --public-url https://your-server.com
+```
+
 ## Skills
 
 ### skills list

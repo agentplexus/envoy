@@ -116,21 +116,45 @@ Tools execute in isolated environments:
 
 ### Voice Processing
 
+OmniAgent supports two voice processing architectures:
+
+**Traditional Pipeline (STT → LLM → TTS)**
+
 ```
 1. Voice message received
          │
          ▼
-2. STT transcription (omnivoice)
+2. STT transcription (Deepgram, Whisper)
          │
          ▼
-3. Agent processes text
+3. Agent processes text (Claude, GPT)
          │
          ▼
-4. TTS synthesis (omnivoice)
+4. TTS synthesis (ElevenLabs, Deepgram)
          │
          ▼
 5. Voice response sent
 ```
+
+- Latency: 500-1500ms
+- Use case: Custom voice selection, specialized STT
+
+**Native Voice-to-Voice**
+
+```
+1. Audio stream received
+         │
+         ▼
+2. Realtime API (OpenAI Realtime / Gemini Live)
+         │
+         ▼
+3. Audio response sent
+```
+
+- Latency: 100-200ms
+- Use case: Low-latency conversations, natural barge-in
+
+See [Voice Integration Guide](../guides/voice.md) for configuration details.
 
 ## Omni* Library Ecosystem
 
@@ -178,8 +202,18 @@ OmniAgent is built on a modular ecosystem of `omni*` libraries. Each library fol
     │  │   (S3)          │  │   (GCS)         │                       │
     │  │                 │  │                 │                       │
     │  │ /omnivoice      │  │ /omnivoice      │                       │
-    │  │   (future)      │  │   (future)      │                       │
+    │  │   (Polly TTS)   │  │   (Gemini Live) │                       │
     │  └─────────────────┘  └─────────────────┘                       │
+    │                                                                  │
+    │  ┌─────────────────┐                                            │
+    │  │   omni-openai   │                                            │
+    │  │                 │                                            │
+    │  │ /omnillm        │                                            │
+    │  │   (GPT)         │                                            │
+    │  │                 │                                            │
+    │  │ /omnivoice      │                                            │
+    │  │   (Realtime)    │                                            │
+    │  └─────────────────┘                                            │
     └─────────────────────────────────────────────────────────────────┘
 ```
 

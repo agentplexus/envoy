@@ -40,14 +40,19 @@ Complete reference for OmniAgent environment variables.
 |----------|-------------|
 | `DISCORD_BOT_TOKEN` | Discord bot token (auto-enables channel) |
 
-### Twilio SMS
+### Twilio SMS/MMS/RCS
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `TWILIO_ACCOUNT_SID` | Twilio Account SID (auto-enables channel) | - |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token | - |
 | `TWILIO_PHONE_NUMBER` | Twilio phone number in E.164 format | - |
-| `TWILIO_WEBHOOK_PATH` | SMS webhook path | `/webhook/twilio/sms` |
+| `TWILIO_MESSAGING_SERVICE_SID` | Messaging Service SID for RCS (enables RCS with SMS/MMS fallback) | - |
+| `TWILIO_WEBHOOK_PATH` | SMS/MMS webhook path | `/webhook/twilio/sms` |
+
+**MMS Support**: Incoming MMS messages with media attachments (images, videos, audio) are automatically extracted. Media URLs are available in `msg.Media`.
+
+**RCS Support**: When `TWILIO_MESSAGING_SERVICE_SID` is set, messages are sent via RCS with automatic fallback to SMS/MMS. RCS features include branded sender identity, rich cards, and suggested actions. Requires carrier-approved RCS sender in your Messaging Service.
 
 ## Voice
 
@@ -57,6 +62,50 @@ Complete reference for OmniAgent environment variables.
 | `ELEVENLABS_API_KEY` | ElevenLabs API key | - |
 | `OMNIAGENT_VOICE_ENABLED` | Enable voice processing | `false` |
 | `OMNIAGENT_VOICE_RESPONSE_MODE` | Response mode: `auto`, `always`, `never` | `auto` |
+
+## Voice Gateway
+
+### Twilio
+
+| Variable | Description |
+|----------|-------------|
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token |
+
+### Telnyx
+
+| Variable | Description |
+|----------|-------------|
+| `TELNYX_API_KEY` | Telnyx API Key |
+| `TELNYX_CONNECTION_ID` | Telnyx Connection ID |
+
+### Vonage
+
+| Variable | Description |
+|----------|-------------|
+| `VONAGE_APPLICATION_ID` | Vonage Application ID |
+| `VONAGE_PRIVATE_KEY` | Path to Vonage private key file |
+
+### Plivo
+
+| Variable | Description |
+|----------|-------------|
+| `PLIVO_AUTH_ID` | Plivo Auth ID |
+| `PLIVO_AUTH_TOKEN` | Plivo Auth Token |
+
+### LiveKit (WebRTC)
+
+| Variable | Description |
+|----------|-------------|
+| `LIVEKIT_URL` | LiveKit server URL (e.g., `wss://your-app.livekit.cloud`) |
+| `LIVEKIT_API_KEY` | LiveKit API Key |
+| `LIVEKIT_API_SECRET` | LiveKit API Secret |
+
+### Tunneling
+
+| Variable | Description |
+|----------|-------------|
+| `NGROK_AUTHTOKEN` | ngrok auth token (for `--ngrok` flag) |
 
 ## Gateway
 
@@ -89,16 +138,19 @@ export WHATSAPP_ENABLED=true
 omniagent gateway run
 ```
 
-### Twilio SMS Setup
+### Twilio SMS/MMS/RCS Setup
 
 ```bash
 # LLM Provider
 export OPENAI_API_KEY="sk-..."
 
-# Twilio SMS
+# Twilio SMS/MMS
 export TWILIO_ACCOUNT_SID="AC..."
 export TWILIO_AUTH_TOKEN="..."
 export TWILIO_PHONE_NUMBER="+15551234567"
+
+# Optional: Enable RCS (with SMS/MMS fallback)
+export TWILIO_MESSAGING_SERVICE_SID="MG..."
 
 # Gateway (for ngrok)
 export OMNIAGENT_GATEWAY_ADDRESS=":8080"
@@ -108,6 +160,8 @@ omniagent gateway run
 
 Configure your Twilio phone number webhook to point to:
 `https://<your-domain>/webhook/twilio/sms` (POST)
+
+This endpoint handles SMS, MMS, and RCS. Incoming MMS messages with images, videos, or other media will have their attachments automatically extracted and available to the agent. When `TWILIO_MESSAGING_SERVICE_SID` is set, outgoing messages use RCS with automatic fallback to SMS/MMS.
 
 For local development, use ngrok:
 

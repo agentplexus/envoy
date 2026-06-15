@@ -55,9 +55,12 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Guides:
+    - Twilio Setup: guides/twilio.md
     - WhatsApp Setup: guides/whatsapp.md
     - Voice Integration: guides/voice.md
+    - LLM Providers: guides/providers.md
     - Skills Development: guides/skills.md
+    - Memory Skill: guides/memory.md
     - Sessions & Storage: guides/sessions.md
     - Scheduled Jobs: guides/cron.md
     - Context Management: guides/context.md

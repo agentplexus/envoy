@@ -1,8 +1,338 @@
 # Voice Integration
 
-OmniAgent supports voice notes via [OmniVoice](https://github.com/plexusone/omnivoice), providing speech-to-text (STT) and text-to-speech (TTS) capabilities.
+OmniAgent supports multiple voice modes:
 
-## Overview
+1. **Voice Notes** - STT/TTS for messaging channels (transcribe voice messages, respond with audio)
+2. **Voice Gateway** - Full-duplex phone calls via Twilio, Telnyx, Vonage, or Plivo
+3. **WebRTC Gateway** - Browser/mobile voice via LiveKit (no phone number required)
+
+## Voice Architecture: Traditional vs Native
+
+OmniAgent supports two fundamentally different approaches for real-time voice:
+
+### Traditional Pipeline (STT → LLM → TTS)
+
+```
+Phone → Twilio → [Deepgram STT] → Text → [Claude/GPT] → Text → [ElevenLabs TTS] → Audio → Twilio → Phone
+```
+
+- **Latency**: 500-1500ms (sum of STT + LLM + TTS)
+- **Providers**: Separate STT and TTS providers required
+- **Flexibility**: Mix and match any STT, LLM, and TTS providers
+- **Cost**: Pay for STT + LLM + TTS separately
+
+### Native Voice-to-Voice (Recommended)
+
+```
+Phone → Twilio → [OpenAI Realtime / Gemini Live] → Audio → Twilio → Phone
+```
+
+- **Latency**: 100-200ms (model handles audio directly)
+- **Providers**: Single provider handles everything
+- **Simplicity**: No separate STT/TTS configuration
+- **Cost**: Single API cost (often cheaper overall)
+
+### Comparison
+
+| Aspect | Traditional (STT→LLM→TTS) | Native Voice-to-Voice |
+|--------|---------------------------|----------------------|
+| Latency | 500-1500ms | 100-200ms |
+| Configuration | 3 providers to configure | 1 provider |
+| STT Provider | Deepgram, Whisper, Google | Built-in |
+| TTS Provider | ElevenLabs, Deepgram, Cartesia | Built-in |
+| Barge-in | Complex (coordinate STT+TTS) | Native support |
+| Best for | Custom voice selection, specialized STT | Low latency, simplicity |
+
+### Native Voice-to-Voice Providers
+
+| Provider | Package | Latency | Voices |
+|----------|---------|---------|--------|
+| **OpenAI Realtime** | `omni-openai/omnivoice/realtime` | ~100ms | 11 voices |
+| **Gemini Live** | `omni-google/omnivoice` | ~200ms | 5 voices |
+
+### When to Use Each
+
+**Use Native Voice-to-Voice when:**
+
+- Low latency is critical (customer service, real-time conversations)
+- You want simpler configuration
+- Barge-in (user interruption) is important
+
+**Use Traditional Pipeline when:**
+
+- You need specific STT accuracy (e.g., medical/legal terminology)
+- You want custom voice cloning (ElevenLabs, Cartesia)
+- You need to support languages not available in native APIs
+
+For detailed comparison including latency breakdown, cost analysis, and feature matrix, see the [Voice Architecture Guide](https://plexusone.dev/omnivoice-core/voice-architecture).
+
+---
+
+## Voice Gateway (Phone Calls)
+
+The voice gateway enables real-time phone conversations with bidirectional audio streaming.
+
+### Supported Telephony Providers
+
+Twilio, Telnyx, Vonage, and Plivo provide **telephony transport only** (phone connectivity). They do NOT provide STT/TTS - you must configure a voice processing approach above.
+
+| Provider | Protocol | SMS | Notes |
+|----------|----------|-----|-------|
+| **Twilio** | Media Streams (WS) | Yes | Most popular, extensive documentation |
+| **Telnyx** | Media Streaming (WS) | Yes | Competitive pricing, good API |
+| **Vonage** | Voice WebSocket | Yes | JWT auth, NCCO call control |
+| **Plivo** | Stream API (WS) | Yes | Simple pricing, good international coverage |
+| **LiveKit** | WebRTC | No | Browser/mobile apps, low latency |
+
+### Architecture (Traditional)
+
+```
+┌──────────┐        ┌─────────────────┐        ┌───────────────────┐
+│  Caller  │◄──────►│    Provider     │◄──────►│   Voice Gateway   │
+│  (PSTN)  │  PSTN  │  (Twilio/Telnyx │   WS   │   (STT→LLM→TTS)   │
+│          │        │  /Vonage/Plivo) │        │                   │
+└──────────┘        └─────────────────┘        └───────────────────┘
+```
+
+### Architecture (Native Voice-to-Voice)
+
+```
+┌──────────┐        ┌─────────────────┐        ┌───────────────────┐
+│  Caller  │◄──────►│    Provider     │◄──────►│   Voice Gateway   │
+│  (PSTN)  │  PSTN  │  (Twilio/Telnyx │   WS   │ (OpenAI Realtime) │
+│          │        │  /Vonage/Plivo) │        │                   │
+└──────────┘        └─────────────────┘        └───────────────────┘
+```
+
+### Quick Start (Native Voice-to-Voice)
+
+For lowest latency, use native voice-to-voice APIs:
+
+```bash
+# OpenAI Realtime (~100ms latency)
+export TWILIO_ACCOUNT_SID="AC..."
+export TWILIO_AUTH_TOKEN="..."
+export OPENAI_API_KEY="sk-..."
+omniagent voice serve --provider twilio --realtime openai --public-url https://your-server.com
+
+# Gemini Live (~200ms latency)
+export TWILIO_ACCOUNT_SID="AC..."
+export TWILIO_AUTH_TOKEN="..."
+export GOOGLE_API_KEY="..."
+omniagent voice serve --provider twilio --realtime gemini --public-url https://your-server.com
+```
+
+### Quick Start (Traditional Pipeline)
+
+For custom STT/TTS provider selection:
+
+```bash
+# With Twilio
+export TWILIO_ACCOUNT_SID="AC..."
+export TWILIO_AUTH_TOKEN="..."
+omniagent voice serve --provider twilio --public-url https://your-server.com
+
+# With Telnyx
+export TELNYX_API_KEY="KEY..."
+export TELNYX_CONNECTION_ID="..."
+omniagent voice serve --provider telnyx --public-url https://your-server.com
+
+# With Vonage
+export VONAGE_APPLICATION_ID="..."
+export VONAGE_PRIVATE_KEY="/path/to/private.key"
+omniagent voice serve --provider vonage --public-url https://your-server.com
+
+# With Plivo
+export PLIVO_AUTH_ID="..."
+export PLIVO_AUTH_TOKEN="..."
+omniagent voice serve --provider plivo --public-url https://your-server.com
+
+# With ngrok (local development)
+export NGROK_AUTHTOKEN=your-token
+omniagent voice serve --provider twilio --listen :8081 --ngrok
+```
+
+### Webhook Configuration
+
+Configure webhooks in your provider's console:
+
+#### Twilio
+
+| Webhook | URL |
+|---------|-----|
+| Voice URL | `https://your-server.com/voice/inbound` |
+| Status Callback | `https://your-server.com/voice/status` |
+
+#### Telnyx
+
+| Webhook | URL |
+|---------|-----|
+| Voice URL | `https://your-server.com/voice/inbound` |
+| Status Callback | `https://your-server.com/voice/status` |
+
+#### Vonage
+
+| Webhook | URL |
+|---------|-----|
+| Answer URL | `https://your-server.com/voice/answer` |
+| Event URL | `https://your-server.com/voice/event` |
+
+#### Plivo
+
+| Webhook | URL |
+|---------|-----|
+| Answer URL | `https://your-server.com/voice/answer` |
+| Hangup URL | `https://your-server.com/voice/hangup` |
+| Fallback URL | `https://your-server.com/voice/fallback` |
+
+## WebRTC Gateway (Browser/Mobile)
+
+For web and mobile applications, use LiveKit instead of PSTN providers:
+
+```
+┌───────────────┐        ┌─────────────────┐        ┌───────────────────┐
+│  Browser/App  │◄──────►│  LiveKit Cloud  │◄──────►│   Voice Gateway   │
+│   (WebRTC)    │ WebRTC │    or Server    │ WebRTC │   (STT→LLM→TTS)   │
+└───────────────┘        └─────────────────┘        └───────────────────┘
+```
+
+### LiveKit Quick Start
+
+```bash
+# Set LiveKit credentials
+export LIVEKIT_URL="wss://your-app.livekit.cloud"
+export LIVEKIT_API_KEY="..."
+export LIVEKIT_API_SECRET="..."
+
+# Start WebRTC voice gateway
+omniagent voice serve --provider livekit --room voice-agent
+```
+
+### Key Differences from PSTN
+
+| Aspect | PSTN (Twilio, etc.) | WebRTC (LiveKit) |
+|--------|---------------------|------------------|
+| Connection | Phone number | Room name |
+| Clients | Phone calls | Browser/mobile apps |
+| Latency | 500ms+ | <200ms |
+| Cost | Per-minute charges | Infrastructure only |
+| No webhooks | Needs public URL | Direct WebRTC |
+
+### Local Development with ngrok
+
+For local development, use the built-in ngrok integration:
+
+```bash
+# Set ngrok auth token
+export NGROK_AUTHTOKEN=your-ngrok-token
+
+# Start with auto-generated public URL
+omniagent voice serve --listen :8081 --ngrok
+
+# With custom ngrok domain (requires paid plan)
+omniagent voice serve --listen :8081 --ngrok --ngrok-domain myapp.ngrok.io
+```
+
+The public URL is displayed on startup. Configure this in your provider's webhook settings.
+
+### Voice Gateway Commands
+
+```bash
+omniagent voice serve      # Start the voice gateway server
+omniagent voice status     # Show configuration and provider status
+omniagent voice call NUM   # Make an outbound call
+```
+
+### Voice Gateway Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--provider` | Telephony provider (`twilio`, `telnyx`, `vonage`, `plivo`) | `twilio` |
+| `--listen` | Listen address | `:8080` |
+| `--public-url` | Public URL for webhooks | - |
+| `--phone` | Phone number for outbound calls | - |
+| `--ngrok` | Use ngrok tunnel | `false` |
+| `--ngrok-domain` | Custom ngrok domain | - |
+| `--stt` | STT provider | `deepgram` |
+| `--tts` | TTS provider | `elevenlabs` |
+| `--voice` | TTS voice ID | - |
+| `--llm` | LLM provider | `anthropic` |
+| `--model` | LLM model | `claude-sonnet-4-20250514` |
+| `--system-prompt` | Custom system prompt | - |
+| `--realtime` | Native voice-to-voice provider (`openai`, `gemini`) | - |
+| `--realtime-voice` | Voice for realtime API | `alloy` (OpenAI), `Puck` (Gemini) |
+
+### Native Voice-to-Voice Configuration
+
+When using `--realtime`, the STT/TTS flags are ignored - the realtime API handles audio directly.
+
+#### OpenAI Realtime
+
+```bash
+omniagent voice serve \
+  --provider twilio \
+  --realtime openai \
+  --realtime-voice alloy \
+  --system-prompt "You are a helpful customer service agent." \
+  --public-url https://your-server.com
+```
+
+Available voices: `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `nova`, `onyx`, `sage`, `shimmer`, `verse`
+
+Audio format: PCM16 24kHz mono (native, no conversion needed for LiveKit)
+
+#### Gemini Live
+
+```bash
+omniagent voice serve \
+  --provider twilio \
+  --realtime gemini \
+  --realtime-voice Puck \
+  --system-prompt "You are a helpful customer service agent." \
+  --public-url https://your-server.com
+```
+
+Available voices: `Puck`, `Charon`, `Kore`, `Fenrir`, `Aoede`
+
+Audio format: PCM16 16kHz input, 24kHz output
+
+#### With Function Calling
+
+Native voice-to-voice APIs support function calling during conversation:
+
+```yaml
+# omniagent.yaml
+voice:
+  realtime:
+    provider: openai
+    voice: alloy
+    tools:
+      - name: lookup_order
+        description: Look up an order by ID
+        parameters:
+          type: object
+          properties:
+            order_id:
+              type: string
+          required: [order_id]
+```
+
+### Provider Comparison
+
+| Feature | Twilio | Telnyx | Vonage | Plivo |
+|---------|--------|--------|--------|-------|
+| Audio Format | mulaw 8kHz | L16 16kHz | L16 16kHz | L16 16kHz |
+| WebSocket | Media Streams | Media Streaming | Voice WebSocket | Stream API |
+| Auth | Account SID + Token | API Key | JWT (RS256) | Auth ID + Token |
+| Call Control | TwiML | TeXML | NCCO (JSON) | Plivo XML |
+
+---
+
+## Voice Notes (Messaging)
+
+OmniAgent supports voice notes via [OmniVoice](https://github.com/plexusone/omnivoice), providing speech-to-text (STT) and text-to-speech (TTS) capabilities for messaging channels.
+
+### Overview
 
 When voice processing is enabled:
 
@@ -10,13 +340,13 @@ When voice processing is enabled:
 2. The text is processed by the AI agent
 3. Responses can be synthesized back to speech
 
-## Supported Providers
+## Supported STT/TTS Providers
 
 | Provider | STT | TTS | Notes |
 |----------|-----|-----|-------|
-| Deepgram | ✅ | ✅ | Nova-2 for STT, Aura voices for TTS |
-| OpenAI | ✅ | ✅ | Whisper for STT, TTS-1 for TTS |
-| ElevenLabs | ❌ | ✅ | High-quality voice synthesis |
+| Deepgram | Yes | Yes | Nova-2 for STT, Aura voices for TTS |
+| OpenAI | Yes | Yes | Whisper for STT, TTS-1 for TTS |
+| ElevenLabs | No | Yes | High-quality voice synthesis |
 
 ## Configuration
 

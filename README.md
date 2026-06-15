@@ -37,6 +37,8 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 💬 **Multi-Channel Support** - Telegram, Discord, Slack, WhatsApp, and more
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, etc.)
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
+- 📞 **Full-Duplex Phone Calls** - Real-time phone conversations via Twilio Media Streams
+- ⚡ **Native Voice-to-Voice** - Ultra-low latency (~100ms) via OpenAI Realtime or Gemini Live APIs
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
 - ⏰ **Scheduled Jobs** - Cron expressions, intervals, and one-time job scheduling
@@ -106,18 +108,25 @@ channels:
     account_sid: ${TWILIO_ACCOUNT_SID}
     auth_token: ${TWILIO_AUTH_TOKEN}
     phone_number: ${TWILIO_PHONE_NUMBER}
-    webhook_path: /webhook/twilio/sms
+    messaging_service_sid: ${TWILIO_MESSAGING_SERVICE_SID}  # Optional: enables RCS with SMS/MMS fallback
+    webhook_path: /webhook/twilio/sms  # Supports SMS, MMS, and RCS
 
 voice:
   enabled: true
   response_mode: auto        # auto, always, never
-  stt:
-    provider: deepgram
-    model: nova-2
-  tts:
-    provider: deepgram
-    model: aura-asteria-en
-    voice_id: aura-asteria-en
+
+  # Option 1: Native voice-to-voice (lowest latency, ~100ms)
+  realtime:
+    provider: openai         # or: gemini
+    voice: alloy             # OpenAI: alloy, nova, etc. Gemini: Puck, Charon, etc.
+
+  # Option 2: Traditional pipeline (custom STT/TTS providers)
+  # stt:
+  #   provider: deepgram
+  #   model: nova-2
+  # tts:
+  #   provider: elevenlabs
+  #   voice_id: your-voice-id
 
 skills:
   enabled: true
@@ -468,15 +477,19 @@ See [Access Policies Guide](docs/guides/policies.md) for details.
 | `WHATSAPP_DB_PATH` | WhatsApp session storage path |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token (auto-enables Telegram) |
 | `DISCORD_BOT_TOKEN` | Discord bot token (auto-enables Discord) |
-| `TWILIO_ACCOUNT_SID` | Twilio Account SID (auto-enables SMS) |
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID (auto-enables SMS/MMS/RCS) |
 | `TWILIO_AUTH_TOKEN` | Twilio Auth Token |
 | `TWILIO_PHONE_NUMBER` | Twilio phone number in E.164 format |
+| `TWILIO_MESSAGING_SERVICE_SID` | Messaging Service SID for RCS (enables RCS with SMS/MMS fallback) |
 | `TWILIO_WEBHOOK_PATH` | SMS webhook path (default: `/webhook/twilio/sms`) |
 | `SERPER_API_KEY` | Serper API key for web search |
 | `SERPAPI_API_KEY` | SerpAPI key for web search (alternative) |
-| `DEEPGRAM_API_KEY` | Deepgram API key for voice STT/TTS |
+| `DEEPGRAM_API_KEY` | Deepgram API key for voice STT/TTS (traditional) |
 | `OMNIAGENT_VOICE_ENABLED` | Set to `true` to enable voice processing |
 | `OMNIAGENT_VOICE_RESPONSE_MODE` | Voice response mode: `auto`, `always`, `never` |
+| `OMNIAGENT_VOICE_REALTIME_PROVIDER` | Native voice-to-voice: `openai`, `gemini` |
+| `ELEVENLABS_API_KEY` | ElevenLabs API key for voice TTS (traditional) |
+| `GOOGLE_API_KEY` | Google API key for Gemini Live (native voice-to-voice) |
 
 ## Vault-Backed Credentials
 
@@ -569,6 +582,11 @@ The token manager handles:
 # Gateway
 omniagent gateway run      # Start the gateway server
 
+# Voice (Full-Duplex Phone Calls)
+omniagent voice serve      # Start the voice gateway server
+omniagent voice status     # Show voice configuration status
+omniagent voice call NUM   # Make an outbound call to NUM
+
 # Skills
 omniagent skills list      # List all discovered skills
 omniagent skills info NAME # Show skill details
@@ -583,6 +601,61 @@ omniagent config show      # Display current configuration
 
 # Version
 omniagent version          # Show version information
+```
+
+### Voice Gateway
+
+Start a full-duplex voice gateway for phone calls:
+
+```bash
+# Native voice-to-voice (lowest latency, ~100ms)
+omniagent voice serve \
+  --listen :8081 \
+  --public-url https://your-server.com \
+  --realtime openai \
+  --realtime-voice alloy
+
+# Traditional pipeline (custom STT/TTS)
+omniagent voice serve \
+  --listen :8081 \
+  --public-url https://your-server.com \
+  --stt deepgram \
+  --tts elevenlabs \
+  --llm anthropic \
+  --model claude-sonnet-4-20250514
+```
+
+Configure Twilio webhooks:
+
+- Voice URL: `https://your-server.com/voice/inbound`
+- Status Callback: `https://your-server.com/voice/status`
+
+#### Local Development with ngrok
+
+For local development, use ngrok to expose your local server to Twilio:
+
+```bash
+# Set ngrok auth token
+export NGROK_AUTHTOKEN=your-ngrok-token
+
+# Start voice server with ngrok tunnel (auto-generates public URL)
+omniagent voice serve \
+  --listen :8081 \
+  --ngrok \
+  --stt deepgram \
+  --tts elevenlabs \
+  --llm anthropic
+```
+
+The ngrok public URL will be displayed on startup. Configure this URL in your Twilio webhook settings.
+
+With a custom ngrok domain (requires paid plan):
+
+```bash
+omniagent voice serve \
+  --listen :8081 \
+  --ngrok \
+  --ngrok-domain myapp.ngrok.io
 ```
 
 ## Architecture
@@ -648,8 +721,10 @@ omniagent version          # Show version information
 |-------|------|---------|-------------|
 | `voice.enabled` | bool | `false` | Enable voice processing |
 | `voice.response_mode` | string | `auto` | `auto`, `always`, `never` |
-| `voice.stt.provider` | string | - | STT provider (e.g., `deepgram`) |
-| `voice.tts.provider` | string | - | TTS provider (e.g., `deepgram`) |
+| `voice.realtime.provider` | string | - | Native voice-to-voice: `openai`, `gemini` |
+| `voice.realtime.voice` | string | - | Voice for realtime API |
+| `voice.stt.provider` | string | - | STT provider (traditional): `deepgram`, `whisper` |
+| `voice.tts.provider` | string | - | TTS provider (traditional): `elevenlabs`, `deepgram` |
 
 ## Omni* Library Ecosystem
 
@@ -691,6 +766,7 @@ See [Architecture Overview](docs/architecture/overview.md) for detailed document
 | [omnichat](https://github.com/plexusone/omnichat) | Unified messaging (WhatsApp, Telegram, Discord) |
 | [omnillm](https://github.com/plexusone/omnillm) | Multi-provider LLM abstraction |
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
+| [omni-twilio](https://github.com/plexusone/omni-twilio) | Full-duplex voice gateway via Twilio |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omniserp](https://github.com/plexusone/omniserp) | Web search via Serper/SerpAPI |
 | [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Object and key-value storage |
