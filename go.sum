@@ -551,8 +551,8 @@ github.com/plexusone/omni-twilio v0.8.0 h1:dLiklDTydunjUVLsppyQ1lxAiKcy9cCFWE7gu
 github.com/plexusone/omni-twilio v0.8.0/go.mod h1:Nuo7WMhztQjQtRP4/k6aKNIS4WTVPl0E4YUVkbdYFf4=
 github.com/plexusone/omnichat v0.8.0 h1:PZofl+lWVMtOUurzULxwcHrl6fjvEMwvsvd5a+tCQMM=
 github.com/plexusone/omnichat v0.8.0/go.mod h1:bHZN8Yqbb7wTbnHNe/0zVmvlxLEw1tGUsjlbRWzAHyo=
-github.com/plexusone/omnillm v0.15.5 h1:gyga2dKmJYFfggDSw/Ff3zlPyt7TaElmcepjhrccQDw=
-github.com/plexusone/omnillm v0.15.5/go.mod h1:s1zlPwqU6iySbYMvB7sauuXT+cxsASAO/1/3CblCSxM=
+github.com/plexusone/omnillm v0.16.0 h1:JNV5CfVziaBJKKsoBfKhJJ5koiB/wEGAYOZa+uvRtmM=
+github.com/plexusone/omnillm v0.16.0/go.mod h1:nsfXW/f3Rm0DaQ2Tx6UIKDZQk04YhADMmoOkSi6Ii3A=
 github.com/plexusone/omnillm-core v0.17.0 h1:mzM1yVt7sSFxHqNmyhoV6GxYsqfFOD/m1tWyv2qFpec=
 github.com/plexusone/omnillm-core v0.17.0/go.mod h1:180U/oa67fly3+T3h1sL/pBMvcjIKR+bvSEkAGnalMY=
 github.com/plexusone/omniobserve v0.10.0 h1:JzXj6iVPhxlFnmIRptcla1CCNMZIHpNlR8bvESxhJPw=
@@ -571,6 +571,8 @@ github.com/plexusone/omnivault v0.5.0 h1:7oZwP1KNS+XQ1ksoZoKnLS9PV0TQ93b5NEuxO0T
 github.com/plexusone/omnivault v0.5.0/go.mod h1:LQNyI6gTygb3ht4yLhLpHIdcOVALOTGnaO1oJn6+2KE=
 github.com/plexusone/omnivault-desktop v0.1.0 h1:dfQ0pe4+Dh14MwTX8xlvaS//r55gg/QmkfKNcBqchxY=
 github.com/plexusone/omnivault-desktop v0.1.0/go.mod h1:IKS1xhsjVUp9ETTdHCdqoIKtcJaqTEWxz3CtwTDYnLo=
+github.com/plexusone/omnivoice v0.11.0 h1:TXuf617ml15nsKoELt4uzzZm13rySROqPo8u2VmvctU=
+github.com/plexusone/omnivoice v0.11.0/go.mod h1:KwvTSh8uBsi4C7+1kPO84r+0EEKWTAucvvjKetwitS8=
 github.com/plexusone/omnivoice-core v0.14.0 h1:6KGvVwJI2RWcK0y1A91pVFn7lyuWsYjFPKxsAzIZPNA=
 github.com/plexusone/omnivoice-core v0.14.0/go.mod h1:ghbU63vSkn09vz1Mb9uQrePVcNLpXXBB9IMZ2wkzePM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
