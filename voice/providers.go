@@ -13,37 +13,37 @@ import (
 	_ "github.com/plexusone/omnivoice/providers/all"
 )
 
-// createTwilioGateway creates a Twilio voice gateway using the registry pattern.
-func createTwilioGateway(cfg GatewayConfig) (gateway.Gateway, error) {
-	// Convert tools to omnivoice format
-	var tools []omnivoice.ToolDefinition
-	for _, t := range cfg.Tools {
-		tools = append(tools, omnivoice.ToolDefinition{
+// convertTools converts gateway tools to omnivoice format.
+func convertTools(tools []ToolDefinition) []omnivoice.ToolDefinition {
+	result := make([]omnivoice.ToolDefinition, len(tools))
+	for i, t := range tools {
+		result[i] = omnivoice.ToolDefinition{
 			Name:        t.Name,
 			Description: t.Description,
 			Parameters:  t.Parameters,
-		})
-	}
-
-	// Convert tool handlers
-	var handlers map[string]omnivoice.ToolHandler
-	if cfg.ToolHandlers != nil {
-		handlers = make(map[string]omnivoice.ToolHandler)
-		for name, handler := range cfg.ToolHandlers {
-			h := handler // capture for closure
-			handlers[name] = func(ctx context.Context, args map[string]any) (string, error) {
-				return h(ctx, args)
-			}
 		}
 	}
+	return result
+}
 
-	// Build options using registry options
-	opts := []registry.ProviderOption{
-		// Twilio credentials
-		registry.WithAccountSID(cfg.TwilioAccountSID),
-		registry.WithAuthToken(cfg.TwilioAuthToken),
-		registry.WithPhoneNumber(cfg.TwilioPhone),
+// convertHandlers converts tool handlers to omnivoice format.
+func convertHandlers(handlers map[string]ToolHandler) map[string]omnivoice.ToolHandler {
+	if handlers == nil {
+		return nil
+	}
+	result := make(map[string]omnivoice.ToolHandler, len(handlers))
+	for name, handler := range handlers {
+		h := handler // capture for closure
+		result[name] = func(ctx context.Context, args map[string]any) (string, error) {
+			return h(ctx, args)
+		}
+	}
+	return result
+}
 
+// buildCommonGatewayOptions builds provider options common to all gateways.
+func buildCommonGatewayOptions(cfg GatewayConfig) []registry.ProviderOption {
+	return []registry.ProviderOption{
 		// Server configuration
 		registry.WithListenAddr(cfg.ListenAddr),
 		registry.WithPublicURL(cfg.PublicURL),
@@ -70,11 +70,35 @@ func createTwilioGateway(cfg GatewayConfig) (gateway.Gateway, error) {
 		registry.WithMaxSessionDuration(cfg.MaxSessionDuration),
 		registry.WithInterruptionMode(cfg.InterruptionMode),
 		registry.WithLogger(cfg.Logger),
+	}
+}
 
-		// Provider-specific options via omnivoice
+// extractGateway extracts the gateway.Gateway from a registry.Gateway.
+func extractGateway(gw registry.Gateway) gateway.Gateway {
+	// The registry returns a wrapper; extract the underlying gateway if possible
+	if wrapper, ok := gw.(interface{ Gateway() gateway.Gateway }); ok {
+		return wrapper.Gateway()
+	}
+	// Fallback: wrap the registry.Gateway to satisfy gateway.Gateway interface
+	return &registryGatewayAdapter{gw}
+}
+
+// createTwilioGateway creates a Twilio voice gateway using the registry pattern.
+func createTwilioGateway(cfg GatewayConfig) (gateway.Gateway, error) {
+	tools := convertTools(cfg.Tools)
+	handlers := convertHandlers(cfg.ToolHandlers)
+
+	// Build options: Twilio credentials + common options + provider-specific
+	opts := []registry.ProviderOption{
+		registry.WithAccountSID(cfg.TwilioAccountSID),
+		registry.WithAuthToken(cfg.TwilioAuthToken),
+		registry.WithPhoneNumber(cfg.TwilioPhone),
+	}
+	opts = append(opts, buildCommonGatewayOptions(cfg)...)
+	opts = append(opts,
 		omnivoice.WithGatewayTools("twilio", tools),
 		omnivoice.WithGatewayToolHandlers("twilio", handlers),
-	}
+	)
 
 	// Add listener if provided
 	if cfg.Listener != nil {
@@ -83,117 +107,37 @@ func createTwilioGateway(cfg GatewayConfig) (gateway.Gateway, error) {
 
 	// Configure realtime mode if specified
 	if cfg.Mode == "realtime" {
-		opts = append(opts, registry.WithPipelineMode("realtime"))
-
-		// Get realtime provider factory via omnivoice
-		factory, err := omnivoice.GetRealtimeFactory(cfg.RealtimeProvider)
+		realtimeOpts, err := buildRealtimeOptions(cfg)
 		if err != nil {
-			return nil, fmt.Errorf("get realtime factory: %w", err)
+			return nil, err
 		}
-
-		// Resolve API key from environment if not provided
-		apiKey := cfg.RealtimeAPIKey
-		if apiKey == "" {
-			switch cfg.RealtimeProvider {
-			case "openai":
-				apiKey = os.Getenv("OPENAI_API_KEY")
-			case "gemini":
-				apiKey = os.Getenv("GEMINI_API_KEY")
-				if apiKey == "" {
-					apiKey = os.Getenv("GOOGLE_API_KEY")
-				}
-			}
-		}
-
-		opts = append(opts,
-			omnivoice.WithRealtimeFactory(factory),
-			omnivoice.WithGatewayRealtimeConfig(&gateway.RealtimeConfig{
-				Provider:     cfg.RealtimeProvider,
-				APIKey:       apiKey,
-				Model:        cfg.RealtimeModel,
-				Voice:        cfg.RealtimeVoice,
-				Instructions: cfg.LLMSystemPrompt,
-			}),
-		)
+		opts = append(opts, realtimeOpts...)
 	}
 
-	// Get gateway via registry (returns registry.Gateway, need to unwrap)
+	// Get gateway via registry
 	gw, err := omnivoice.GetGatewayProvider("twilio", opts...)
 	if err != nil {
 		return nil, err
 	}
-
-	// The registry returns a wrapper; extract the underlying gateway if possible
-	if wrapper, ok := gw.(interface{ Gateway() gateway.Gateway }); ok {
-		return wrapper.Gateway(), nil
-	}
-
-	// Fallback: wrap the registry.Gateway to satisfy gateway.Gateway interface
-	return &registryGatewayAdapter{gw}, nil
+	return extractGateway(gw), nil
 }
 
 // createTelnyxGateway creates a Telnyx voice gateway using the registry pattern.
 func createTelnyxGateway(cfg GatewayConfig) (gateway.Gateway, error) {
-	// Convert tools to omnivoice format
-	var tools []omnivoice.ToolDefinition
-	for _, t := range cfg.Tools {
-		tools = append(tools, omnivoice.ToolDefinition{
-			Name:        t.Name,
-			Description: t.Description,
-			Parameters:  t.Parameters,
-		})
-	}
+	tools := convertTools(cfg.Tools)
+	handlers := convertHandlers(cfg.ToolHandlers)
 
-	// Convert tool handlers
-	var handlers map[string]omnivoice.ToolHandler
-	if cfg.ToolHandlers != nil {
-		handlers = make(map[string]omnivoice.ToolHandler)
-		for name, handler := range cfg.ToolHandlers {
-			h := handler // capture for closure
-			handlers[name] = func(ctx context.Context, args map[string]any) (string, error) {
-				return h(ctx, args)
-			}
-		}
-	}
-
-	// Build options using registry options
+	// Build options: Telnyx credentials + common options + provider-specific
 	opts := []registry.ProviderOption{
-		// Telnyx credentials
 		registry.WithAPIKey(cfg.TelnyxAPIKey),
 		registry.WithPhoneNumber(cfg.TelnyxPhone),
 		registry.WithConnectionID(cfg.TelnyxConnectionID),
-
-		// Server configuration
-		registry.WithListenAddr(cfg.ListenAddr),
-		registry.WithPublicURL(cfg.PublicURL),
-
-		// STT configuration
-		registry.WithSTTProvider(cfg.Config.STT.Provider),
-		registry.WithSTTAPIKey(cfg.Config.STT.APIKey),
-		registry.WithSTTModel(cfg.Config.STT.Model),
-		registry.WithSTTLanguage(cfg.Config.STT.Language),
-
-		// TTS configuration
-		registry.WithTTSProvider(cfg.Config.TTS.Provider),
-		registry.WithTTSAPIKey(cfg.Config.TTS.APIKey),
-		registry.WithTTSVoiceID(cfg.Config.TTS.VoiceID),
-		registry.WithTTSModel(cfg.Config.TTS.Model),
-
-		// LLM configuration
-		registry.WithLLMProvider(cfg.LLMProvider),
-		registry.WithLLMModel(cfg.LLMModel),
-		registry.WithLLMSystemPrompt(cfg.LLMSystemPrompt),
-
-		// Session configuration
-		registry.WithGreeting(cfg.Greeting),
-		registry.WithMaxSessionDuration(cfg.MaxSessionDuration),
-		registry.WithInterruptionMode(cfg.InterruptionMode),
-		registry.WithLogger(cfg.Logger),
-
-		// Provider-specific options via omnivoice
+	}
+	opts = append(opts, buildCommonGatewayOptions(cfg)...)
+	opts = append(opts,
 		omnivoice.WithGatewayTools("telnyx", tools),
 		omnivoice.WithGatewayToolHandlers("telnyx", handlers),
-	}
+	)
 
 	// Add listener if provided
 	if cfg.Listener != nil {
@@ -205,14 +149,48 @@ func createTelnyxGateway(cfg GatewayConfig) (gateway.Gateway, error) {
 	if err != nil {
 		return nil, err
 	}
+	return extractGateway(gw), nil
+}
 
-	// The registry returns a wrapper; extract the underlying gateway if possible
-	if wrapper, ok := gw.(interface{ Gateway() gateway.Gateway }); ok {
-		return wrapper.Gateway(), nil
+// buildRealtimeOptions builds provider options for realtime mode.
+func buildRealtimeOptions(cfg GatewayConfig) ([]registry.ProviderOption, error) {
+	factory, err := omnivoice.GetRealtimeFactory(cfg.RealtimeProvider)
+	if err != nil {
+		return nil, fmt.Errorf("get realtime factory: %w", err)
 	}
 
-	// Fallback: wrap the registry.Gateway to satisfy gateway.Gateway interface
-	return &registryGatewayAdapter{gw}, nil
+	// Resolve API key from environment if not provided
+	apiKey := cfg.RealtimeAPIKey
+	if apiKey == "" {
+		apiKey = resolveRealtimeAPIKey(cfg.RealtimeProvider)
+	}
+
+	return []registry.ProviderOption{
+		registry.WithPipelineMode("realtime"),
+		omnivoice.WithRealtimeFactory(factory),
+		omnivoice.WithGatewayRealtimeConfig(&gateway.RealtimeConfig{
+			Provider:     cfg.RealtimeProvider,
+			APIKey:       apiKey,
+			Model:        cfg.RealtimeModel,
+			Voice:        cfg.RealtimeVoice,
+			Instructions: cfg.LLMSystemPrompt,
+		}),
+	}, nil
+}
+
+// resolveRealtimeAPIKey resolves the API key from environment variables.
+func resolveRealtimeAPIKey(provider string) string {
+	switch provider {
+	case "openai":
+		return os.Getenv("OPENAI_API_KEY")
+	case "gemini":
+		if key := os.Getenv("GEMINI_API_KEY"); key != "" {
+			return key
+		}
+		return os.Getenv("GOOGLE_API_KEY")
+	default:
+		return ""
+	}
 }
 
 // registryGatewayAdapter adapts registry.Gateway to gateway.Gateway interface.
