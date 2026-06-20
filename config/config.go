@@ -7,6 +7,7 @@ import "time"
 type Config struct {
 	Gateway       GatewayConfig       `json:"gateway" yaml:"gateway"`
 	Agent         AgentConfig         `json:"agent" yaml:"agent"`
+	Agents        []AgentConfig       `json:"agents,omitempty" yaml:"agents,omitempty"` // Multi-agent configs
 	Channels      ChannelsConfig      `json:"channels" yaml:"channels"`
 	Tools         ToolsConfig         `json:"tools" yaml:"tools"`
 	Skills        SkillsConfig        `json:"skills" yaml:"skills"`
@@ -25,13 +26,28 @@ type GatewayConfig struct {
 
 // AgentConfig configures the AI agent.
 type AgentConfig struct {
-	Provider     string  `json:"provider" yaml:"provider"`
-	Model        string  `json:"model" yaml:"model"`
-	APIKey       string  `json:"api_key" yaml:"api_key"` //nolint:gosec // G117: APIKey loaded from config file
-	BaseURL      string  `json:"base_url" yaml:"base_url"`
-	Temperature  float64 `json:"temperature" yaml:"temperature"`
-	MaxTokens    int     `json:"max_tokens" yaml:"max_tokens"`
-	SystemPrompt string  `json:"system_prompt" yaml:"system_prompt"`
+	ID           string   `json:"id,omitempty" yaml:"id,omitempty"`
+	Name         string   `json:"name,omitempty" yaml:"name,omitempty"`
+	Description  string   `json:"description,omitempty" yaml:"description,omitempty"`
+	Provider     string   `json:"provider" yaml:"provider"`
+	Model        string   `json:"model" yaml:"model"`
+	APIKey       string   `json:"api_key" yaml:"api_key"` //nolint:gosec // G117: APIKey loaded from config file
+	BaseURL      string   `json:"base_url" yaml:"base_url"`
+	Temperature  float64  `json:"temperature" yaml:"temperature"`
+	MaxTokens    int      `json:"max_tokens" yaml:"max_tokens"`
+	SystemPrompt string   `json:"system_prompt" yaml:"system_prompt"`
+	AllowedTools []string `json:"allowed_tools,omitempty" yaml:"allowed_tools,omitempty"`
+	DeniedTools  []string `json:"denied_tools,omitempty" yaml:"denied_tools,omitempty"`
+	Enabled      *bool    `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+}
+
+// IsEnabled returns whether the agent is enabled.
+// Defaults to true if Enabled is nil.
+func (c *AgentConfig) IsEnabled() bool {
+	if c.Enabled == nil {
+		return true
+	}
+	return *c.Enabled
 }
 
 // ChannelsConfig configures messaging channels.
