@@ -65,6 +65,11 @@ func (a *Agent) RegisterCompiledSkill(skill compiled.Skill) error {
 		sa.SetStorage(a.storage)
 	}
 
+	// Check if skill implements AgentAware and inject agent
+	if aa, ok := skill.(compiled.AgentAware); ok {
+		aa.SetAgent(a)
+	}
+
 	// Register all tools from the skill
 	for _, tool := range skill.Tools() {
 		wrapper := &compiledToolWrapper{
@@ -128,10 +133,13 @@ func (a *Agent) SetStorage(s kvs.Store) {
 	skills := a.compiledSkills
 	a.mu.Unlock()
 
-	// Inject storage into existing storage-aware skills
+	// Inject storage and agent into existing compiled skills
 	for _, skill := range skills {
 		if sa, ok := skill.(compiled.StorageAware); ok {
 			sa.SetStorage(s)
+		}
+		if aa, ok := skill.(compiled.AgentAware); ok {
+			aa.SetAgent(a)
 		}
 	}
 }

@@ -33,6 +33,14 @@ type StorageAware interface {
 	SetStorage(s kvs.Store)
 }
 
+// AgentAware is an optional interface for skills that need agent access.
+// If a skill implements this interface, the agent will inject itself
+// after creation and before Init() is called.
+// The agent is passed as interface{} to avoid import cycles.
+type AgentAware interface {
+	SetAgent(a interface{})
+}
+
 // SkillInfo provides metadata about a skill for introspection.
 type SkillInfo struct {
 	Name        string
