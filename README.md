@@ -153,7 +153,7 @@ OmniAgent exposes an OpenAI-compatible REST API, allowing you to use standard Op
 omniagent gateway run --config omniagent.yaml
 
 # Use with any OpenAI client
-curl http://localhost:18789/v1/chat/completions \
+curl http://localhost:18789/openai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $API_KEY" \
   -d '{
@@ -167,15 +167,15 @@ curl http://localhost:18789/v1/chat/completions \
 
 | Endpoint | Description |
 |----------|-------------|
-| `POST /v1/chat/completions` | Chat completions with SSE streaming |
-| `GET /v1/models` | List available models |
-| `GET /v1/tools` | List registered tools |
-| `GET /v1/agents` | List configured agents |
-| `POST /v1/agents` | Create a new agent |
-| `GET /v1/cron/jobs` | List scheduled jobs |
-| `GET /health` | Health check |
+| `POST /openai/v1/chat/completions` | Chat completions with SSE streaming |
+| `GET /openai/v1/models` | List available models |
+| `GET /api/v1/tools` | List registered tools |
+| `GET /api/v1/agents` | List configured agents |
+| `POST /api/v1/agents` | Create a new agent |
+| `GET /api/v1/cron/jobs` | List scheduled jobs |
+| `GET /api/health` | Health check |
 | `GET /docs` | Interactive API documentation (Scalar) |
-| `GET /openapi.json` | OpenAPI 3.1 specification |
+| `GET /api/openapi.json` | OpenAPI 3.1 specification |
 
 ### Python Example
 
@@ -183,7 +183,7 @@ curl http://localhost:18789/v1/chat/completions \
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://localhost:18789/v1",
+    base_url="http://localhost:18789/openai/v1",
     api_key="your-api-key"
 )
 

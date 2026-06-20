@@ -32,8 +32,8 @@ Display registered agent tools and their capabilities.
 
 ### API Endpoints
 
-- [x] `GET /v1/tools` - List available tools
-- [ ] `GET /v1/tools/{name}` - Get tool details
+- [x] `GET /api/v1/tools` - List available tools
+- [ ] `GET /api/v1/tools/{name}` - Get tool details
 
 ### UI Components
 
@@ -45,7 +45,7 @@ Display registered agent tools and their capabilities.
 ### Implementation Files
 
 - `api/openai/handler.go` - Added `ListTools` to `AgentHandler` interface
-- `api/openai/server.go` - Added `/v1/tools` endpoint
+- `api/openai/server.go` - Added `/api/v1/tools` endpoint
 - `openai/adapter.go` - Implemented `ListTools` method
 - `api/openai/web/index.html` - Added tools panel UI
 
@@ -101,7 +101,7 @@ Real-time system status and health monitoring.
 ### API Endpoints
 
 - [x] `GET /health` - Health check (already exists)
-- [ ] `GET /v1/status` - Detailed status including model, tokens
+- [ ] `GET /api/v1/status` - Detailed status including model, tokens
 
 ### UI Components
 
@@ -269,14 +269,14 @@ Schedule automated agent tasks.
 
 ### API Endpoints
 
-- `GET /v1/cron/jobs` - List all scheduled jobs
-- `POST /v1/cron/jobs` - Create a new job
-- `GET /v1/cron/jobs/{id}` - Get job details
-- `PUT /v1/cron/jobs/{id}` - Update a job
-- `DELETE /v1/cron/jobs/{id}` - Delete a job
-- `POST /v1/cron/jobs/{id}/trigger` - Run job immediately
-- `POST /v1/cron/jobs/{id}/enable` - Enable a job
-- `POST /v1/cron/jobs/{id}/disable` - Disable a job
+- `GET /api/v1/cron/jobs` - List all scheduled jobs
+- `POST /api/v1/cron/jobs` - Create a new job
+- `GET /api/v1/cron/jobs/{id}` - Get job details
+- `PUT /api/v1/cron/jobs/{id}` - Update a job
+- `DELETE /api/v1/cron/jobs/{id}` - Delete a job
+- `POST /api/v1/cron/jobs/{id}/trigger` - Run job immediately
+- `POST /api/v1/cron/jobs/{id}/enable` - Enable a job
+- `POST /api/v1/cron/jobs/{id}/disable` - Disable a job
 
 ### UI Components
 
@@ -318,12 +318,12 @@ Support for multiple agent configurations.
 
 ### API Endpoints
 
-- `GET /v1/agents` - List all configured agents
-- `POST /v1/agents` - Create a new agent
-- `GET /v1/agents/{id}` - Get agent details
-- `PUT /v1/agents/{id}` - Update an agent
-- `DELETE /v1/agents/{id}` - Delete an agent
-- `POST /v1/agents/{id}/clone` - Clone an agent
+- `GET /api/v1/agents` - List all configured agents
+- `POST /api/v1/agents` - Create a new agent
+- `GET /api/v1/agents/{id}` - Get agent details
+- `PUT /api/v1/agents/{id}` - Update an agent
+- `DELETE /api/v1/agents/{id}` - Delete an agent
+- `POST /api/v1/agents/{id}/clone` - Clone an agent
 
 ### Configuration
 
@@ -396,12 +396,12 @@ Token usage tracking, cost estimation, and visualization.
 
 ### API Endpoints
 
-- `GET /v1/usage` - Usage summary for time range
-- `GET /v1/usage/timeseries` - Time-bucketed usage data
-- `GET /v1/usage/records` - Recent usage records
-- `GET /v1/usage/chart/tokens` - Token chart (ChartIR format)
-- `GET /v1/usage/chart/cost` - Cost chart (ChartIR format)
-- `GET /v1/usage/chart/models` - Model distribution chart (ChartIR format)
+- `GET /api/v1/usage` - Usage summary for time range
+- `GET /api/v1/usage/timeseries` - Time-bucketed usage data
+- `GET /api/v1/usage/records` - Recent usage records
+- `GET /api/v1/usage/chart/tokens` - Token chart (ChartIR format)
+- `GET /api/v1/usage/chart/cost` - Cost chart (ChartIR format)
+- `GET /api/v1/usage/chart/models` - Model distribution chart (ChartIR format)
 
 ### Query Parameters
 
@@ -465,11 +465,11 @@ Semantic memory for storing and retrieving information across conversations.
 
 ### API Endpoints
 
-- `GET /v1/memories` - List memories in collection
-- `POST /v1/memories` - Store new memory
-- `GET /v1/memories/search` - Semantic search
-- `DELETE /v1/memories/{key}` - Delete memory
-- `GET /v1/memories/collections` - List collections
+- `GET /api/v1/memories` - List memories in collection
+- `POST /api/v1/memories` - Store new memory
+- `GET /api/v1/memories/search` - Semantic search
+- `DELETE /api/v1/memories/{key}` - Delete memory
+- `GET /api/v1/memories/collections` - List collections
 
 ### Query Parameters
 
@@ -510,25 +510,25 @@ The API server uses a hybrid architecture combining three routing technologies:
 
 ```
 Chi Router (base)
-├── /v1/chat/completions  → StreamingHandler → ogen (SSE streaming)
-├── /v1/models            → ogen handler
-├── /v1/models/{model}    → ogen handler
-├── /v1/tools             → Huma (auto-generated OpenAPI)
-├── /v1/agents/*          → Huma
-├── /v1/cron/jobs/*       → Huma
-├── /v1/usage/*           → Huma
-├── /v1/memories/*        → Huma
-├── /health               → Huma
-├── /openapi.json         → Merged spec (ogen input + Huma generated)
-├── /docs                 → Scalar UI
-└── /                     → Web UI (static)
+├── /openai/v1/chat/completions  → StreamingHandler → ogen (SSE streaming)
+├── /openai/v1/models            → ogen handler
+├── /openai/v1/models/{model}    → ogen handler
+├── /api/v1/tools                → Huma (auto-generated OpenAPI)
+├── /api/v1/agents/*             → Huma
+├── /api/v1/cron/jobs/*          → Huma
+├── /api/v1/usage/*              → Huma
+├── /api/v1/memories/*           → Huma
+├── /api/health                  → Huma
+├── /api/openapi.json            → Merged spec (ogen input + Huma generated)
+├── /docs                        → Scalar UI
+└── /                            → Web UI (static)
 ```
 
 #### Component Responsibilities
 
 - **Chi Router (github.com/go-chi/chi/v5)**: Base HTTP router with middleware support (RealIP, Recoverer). Provides clean path-based routing and compatibility with standard `http.Handler`.
 
-- **ogen (github.com/ogen-go/ogen)**: Handles OpenAI-compatible endpoints (`/v1/chat/completions`, `/v1/models`). Used for SSE streaming support and type-safe request/response handling generated from OpenAPI spec.
+- **ogen (github.com/ogen-go/ogen)**: Handles OpenAI-compatible endpoints (`/openai/v1/chat/completions`, `/openai/v1/models`). Used for SSE streaming support and type-safe request/response handling generated from OpenAPI spec.
 
 - **Huma (github.com/danielgtaylor/huma/v2)**: Handles OmniAgent extension endpoints (tools, agents, cron, usage, memory, health). Provides automatic OpenAPI 3.1 schema generation from Go types with validation.
 

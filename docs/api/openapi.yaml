@@ -2137,7 +2137,7 @@ info:
     version: 1.0.0
 openapi: 3.1.0
 paths:
-    /health:
+    /api/health:
         get:
             description: Returns the health status of the API server.
             operationId: healthCheck
@@ -2157,7 +2157,7 @@ paths:
             summary: Health check
             tags:
                 - System
-    /v1/agents:
+    /api/v1/agents:
         get:
             description: Returns a list of all configured agents.
             operationId: listAgents
@@ -2202,7 +2202,7 @@ paths:
             summary: Create a new agent
             tags:
                 - Agents
-    /v1/agents/{id}:
+    /api/v1/agents/{id}:
         delete:
             description: Deletes an agent configuration.
             operationId: deleteAgent
@@ -2286,7 +2286,7 @@ paths:
             summary: Update an agent
             tags:
                 - Agents
-    /v1/agents/{id}/clone:
+    /api/v1/agents/{id}/clone:
         post:
             description: Creates a copy of an existing agent with a new name.
             operationId: cloneAgent
@@ -2320,7 +2320,7 @@ paths:
             summary: Clone an agent
             tags:
                 - Agents
-    /v1/agents/{id}/reload:
+    /api/v1/agents/{id}/reload:
         post:
             description: Reloads an agent from its configuration.
             operationId: reloadAgent
@@ -2348,44 +2348,7 @@ paths:
             summary: Reload an agent
             tags:
                 - Agents
-    /v1/chat/completions:
-        post:
-            operationId: createChatCompletion
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CreateChatCompletionRequest'
-                required: true
-            responses:
-                "200":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CreateChatCompletionResponse'
-                    description: OK
-                "400":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
-                    description: Bad Request
-                "401":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
-                    description: Unauthorized
-                "500":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
-                    description: Internal Server Error
-            summary: Creates a model response for the given chat conversation
-            tags:
-                - Chat
-    /v1/cron/jobs:
+    /api/v1/cron/jobs:
         get:
             description: Returns a list of all scheduled cron jobs.
             operationId: listCronJobs
@@ -2430,7 +2393,7 @@ paths:
             summary: Create a scheduled job
             tags:
                 - Cron
-    /v1/cron/jobs/{id}:
+    /api/v1/cron/jobs/{id}:
         delete:
             description: Deletes a cron job.
             operationId: deleteCronJob
@@ -2514,7 +2477,7 @@ paths:
             summary: Update a job
             tags:
                 - Cron
-    /v1/cron/jobs/{id}/disable:
+    /api/v1/cron/jobs/{id}/disable:
         post:
             description: Disables a cron job without deleting it.
             operationId: disableCronJob
@@ -2542,7 +2505,7 @@ paths:
             summary: Disable a job
             tags:
                 - Cron
-    /v1/cron/jobs/{id}/enable:
+    /api/v1/cron/jobs/{id}/enable:
         post:
             description: Enables a disabled cron job.
             operationId: enableCronJob
@@ -2570,7 +2533,7 @@ paths:
             summary: Enable a job
             tags:
                 - Cron
-    /v1/cron/jobs/{id}/trigger:
+    /api/v1/cron/jobs/{id}/trigger:
         post:
             description: Runs a cron job immediately.
             operationId: triggerCronJob
@@ -2598,7 +2561,7 @@ paths:
             summary: Trigger a job
             tags:
                 - Cron
-    /v1/memories:
+    /api/v1/memories:
         get:
             description: Returns memories from a collection.
             operationId: listMemories
@@ -2661,7 +2624,7 @@ paths:
             summary: Store a memory
             tags:
                 - Memory
-    /v1/memories/{key}:
+    /api/v1/memories/{key}:
         delete:
             description: Deletes a memory by key.
             operationId: deleteMemory
@@ -2693,7 +2656,7 @@ paths:
             summary: Delete a memory
             tags:
                 - Memory
-    /v1/memories/collections:
+    /api/v1/memories/collections:
         get:
             description: Returns all memory collections.
             operationId: listCollections
@@ -2713,7 +2676,7 @@ paths:
             summary: List collections
             tags:
                 - Memory
-    /v1/memories/search:
+    /api/v1/memories/search:
         get:
             description: Performs semantic search on memories.
             operationId: searchMemories
@@ -2759,46 +2722,7 @@ paths:
             summary: Search memories
             tags:
                 - Memory
-    /v1/models:
-        get:
-            operationId: listModels
-            responses:
-                "200":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListModelsResponse'
-                    description: OK
-            summary: Lists the currently available models
-            tags:
-                - Models
-    /v1/models/{model}:
-        get:
-            operationId: retrieveModel
-            parameters:
-                - description: The ID of the model to retrieve
-                  in: path
-                  name: model
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Model'
-                    description: OK
-                "404":
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ErrorResponse'
-                    description: Model not found
-            summary: Retrieves a model instance
-            tags:
-                - Models
-    /v1/tools:
+    /api/v1/tools:
         get:
             description: Returns a list of all tools registered with the agent.
             operationId: listTools
@@ -2818,7 +2742,7 @@ paths:
             summary: List available tools
             tags:
                 - Tools
-    /v1/usage:
+    /api/v1/usage:
         get:
             description: Returns aggregated usage statistics for a time range.
             operationId: getUsageSummary
@@ -2853,7 +2777,7 @@ paths:
             summary: Get usage summary
             tags:
                 - Usage
-    /v1/usage/chart/cost:
+    /api/v1/usage/chart/cost:
         get:
             description: Returns a ChartIR representation of cost over time.
             operationId: getUsageChartCost
@@ -2896,7 +2820,7 @@ paths:
             summary: Get cost chart
             tags:
                 - Usage
-    /v1/usage/chart/models:
+    /api/v1/usage/chart/models:
         get:
             description: Returns a ChartIR representation of usage by model.
             operationId: getUsageChartModels
@@ -2931,7 +2855,7 @@ paths:
             summary: Get model distribution chart
             tags:
                 - Usage
-    /v1/usage/chart/tokens:
+    /api/v1/usage/chart/tokens:
         get:
             description: Returns a ChartIR representation of token usage over time.
             operationId: getUsageChartTokens
@@ -2974,7 +2898,7 @@ paths:
             summary: Get token usage chart
             tags:
                 - Usage
-    /v1/usage/records:
+    /api/v1/usage/records:
         get:
             description: Returns recent usage records.
             operationId: getUsageRecords
@@ -3004,7 +2928,7 @@ paths:
             summary: Get usage records
             tags:
                 - Usage
-    /v1/usage/timeseries:
+    /api/v1/usage/timeseries:
         get:
             description: Returns time-bucketed usage data.
             operationId: getUsageTimeseries
@@ -3047,6 +2971,82 @@ paths:
             summary: Get usage timeseries
             tags:
                 - Usage
+    /openai/v1/chat/completions:
+        post:
+            operationId: createChatCompletion
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateChatCompletionRequest'
+                required: true
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateChatCompletionResponse'
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Bad Request
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Unauthorized
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Internal Server Error
+            summary: Creates a model response for the given chat conversation
+            tags:
+                - Chat
+    /openai/v1/models:
+        get:
+            operationId: listModels
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListModelsResponse'
+                    description: OK
+            summary: Lists the currently available models
+            tags:
+                - Models
+    /openai/v1/models/{model}:
+        get:
+            operationId: retrieveModel
+            parameters:
+                - description: The ID of the model to retrieve
+                  in: path
+                  name: model
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Model'
+                    description: OK
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Model not found
+            summary: Retrieves a model instance
+            tags:
+                - Models
 servers:
     - description: Local development server
       url: http://localhost:8080

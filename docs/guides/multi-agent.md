@@ -151,7 +151,7 @@ Specify the agent using the `model` parameter:
 
 ```bash
 # Use the research agent
-curl http://localhost:18789/v1/chat/completions \
+curl http://localhost:18789/openai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "research",
@@ -159,7 +159,7 @@ curl http://localhost:18789/v1/chat/completions \
   }'
 
 # Use the coding agent
-curl http://localhost:18789/v1/chat/completions \
+curl http://localhost:18789/openai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "coder",
@@ -203,7 +203,7 @@ response = client.chat.completions.create(
 ### List Agents
 
 ```bash
-curl http://localhost:18789/v1/agents
+curl http://localhost:18789/api/v1/agents
 ```
 
 ```json
@@ -229,7 +229,7 @@ curl http://localhost:18789/v1/agents
 ### Create Agent (Runtime)
 
 ```bash
-curl -X POST http://localhost:18789/v1/agents \
+curl -X POST http://localhost:18789/api/v1/agents \
   -H "Content-Type: application/json" \
   -d '{
     "id": "translator",
@@ -243,7 +243,7 @@ curl -X POST http://localhost:18789/v1/agents \
 ### Update Agent
 
 ```bash
-curl -X PUT http://localhost:18789/v1/agents/translator \
+curl -X PUT http://localhost:18789/api/v1/agents/translator \
   -H "Content-Type: application/json" \
   -d '{
     "system_prompt": "You are a translator specializing in technical documents."
@@ -253,7 +253,7 @@ curl -X PUT http://localhost:18789/v1/agents/translator \
 ### Disable Agent
 
 ```bash
-curl -X PUT http://localhost:18789/v1/agents/translator \
+curl -X PUT http://localhost:18789/api/v1/agents/translator \
   -H "Content-Type: application/json" \
   -d '{"enabled": false}'
 ```
@@ -261,7 +261,7 @@ curl -X PUT http://localhost:18789/v1/agents/translator \
 ### Delete Agent
 
 ```bash
-curl -X DELETE http://localhost:18789/v1/agents/translator
+curl -X DELETE http://localhost:18789/api/v1/agents/translator
 ```
 
 ## Programmatic Usage
@@ -398,7 +398,7 @@ agents:
 1. **Use descriptive IDs**: Agent IDs are used in API calls, make them memorable
 2. **Set clear system prompts**: Each agent should have a focused purpose
 3. **Restrict tool access**: Only give agents the tools they need
-4. **Monitor usage**: Track which agents are used most via `/v1/usage`
+4. **Monitor usage**: Track which agents are used most via `/api/v1/usage`
 5. **Start simple**: Begin with 2-3 agents and expand as needed
 
 ## Limitations

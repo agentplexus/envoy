@@ -10,12 +10,12 @@ Start the gateway server:
 omniagent gateway run --config omniagent.yaml
 ```
 
-The API is available at `http://localhost:18789/v1`.
+The API is available at `http://localhost:18789/openai/v1`.
 
 ### Using curl
 
 ```bash
-curl http://localhost:18789/v1/chat/completions \
+curl http://localhost:18789/openai/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $API_KEY" \
   -d '{
@@ -31,7 +31,7 @@ curl http://localhost:18789/v1/chat/completions \
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://localhost:18789/v1",
+    base_url="http://localhost:18789/openai/v1",
     api_key="your-api-key"
 )
 
@@ -53,7 +53,7 @@ for chunk in response:
 import OpenAI from 'openai';
 
 const client = new OpenAI({
-  baseURL: 'http://localhost:18789/v1',
+  baseURL: 'http://localhost:18789/openai/v1',
   apiKey: 'your-api-key',
 });
 
@@ -72,7 +72,7 @@ for await (const chunk of stream) {
 
 ### Chat Completions
 
-#### POST /v1/chat/completions
+#### POST /openai/v1/chat/completions
 
 Create a chat completion with optional streaming.
 
@@ -135,7 +135,7 @@ data: [DONE]
 
 ### Models
 
-#### GET /v1/models
+#### GET /openai/v1/models
 
 List available models.
 
@@ -155,13 +155,13 @@ List available models.
 }
 ```
 
-#### GET /v1/models/{model}
+#### GET /openai/v1/models/{model}
 
 Get details for a specific model.
 
 ### Tools
 
-#### GET /v1/tools
+#### GET /api/v1/tools
 
 List all registered tools.
 
@@ -189,7 +189,7 @@ List all registered tools.
 
 ### Agents
 
-#### GET /v1/agents
+#### GET /api/v1/agents
 
 List all configured agents.
 
@@ -212,7 +212,7 @@ List all configured agents.
 }
 ```
 
-#### POST /v1/agents
+#### POST /api/v1/agents
 
 Create a new agent.
 
@@ -231,43 +231,43 @@ Create a new agent.
 }
 ```
 
-#### GET /v1/agents/{id}
+#### GET /api/v1/agents/{id}
 
 Get agent details.
 
-#### PUT /v1/agents/{id}
+#### PUT /api/v1/agents/{id}
 
 Update an agent.
 
-#### DELETE /v1/agents/{id}
+#### DELETE /api/v1/agents/{id}
 
 Delete an agent.
 
 ### Cron Jobs
 
-#### GET /v1/cron/jobs
+#### GET /api/v1/cron/jobs
 
 List all scheduled jobs.
 
-#### POST /v1/cron/jobs
+#### POST /api/v1/cron/jobs
 
 Create a new job.
 
-#### GET /v1/cron/jobs/{id}
+#### GET /api/v1/cron/jobs/{id}
 
 Get job details.
 
-#### DELETE /v1/cron/jobs/{id}
+#### DELETE /api/v1/cron/jobs/{id}
 
 Delete a job.
 
-#### POST /v1/cron/jobs/{id}/trigger
+#### POST /api/v1/cron/jobs/{id}/trigger
 
 Trigger immediate execution.
 
 ### Usage
 
-#### GET /v1/usage
+#### GET /api/v1/usage
 
 Get usage statistics.
 
@@ -300,7 +300,7 @@ Health check endpoint.
 The API supports Bearer token authentication:
 
 ```bash
-curl -H "Authorization: Bearer your-api-key" http://localhost:18789/v1/models
+curl -H "Authorization: Bearer your-api-key" http://localhost:18789/openai/v1/models
 ```
 
 Configure API keys in your config file:
@@ -451,13 +451,13 @@ The API is built on a hybrid architecture:
 
 ```
 Chi Router (base)
-├── /v1/chat/completions  → ogen (SSE streaming)
-├── /v1/models            → ogen
-├── /v1/tools             → Huma
-├── /v1/agents/*          → Huma
-├── /v1/cron/jobs/*       → Huma
-├── /v1/usage/*           → Huma
-├── /health               → Huma
-├── /openapi.json         → Merged spec
-└── /docs                 → Scalar UI
+├── /openai/v1/chat/completions  → ogen (SSE streaming)
+├── /openai/v1/models            → ogen
+├── /api/v1/tools                → Huma
+├── /api/v1/agents/*             → Huma
+├── /api/v1/cron/jobs/*          → Huma
+├── /api/v1/usage/*              → Huma
+├── /api/health                  → Huma
+├── /api/openapi.json            → Merged spec
+└── /docs                        → Scalar UI
 ```
