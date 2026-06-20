@@ -363,7 +363,7 @@ func TestSkill_TriggerTool(t *testing.T) {
 	skill := setupSkill(t)
 	ctx := context.Background()
 
-	// Create a job
+	// Create a job with send_message action (no agent configured, so trigger will fail)
 	createParams := map[string]any{
 		"name":          "Test Job",
 		"schedule_cron": "0 0 9 * * *",
@@ -374,15 +374,20 @@ func TestSkill_TriggerTool(t *testing.T) {
 	createResult, _ := skill.handleCreate(ctx, createParams)
 	id := createResult.(map[string]any)["id"].(string)
 
-	// Trigger
+	// Trigger - should complete but with success=false since no agent configured
 	result, err := skill.handleTrigger(ctx, map[string]any{"id": id})
 	if err != nil {
 		t.Fatalf("handleTrigger failed: %v", err)
 	}
 
 	m := result.(map[string]any)
-	if m["success"] != true {
-		t.Error("expected success to be true")
+	// Without an agent configured, send_message action should fail
+	if m["success"] != false {
+		t.Error("expected success to be false (no agent configured)")
+	}
+	// Error message should indicate the issue
+	if m["error"] == "" {
+		t.Error("expected error message")
 	}
 }
 

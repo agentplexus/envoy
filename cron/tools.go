@@ -15,12 +15,14 @@ import (
 type Skill struct {
 	store     *Store
 	scheduler *Scheduler
+	agent     AgentInterface // Agent for executing actions
 }
 
 // Ensure Skill implements the interfaces.
 var (
 	_ compiled.Skill        = (*Skill)(nil)
 	_ compiled.StorageAware = (*Skill)(nil)
+	_ compiled.AgentAware   = (*Skill)(nil)
 )
 
 // NewSkill creates a new cron skill.
@@ -43,15 +45,28 @@ func (s *Skill) SetStorage(storage kvs.Store) {
 	s.store = NewStore(StoreConfig{Backend: storage})
 }
 
+// SetAgent implements compiled.AgentAware.
+func (s *Skill) SetAgent(a interface{}) {
+	// Type assert to AgentInterface
+	if agent, ok := a.(AgentInterface); ok {
+		s.agent = agent
+	}
+}
+
 // Init initializes the skill.
 func (s *Skill) Init(ctx context.Context) error {
 	if s.store == nil {
 		return fmt.Errorf("storage not configured")
 	}
 
+	// Create executor with agent
+	executor := NewExecutor(ExecutorConfig{
+		Agent: s.agent,
+	})
+
 	s.scheduler = NewScheduler(SchedulerConfig{
 		Store:   s.store,
-		Handler: nil, // Handler set via SetExecutionHandler
+		Handler: executor.Execute, // Wire up the executor
 	})
 
 	return s.scheduler.Start(ctx)
