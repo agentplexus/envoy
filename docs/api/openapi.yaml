@@ -1,0 +1,3071 @@
+components:
+    schemas:
+        AgentInfo:
+            additionalProperties: false
+            description: Agent configuration and metadata
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/AgentInfo.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                allowed_tools:
+                    description: List of allowed tool names
+                    items:
+                        type: string
+                    type:
+                        - array
+                        - "null"
+                created_at:
+                    description: Creation timestamp
+                    format: date-time
+                    type: string
+                denied_tools:
+                    description: List of denied tool names
+                    items:
+                        type: string
+                    type:
+                        - array
+                        - "null"
+                description:
+                    description: Agent description
+                    type: string
+                enabled:
+                    description: Whether agent is enabled
+                    type: boolean
+                id:
+                    description: Agent unique identifier
+                    type: string
+                max_tokens:
+                    description: Maximum tokens to generate
+                    format: int64
+                    type: integer
+                model:
+                    description: Model identifier
+                    type: string
+                name:
+                    description: Agent display name
+                    type: string
+                provider:
+                    description: LLM provider (anthropic, openai, etc.)
+                    type: string
+                system_prompt:
+                    description: System prompt for the agent
+                    type: string
+                temperature:
+                    description: Sampling temperature (0.0-2.0)
+                    format: double
+                    type: number
+                updated_at:
+                    description: Last update timestamp
+                    format: date-time
+                    type: string
+            required:
+                - id
+                - name
+                - provider
+                - model
+                - enabled
+                - created_at
+                - updated_at
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        AgentUsage:
+            additionalProperties: false
+            description: Usage statistics for an agent
+            properties:
+                agent_id:
+                    description: Agent identifier
+                    type: string
+                completion_tokens:
+                    description: Output tokens
+                    format: int64
+                    type: integer
+                cost:
+                    description: Estimated cost in USD
+                    format: double
+                    type: number
+                prompt_tokens:
+                    description: Input tokens
+                    format: int64
+                    type: integer
+                requests:
+                    description: Number of requests
+                    format: int64
+                    type: integer
+                total_tokens:
+                    description: Total tokens
+                    format: int64
+                    type: integer
+            required:
+                - agent_id
+                - requests
+                - prompt_tokens
+                - completion_tokens
+                - total_tokens
+                - cost
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Axis:
+            additionalProperties: false
+            description: Chart axis configuration
+            properties:
+                id:
+                    type: string
+                max:
+                    format: double
+                    type: number
+                min:
+                    format: double
+                    type: number
+                name:
+                    type: string
+                position:
+                    type: string
+                type:
+                    type: string
+            required:
+                - id
+                - type
+                - position
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        ChartIR:
+            additionalProperties: false
+            description: Chart intermediate representation for rendering
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ChartIR.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                axes:
+                    items:
+                        $ref: '#/components/schemas/Axis'
+                    type:
+                        - array
+                        - "null"
+                datasets:
+                    items:
+                        $ref: '#/components/schemas/Dataset'
+                    type:
+                        - array
+                        - "null"
+                grid:
+                    $ref: '#/components/schemas/Grid'
+                legend:
+                    $ref: '#/components/schemas/Legend'
+                marks:
+                    items:
+                        $ref: '#/components/schemas/Mark'
+                    type:
+                        - array
+                        - "null"
+                title:
+                    type: string
+                tooltip:
+                    $ref: '#/components/schemas/Tooltip'
+            required:
+                - datasets
+                - marks
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        ChatCompletionChoice:
+            description: A chat completion choice
+            properties:
+                finish_reason:
+                    description: The reason the model stopped generating
+                    enum:
+                        - stop
+                        - length
+                        - tool_calls
+                        - content_filter
+                        - function_call
+                    type:
+                        - string
+                        - "null"
+                index:
+                    description: Index of this choice
+                    type: integer
+                logprobs:
+                    $ref: '#/components/schemas/ChatCompletionLogprobs'
+                message:
+                    $ref: '#/components/schemas/ChatCompletionMessage'
+            required:
+                - index
+                - message
+                - finish_reason
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionContentPart:
+            description: Content part of a chat message
+            properties:
+                image_url:
+                    properties:
+                        detail:
+                            default: auto
+                            enum:
+                                - auto
+                                - low
+                                - high
+                            type: string
+                        url:
+                            type: string
+                    type: object
+                text:
+                    type: string
+                type:
+                    enum:
+                        - text
+                        - image_url
+                    type: string
+            required:
+                - type
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionLogprobs:
+            description: Log probability information
+            properties:
+                content:
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionTokenLogprob'
+                    type:
+                        - array
+                        - "null"
+                refusal:
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionTokenLogprob'
+                    type:
+                        - array
+                        - "null"
+            type:
+                - object
+                - "null"
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionMessage:
+            description: A chat completion message
+            properties:
+                content:
+                    description: The contents of the message
+                    type:
+                        - string
+                        - "null"
+                function_call:
+                    deprecated: true
+                    properties:
+                        arguments:
+                            type: string
+                        name:
+                            type: string
+                    type: object
+                refusal:
+                    type:
+                        - string
+                        - "null"
+                role:
+                    enum:
+                        - assistant
+                    type: string
+                tool_calls:
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionMessageToolCall'
+                    type: array
+            required:
+                - role
+                - content
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionMessageParam:
+            description: Input message for chat completion
+            properties:
+                content:
+                    description: The contents of the message
+                    oneOf:
+                        - type: string
+                        - items:
+                            $ref: '#/components/schemas/ChatCompletionContentPart'
+                          type: array
+                name:
+                    description: Optional name for the participant
+                    type: string
+                role:
+                    description: The role of the message author
+                    enum:
+                        - system
+                        - user
+                        - assistant
+                        - tool
+                    type: string
+                tool_call_id:
+                    description: Tool call that this message is responding to
+                    type: string
+                tool_calls:
+                    description: Tool calls generated by the model
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionMessageToolCall'
+                    type: array
+            required:
+                - role
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionMessageToolCall:
+            description: Tool call in a chat message
+            properties:
+                function:
+                    properties:
+                        arguments:
+                            description: JSON arguments to pass to the function
+                            type: string
+                        name:
+                            description: The name of the function to call
+                            type: string
+                    required:
+                        - name
+                        - arguments
+                    type: object
+                id:
+                    description: The ID of the tool call
+                    type: string
+                type:
+                    enum:
+                        - function
+                    type: string
+            required:
+                - id
+                - type
+                - function
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionNamedToolChoice:
+            description: Named tool choice for chat completion
+            properties:
+                function:
+                    properties:
+                        name:
+                            type: string
+                    required:
+                        - name
+                    type: object
+                type:
+                    enum:
+                        - function
+                    type: string
+            required:
+                - type
+                - function
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionStreamChoice:
+            description: Streaming chat completion choice
+            properties:
+                delta:
+                    $ref: '#/components/schemas/ChatCompletionStreamDelta'
+                finish_reason:
+                    enum:
+                        - stop
+                        - length
+                        - tool_calls
+                        - content_filter
+                        - function_call
+                    type:
+                        - string
+                        - "null"
+                index:
+                    type: integer
+                logprobs:
+                    $ref: '#/components/schemas/ChatCompletionLogprobs'
+            required:
+                - index
+                - delta
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionStreamDelta:
+            description: Delta content in streaming response
+            properties:
+                content:
+                    type:
+                        - string
+                        - "null"
+                function_call:
+                    deprecated: true
+                    properties:
+                        arguments:
+                            type: string
+                        name:
+                            type: string
+                    type: object
+                refusal:
+                    type:
+                        - string
+                        - "null"
+                role:
+                    enum:
+                        - system
+                        - user
+                        - assistant
+                        - tool
+                    type: string
+                tool_calls:
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionStreamToolCall'
+                    type: array
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionStreamOptions:
+            description: Options for streaming chat completions
+            properties:
+                include_usage:
+                    description: If true, include usage information in the final chunk
+                    type: boolean
+            type:
+                - object
+                - "null"
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionStreamToolCall:
+            description: Tool call in streaming response
+            properties:
+                function:
+                    properties:
+                        arguments:
+                            type: string
+                        name:
+                            type: string
+                    type: object
+                id:
+                    type: string
+                index:
+                    type: integer
+                type:
+                    enum:
+                        - function
+                    type: string
+            required:
+                - index
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionTokenLogprob:
+            description: Token log probability
+            properties:
+                bytes:
+                    items:
+                        type: integer
+                    type:
+                        - array
+                        - "null"
+                logprob:
+                    type: number
+                token:
+                    type: string
+                top_logprobs:
+                    items:
+                        properties:
+                            bytes:
+                                items:
+                                    type: integer
+                                type:
+                                    - array
+                                    - "null"
+                            logprob:
+                                type: number
+                            token:
+                                type: string
+                        required:
+                            - token
+                            - logprob
+                            - bytes
+                        type: object
+                    type: array
+            required:
+                - token
+                - logprob
+                - bytes
+                - top_logprobs
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ChatCompletionTool:
+            description: Tool definition for chat completion
+            properties:
+                function:
+                    $ref: '#/components/schemas/FunctionObject'
+                type:
+                    enum:
+                        - function
+                    type: string
+            required:
+                - type
+                - function
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        CloneAgentRequest:
+            additionalProperties: false
+            description: Request to clone an existing agent
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/CloneAgentRequest.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                new_id:
+                    description: New agent ID (auto-generated if empty)
+                    type: string
+                new_name:
+                    description: New agent name
+                    type: string
+            required:
+                - new_name
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Column:
+            additionalProperties: false
+            description: Chart data column definition
+            properties:
+                name:
+                    type: string
+                type:
+                    type: string
+            required:
+                - name
+                - type
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        CompletionUsage:
+            description: Token usage statistics for a completion
+            properties:
+                completion_tokens:
+                    description: Number of tokens in the completion
+                    type: integer
+                completion_tokens_details:
+                    properties:
+                        accepted_prediction_tokens:
+                            type: integer
+                        audio_tokens:
+                            type: integer
+                        reasoning_tokens:
+                            type: integer
+                        rejected_prediction_tokens:
+                            type: integer
+                    type: object
+                prompt_tokens:
+                    description: Number of tokens in the prompt
+                    type: integer
+                prompt_tokens_details:
+                    properties:
+                        audio_tokens:
+                            type: integer
+                        cached_tokens:
+                            type: integer
+                    type: object
+                total_tokens:
+                    description: Total number of tokens used
+                    type: integer
+            required:
+                - prompt_tokens
+                - completion_tokens
+                - total_tokens
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        CreateAgentRequest:
+            additionalProperties: false
+            description: Request to create a new agent
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/CreateAgentRequest.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                allowed_tools:
+                    description: Allowed tool names
+                    items:
+                        type: string
+                    type:
+                        - array
+                        - "null"
+                api_key:
+                    description: API key for the provider
+                    type: string
+                base_url:
+                    description: Base URL for the provider
+                    type: string
+                denied_tools:
+                    description: Denied tool names
+                    items:
+                        type: string
+                    type:
+                        - array
+                        - "null"
+                description:
+                    description: Agent description
+                    type: string
+                id:
+                    description: Agent ID (auto-generated if empty)
+                    type: string
+                max_tokens:
+                    description: Maximum tokens to generate
+                    format: int64
+                    type: integer
+                model:
+                    description: Model identifier
+                    type: string
+                name:
+                    description: Agent display name
+                    type: string
+                provider:
+                    description: LLM provider
+                    type: string
+                system_prompt:
+                    description: System prompt
+                    type: string
+                temperature:
+                    description: Sampling temperature
+                    format: double
+                    type: number
+            required:
+                - name
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        CreateChatCompletionRequest:
+            description: Request for chat completion
+            properties:
+                frequency_penalty:
+                    default: 0
+                    description: Penalty for token frequency
+                    maximum: 2
+                    minimum: -2
+                    type:
+                        - number
+                        - "null"
+                logit_bias:
+                    additionalProperties:
+                        type: integer
+                    description: Modify likelihood of specified tokens
+                    type:
+                        - object
+                        - "null"
+                max_completion_tokens:
+                    description: Maximum number of tokens to generate (alternative to max_tokens)
+                    type:
+                        - integer
+                        - "null"
+                max_tokens:
+                    description: Maximum number of tokens to generate
+                    type:
+                        - integer
+                        - "null"
+                messages:
+                    description: A list of messages comprising the conversation
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionMessageParam'
+                    minItems: 1
+                    type: array
+                metadata:
+                    additionalProperties:
+                        type: string
+                    description: Custom metadata
+                    type:
+                        - object
+                        - "null"
+                model:
+                    description: ID of the model to use
+                    example: omniagent
+                    type: string
+                "n":
+                    default: 1
+                    description: Number of chat completion choices to generate
+                    maximum: 128
+                    minimum: 1
+                    type:
+                        - integer
+                        - "null"
+                presence_penalty:
+                    default: 0
+                    description: Penalty for token presence
+                    maximum: 2
+                    minimum: -2
+                    type:
+                        - number
+                        - "null"
+                response_format:
+                    $ref: '#/components/schemas/ResponseFormat'
+                seed:
+                    description: Seed for deterministic sampling
+                    type:
+                        - integer
+                        - "null"
+                stop:
+                    description: Stop sequences
+                    oneOf:
+                        - type: string
+                        - items:
+                            type: string
+                          maxItems: 4
+                          type: array
+                stream:
+                    default: false
+                    description: If true, partial message deltas will be sent as SSE
+                    type:
+                        - boolean
+                        - "null"
+                stream_options:
+                    $ref: '#/components/schemas/ChatCompletionStreamOptions'
+                temperature:
+                    default: 1
+                    description: Sampling temperature between 0 and 2
+                    maximum: 2
+                    minimum: 0
+                    type:
+                        - number
+                        - "null"
+                tool_choice:
+                    description: Controls which tool is called by the model
+                    oneOf:
+                        - enum:
+                            - none
+                            - auto
+                            - required
+                          type: string
+                        - $ref: '#/components/schemas/ChatCompletionNamedToolChoice'
+                tools:
+                    description: List of tools the model may call
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionTool'
+                    type: array
+                top_p:
+                    default: 1
+                    description: Nucleus sampling probability
+                    maximum: 1
+                    minimum: 0
+                    type:
+                        - number
+                        - "null"
+                user:
+                    description: Unique identifier for the end-user
+                    type: string
+            required:
+                - model
+                - messages
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        CreateChatCompletionResponse:
+            description: Response from chat completion
+            properties:
+                choices:
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionChoice'
+                    type: array
+                created:
+                    description: Unix timestamp of when the completion was created
+                    type: integer
+                id:
+                    description: Unique identifier for the completion
+                    type: string
+                model:
+                    description: The model used for completion
+                    type: string
+                object:
+                    enum:
+                        - chat.completion
+                    type: string
+                service_tier:
+                    description: The service tier used
+                    type:
+                        - string
+                        - "null"
+                system_fingerprint:
+                    description: Backend configuration fingerprint
+                    type: string
+                usage:
+                    $ref: '#/components/schemas/CompletionUsage'
+            required:
+                - id
+                - object
+                - created
+                - model
+                - choices
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        CreateChatCompletionStreamResponse:
+            description: Streaming response from chat completion
+            properties:
+                choices:
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionStreamChoice'
+                    type: array
+                created:
+                    type: integer
+                id:
+                    type: string
+                model:
+                    type: string
+                object:
+                    enum:
+                        - chat.completion.chunk
+                    type: string
+                service_tier:
+                    type:
+                        - string
+                        - "null"
+                system_fingerprint:
+                    type: string
+                usage:
+                    $ref: '#/components/schemas/CompletionUsage'
+            required:
+                - id
+                - object
+                - created
+                - model
+                - choices
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        CreateCronJobRequest:
+            additionalProperties: false
+            description: Request to create a cron job
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/CreateCronJobRequest.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                action:
+                    $ref: '#/components/schemas/CronActionInfo'
+                description:
+                    description: Job description
+                    type: string
+                name:
+                    description: Job name
+                    type: string
+                schedule:
+                    $ref: '#/components/schemas/CronScheduleInfo'
+            required:
+                - name
+                - schedule
+                - action
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        CronActionInfo:
+            additionalProperties: false
+            description: Cron job action configuration
+            properties:
+                message:
+                    description: Message content for send_message
+                    type: string
+                session_id:
+                    description: Session ID for send_message
+                    type: string
+                tool_name:
+                    description: Tool name for call_tool
+                    type: string
+                tool_params:
+                    additionalProperties:
+                        additionalProperties: true
+                        type: object
+                    description: Tool parameters for call_tool
+                    type: object
+                type:
+                    description: Action type (send_message, call_webhook, call_tool)
+                    type: string
+                webhook_body:
+                    description: Request body for webhook
+                    type: string
+                webhook_headers:
+                    additionalProperties:
+                        type: string
+                    description: HTTP headers for webhook
+                    type: object
+                webhook_method:
+                    description: HTTP method for webhook (GET, POST, etc.)
+                    type: string
+                webhook_url:
+                    description: Webhook URL for call_webhook
+                    type: string
+            required:
+                - type
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        CronJobInfo:
+            additionalProperties: false
+            description: Cron job configuration and status
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/CronJobInfo.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                action:
+                    $ref: '#/components/schemas/CronActionInfo'
+                created_at:
+                    description: Creation timestamp
+                    format: date-time
+                    type: string
+                description:
+                    description: Job description
+                    type: string
+                id:
+                    description: Job unique identifier
+                    type: string
+                last_error:
+                    description: Last error message if any
+                    type: string
+                last_run_at:
+                    description: Last run timestamp
+                    format: date-time
+                    type: string
+                name:
+                    description: Job name
+                    type: string
+                next_run_at:
+                    description: Next scheduled run timestamp
+                    format: date-time
+                    type: string
+                run_count:
+                    description: Total number of runs
+                    format: int64
+                    type: integer
+                schedule:
+                    $ref: '#/components/schemas/CronScheduleInfo'
+                status:
+                    description: Job status (active, disabled)
+                    type: string
+                updated_at:
+                    description: Last update timestamp
+                    format: date-time
+                    type: string
+            required:
+                - id
+                - name
+                - schedule
+                - action
+                - status
+                - created_at
+                - updated_at
+                - run_count
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        CronJobResult:
+            additionalProperties: false
+            description: Result of a cron job execution
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/CronJobResult.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                duration:
+                    description: Execution duration
+                    type: string
+                error:
+                    description: Error message if failed
+                    type: string
+                output:
+                    additionalProperties: true
+                    description: Job output
+                    type: object
+                started_at:
+                    description: Start timestamp (RFC3339)
+                    type: string
+                success:
+                    description: Whether the job succeeded
+                    type: boolean
+            required:
+                - success
+                - duration
+                - started_at
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        CronScheduleInfo:
+            additionalProperties: false
+            description: Cron job schedule information
+            properties:
+                cron:
+                    description: Cron expression (e.g., '0 * * * *')
+                    type: string
+                interval:
+                    description: Interval duration (e.g., '1h', '30m')
+                    type: string
+                once:
+                    description: One-time schedule (RFC3339 timestamp)
+                    type: string
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Dataset:
+            additionalProperties: false
+            description: Chart dataset
+            properties:
+                columns:
+                    items:
+                        $ref: '#/components/schemas/Column'
+                    type:
+                        - array
+                        - "null"
+                id:
+                    type: string
+                rows:
+                    items:
+                        items:
+                            type: string
+                        type:
+                            - array
+                            - "null"
+                    type:
+                        - array
+                        - "null"
+            required:
+                - id
+                - columns
+                - rows
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        EnableDisableCronJobOutputBody:
+            additionalProperties: false
+            description: Response for enabling/disabling a cron job
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/EnableDisableCronJobOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                id:
+                    description: Cron job ID
+                    type: string
+                status:
+                    description: New status (enabled, disabled)
+                    type: string
+            required:
+                - id
+                - status
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Encode:
+            additionalProperties: false
+            description: Chart encoding configuration
+            properties:
+                category:
+                    type: string
+                color:
+                    type: string
+                heat:
+                    type: string
+                indicator:
+                    type: string
+                name:
+                    type: string
+                size:
+                    type: string
+                source:
+                    type: string
+                target:
+                    type: string
+                value:
+                    type: string
+                x:
+                    type: string
+                "y":
+                    type: string
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        ErrorDetail:
+            additionalProperties: false
+            description: Error detail information
+            properties:
+                location:
+                    description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+                    type: string
+                message:
+                    description: Error message text
+                    type: string
+                value:
+                    additionalProperties: true
+                    description: The value at the given location
+                    type: object
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ErrorModel:
+            additionalProperties: false
+            description: Error response model
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ErrorModel.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                detail:
+                    description: A human-readable explanation specific to this occurrence of the problem.
+                    examples:
+                        - Property foo is required but is missing.
+                    type: string
+                errors:
+                    description: Optional list of individual error details
+                    items:
+                        $ref: '#/components/schemas/ErrorDetail'
+                    type:
+                        - array
+                        - "null"
+                instance:
+                    description: A URI reference that identifies the specific occurrence of the problem.
+                    examples:
+                        - https://example.com/error-log/abc123
+                    format: uri
+                    type: string
+                status:
+                    description: HTTP status code
+                    examples:
+                        - 400
+                    format: int64
+                    type: integer
+                title:
+                    description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+                    examples:
+                        - Bad Request
+                    type: string
+                type:
+                    default: about:blank
+                    description: A URI reference to human-readable documentation for the error.
+                    examples:
+                        - https://example.com/errors/example
+                    format: uri
+                    type: string
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ErrorResponse:
+            description: Error response from the API
+            properties:
+                error:
+                    properties:
+                        code:
+                            description: Error code
+                            type:
+                                - string
+                                - "null"
+                        message:
+                            description: Human-readable error message
+                            type: string
+                        param:
+                            description: The parameter that caused the error
+                            type:
+                                - string
+                                - "null"
+                        type:
+                            description: Error type
+                            type: string
+                    required:
+                        - message
+                        - type
+                    type: object
+            required:
+                - error
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        FunctionObject:
+            description: Function object for tool calls
+            properties:
+                description:
+                    description: Description of what the function does
+                    type: string
+                name:
+                    description: The name of the function
+                    type: string
+                parameters:
+                    description: JSON Schema for the function parameters
+                    type: object
+                strict:
+                    default: false
+                    description: Whether to enable strict schema adherence
+                    type:
+                        - boolean
+                        - "null"
+            required:
+                - name
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        Grid:
+            additionalProperties: false
+            description: Chart grid configuration
+            properties:
+                bottom:
+                    type: string
+                containLabel:
+                    type: boolean
+                height:
+                    type: string
+                left:
+                    type: string
+                right:
+                    type: string
+                top:
+                    type: string
+                width:
+                    type: string
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        HealthOutputBody:
+            additionalProperties: false
+            description: Health check response
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/HealthOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                status:
+                    description: Health status
+                    examples:
+                        - ok
+                    type: string
+            required:
+                - status
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Legend:
+            additionalProperties: false
+            description: Chart legend configuration
+            properties:
+                items:
+                    items:
+                        type: string
+                    type:
+                        - array
+                        - "null"
+                position:
+                    type: string
+                show:
+                    type: boolean
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        ListAgentsOutputBody:
+            additionalProperties: false
+            description: Response containing list of agents
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ListAgentsOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                data:
+                    description: List of agents
+                    items:
+                        $ref: '#/components/schemas/AgentInfo'
+                    type:
+                        - array
+                        - "null"
+                object:
+                    description: Object type
+                    examples:
+                        - list
+                    type: string
+            required:
+                - object
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ListCollectionsOutputBody:
+            additionalProperties: false
+            description: Response containing list of memory collections
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ListCollectionsOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                data:
+                    description: List of collections
+                    items:
+                        $ref: '#/components/schemas/MemoryCollection'
+                    type:
+                        - array
+                        - "null"
+                object:
+                    description: Object type
+                    examples:
+                        - list
+                    type: string
+            required:
+                - object
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ListCronJobsOutputBody:
+            additionalProperties: false
+            description: Response containing list of cron jobs
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ListCronJobsOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                data:
+                    description: List of cron jobs
+                    items:
+                        $ref: '#/components/schemas/CronJobInfo'
+                    type:
+                        - array
+                        - "null"
+                object:
+                    description: Object type
+                    examples:
+                        - list
+                    type: string
+            required:
+                - object
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ListMemoriesOutputBody:
+            additionalProperties: false
+            description: Response containing list of memories
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ListMemoriesOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                collection:
+                    description: Collection name
+                    type: string
+                data:
+                    description: List of memories
+                    items:
+                        $ref: '#/components/schemas/MemoryRecord'
+                    type:
+                        - array
+                        - "null"
+                object:
+                    description: Object type
+                    examples:
+                        - list
+                    type: string
+            required:
+                - object
+                - collection
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ListModelsResponse:
+            description: Response listing available models
+            properties:
+                data:
+                    items:
+                        $ref: '#/components/schemas/Model'
+                    type: array
+                object:
+                    enum:
+                        - list
+                    type: string
+            required:
+                - object
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ListToolsOutputBody:
+            additionalProperties: false
+            description: Response containing list of available tools
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ListToolsOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                data:
+                    description: List of tools
+                    items:
+                        $ref: '#/components/schemas/ToolInfo'
+                    type:
+                        - array
+                        - "null"
+                object:
+                    description: Object type
+                    examples:
+                        - list
+                    type: string
+            required:
+                - object
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Mark:
+            additionalProperties: false
+            description: Chart mark (visual element) configuration
+            properties:
+                coordinateSystem:
+                    type: string
+                datasetId:
+                    type: string
+                encode:
+                    $ref: '#/components/schemas/Encode'
+                geometry:
+                    type: string
+                id:
+                    type: string
+                name:
+                    type: string
+                smooth:
+                    type: boolean
+                stack:
+                    type: string
+                style:
+                    $ref: '#/components/schemas/Style'
+            required:
+                - id
+                - datasetId
+                - geometry
+                - encode
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        MemoryCollection:
+            additionalProperties: false
+            description: A collection of semantic memories
+            properties:
+                count:
+                    description: Number of memories in collection
+                    format: int64
+                    type: integer
+                description:
+                    description: Collection description
+                    type: string
+                name:
+                    description: Collection name
+                    type: string
+            required:
+                - name
+                - count
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        MemoryRecord:
+            additionalProperties: false
+            description: A stored memory record with metadata
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/MemoryRecord.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                collection:
+                    description: Collection name
+                    type: string
+                content:
+                    description: Memory content
+                    type: string
+                created_at:
+                    description: Creation timestamp
+                    format: date-time
+                    type: string
+                key:
+                    description: Memory unique key
+                    type: string
+                metadata:
+                    additionalProperties:
+                        type: string
+                    description: Custom metadata
+                    type: object
+            required:
+                - key
+                - content
+                - collection
+                - created_at
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        MemorySearchResult:
+            additionalProperties: false
+            description: Search result from semantic memory query
+            properties:
+                collection:
+                    description: Collection name
+                    type: string
+                content:
+                    description: Memory content
+                    type: string
+                created_at:
+                    description: Creation timestamp
+                    format: date-time
+                    type: string
+                key:
+                    description: Memory unique key
+                    type: string
+                metadata:
+                    additionalProperties:
+                        type: string
+                    description: Custom metadata
+                    type: object
+                score:
+                    description: Relevance score (0.0-1.0)
+                    format: double
+                    type: number
+            required:
+                - score
+                - key
+                - content
+                - collection
+                - created_at
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Model:
+            description: Model information
+            properties:
+                created:
+                    description: Unix timestamp when the model was created
+                    type: integer
+                id:
+                    description: The model identifier
+                    type: string
+                object:
+                    enum:
+                        - model
+                    type: string
+                owned_by:
+                    description: Organization that owns the model
+                    type: string
+            required:
+                - id
+                - object
+                - created
+                - owned_by
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        ModelUsage:
+            additionalProperties: false
+            description: Usage statistics by model
+            properties:
+                completion_tokens:
+                    description: Output tokens
+                    format: int64
+                    type: integer
+                cost:
+                    description: Estimated cost in USD
+                    format: double
+                    type: number
+                model:
+                    description: Model identifier
+                    type: string
+                prompt_tokens:
+                    description: Input tokens
+                    format: int64
+                    type: integer
+                requests:
+                    description: Number of requests
+                    format: int64
+                    type: integer
+                total_tokens:
+                    description: Total tokens
+                    format: int64
+                    type: integer
+            required:
+                - model
+                - requests
+                - prompt_tokens
+                - completion_tokens
+                - total_tokens
+                - cost
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ReloadAgentOutputBody:
+            additionalProperties: false
+            description: Response from reloading an agent
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/ReloadAgentOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                agent:
+                    $ref: '#/components/schemas/AgentInfo'
+                id:
+                    description: Agent ID
+                    type: string
+                status:
+                    description: Reload status
+                    examples:
+                        - reloaded
+                    type: string
+            required:
+                - id
+                - status
+                - agent
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        ResponseFormat:
+            description: Response format specification for chat completion
+            properties:
+                json_schema:
+                    properties:
+                        description:
+                            type: string
+                        name:
+                            type: string
+                        schema:
+                            type: object
+                        strict:
+                            default: false
+                            type: boolean
+                    type: object
+                type:
+                    default: text
+                    enum:
+                        - text
+                        - json_object
+                        - json_schema
+                    type: string
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: openai
+        SearchMemoriesOutputBody:
+            additionalProperties: false
+            description: Response containing memory search results
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/SearchMemoriesOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                collection:
+                    description: Collection name
+                    type: string
+                data:
+                    description: Search results
+                    items:
+                        $ref: '#/components/schemas/MemorySearchResult'
+                    type:
+                        - array
+                        - "null"
+                object:
+                    description: Object type
+                    examples:
+                        - list
+                    type: string
+                query:
+                    description: Search query
+                    type: string
+            required:
+                - object
+                - collection
+                - query
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        StoreMemoryRequest:
+            additionalProperties: false
+            description: Request to store a memory
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/StoreMemoryRequest.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                collection:
+                    description: Collection name (defaults to 'default')
+                    type: string
+                content:
+                    description: Memory content
+                    type: string
+                key:
+                    description: Memory key (auto-generated if empty)
+                    type: string
+                metadata:
+                    additionalProperties:
+                        type: string
+                    description: Custom metadata
+                    type: object
+            required:
+                - content
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Style:
+            additionalProperties: false
+            description: Chart style configuration
+            properties:
+                areaOpacity:
+                    format: double
+                    type: number
+                barGap:
+                    type: string
+                barWidth:
+                    additionalProperties: true
+                    type: object
+                borderColor:
+                    type: string
+                borderRadius:
+                    additionalProperties: true
+                    type: object
+                borderWidth:
+                    format: double
+                    type: number
+                color:
+                    type: string
+                endAngle:
+                    format: double
+                    type: number
+                funnelAlign:
+                    type: string
+                funnelGap:
+                    format: double
+                    type: number
+                funnelSort:
+                    type: string
+                gaugeMax:
+                    format: double
+                    type: number
+                gaugeMin:
+                    format: double
+                    type: number
+                lineWidth:
+                    format: double
+                    type: number
+                opacity:
+                    format: double
+                    type: number
+                shape:
+                    type: string
+                smooth:
+                    type: boolean
+                startAngle:
+                    format: double
+                    type: number
+                symbol:
+                    type: string
+                symbolSize:
+                    format: double
+                    type: number
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        ToolInfo:
+            additionalProperties: false
+            description: Tool information and parameters
+            properties:
+                category:
+                    description: Tool category
+                    type: string
+                description:
+                    description: Tool description
+                    type: string
+                name:
+                    description: Tool name
+                    type: string
+                parameters:
+                    additionalProperties:
+                        additionalProperties: true
+                        type: object
+                    description: JSON Schema for tool parameters
+                    type: object
+            required:
+                - name
+                - description
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        Tooltip:
+            additionalProperties: false
+            description: Chart tooltip configuration
+            properties:
+                show:
+                    type: boolean
+                trigger:
+                    type: string
+            type: object
+            x-naming-convention: camelCase
+            x-naming-source: echartify
+        UpdateAgentRequest:
+            additionalProperties: false
+            description: Request to update an agent
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/UpdateAgentRequest.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                allowed_tools:
+                    description: Allowed tool names
+                    items:
+                        type: string
+                    type:
+                        - array
+                        - "null"
+                api_key:
+                    description: API key for the provider
+                    type: string
+                base_url:
+                    description: Base URL for the provider
+                    type: string
+                denied_tools:
+                    description: Denied tool names
+                    items:
+                        type: string
+                    type:
+                        - array
+                        - "null"
+                description:
+                    description: Agent description
+                    type: string
+                enabled:
+                    description: Whether agent is enabled
+                    type: boolean
+                max_tokens:
+                    description: Maximum tokens to generate
+                    format: int64
+                    type: integer
+                model:
+                    description: Model identifier
+                    type: string
+                name:
+                    description: Agent display name
+                    type: string
+                provider:
+                    description: LLM provider
+                    type: string
+                system_prompt:
+                    description: System prompt
+                    type: string
+                temperature:
+                    description: Sampling temperature
+                    format: double
+                    type: number
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        UpdateCronJobRequest:
+            additionalProperties: false
+            description: Request to update a cron job
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/UpdateCronJobRequest.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                action:
+                    $ref: '#/components/schemas/CronActionInfo'
+                description:
+                    description: Job description
+                    type: string
+                name:
+                    description: Job name
+                    type: string
+                schedule:
+                    $ref: '#/components/schemas/CronScheduleInfo'
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        UsageBucket:
+            additionalProperties: false
+            description: Time-bucketed usage data
+            properties:
+                completion_tokens:
+                    description: Output tokens
+                    format: int64
+                    type: integer
+                cost:
+                    description: Estimated cost in USD
+                    format: double
+                    type: number
+                prompt_tokens:
+                    description: Input tokens
+                    format: int64
+                    type: integer
+                requests:
+                    description: Number of requests
+                    format: int64
+                    type: integer
+                timestamp:
+                    description: Bucket start timestamp
+                    format: date-time
+                    type: string
+                total_tokens:
+                    description: Total tokens
+                    format: int64
+                    type: integer
+            required:
+                - timestamp
+                - requests
+                - prompt_tokens
+                - completion_tokens
+                - total_tokens
+                - cost
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        UsageRecord:
+            additionalProperties: false
+            description: Individual usage record
+            properties:
+                agent_id:
+                    description: Agent ID if applicable
+                    type: string
+                completion_tokens:
+                    description: Output tokens
+                    format: int64
+                    type: integer
+                cost:
+                    description: Estimated cost in USD
+                    format: double
+                    type: number
+                id:
+                    description: Record ID
+                    type: string
+                latency_ms:
+                    description: Response latency in milliseconds
+                    format: int64
+                    type: integer
+                model:
+                    description: Model used
+                    type: string
+                prompt_tokens:
+                    description: Input tokens
+                    format: int64
+                    type: integer
+                session_id:
+                    description: Session ID
+                    type: string
+                timestamp:
+                    description: Request timestamp
+                    format: date-time
+                    type: string
+                total_tokens:
+                    description: Total tokens
+                    format: int64
+                    type: integer
+            required:
+                - id
+                - timestamp
+                - model
+                - prompt_tokens
+                - completion_tokens
+                - total_tokens
+                - cost
+                - latency_ms
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        UsageRecordsOutputBody:
+            additionalProperties: false
+            description: Response containing usage records
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/UsageRecordsOutputBody.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                data:
+                    description: Usage records
+                    items:
+                        $ref: '#/components/schemas/UsageRecord'
+                    type:
+                        - array
+                        - "null"
+                object:
+                    description: Object type
+                    examples:
+                        - list
+                    type: string
+            required:
+                - object
+                - data
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        UsageSummary:
+            additionalProperties: false
+            description: Aggregated usage summary
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/UsageSummary.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                avg_latency_ms:
+                    description: Average response latency
+                    format: double
+                    type: number
+                by_agent:
+                    additionalProperties:
+                        $ref: '#/components/schemas/AgentUsage'
+                    description: Usage breakdown by agent
+                    type: object
+                by_model:
+                    additionalProperties:
+                        $ref: '#/components/schemas/ModelUsage'
+                    description: Usage breakdown by model
+                    type: object
+                period_end:
+                    description: Period end timestamp
+                    format: date-time
+                    type: string
+                period_start:
+                    description: Period start timestamp
+                    format: date-time
+                    type: string
+                total_completion_tokens:
+                    description: Total output tokens
+                    format: int64
+                    type: integer
+                total_cost:
+                    description: Total estimated cost in USD
+                    format: double
+                    type: number
+                total_prompt_tokens:
+                    description: Total input tokens
+                    format: int64
+                    type: integer
+                total_requests:
+                    description: Total number of requests
+                    format: int64
+                    type: integer
+                total_tokens:
+                    description: Total tokens
+                    format: int64
+                    type: integer
+            required:
+                - total_requests
+                - total_prompt_tokens
+                - total_completion_tokens
+                - total_tokens
+                - total_cost
+                - avg_latency_ms
+                - by_model
+                - by_agent
+                - period_start
+                - period_end
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+        UsageTimeseries:
+            additionalProperties: false
+            description: Time series of usage data
+            properties:
+                $schema:
+                    examples:
+                        - https://example.com/UsageTimeseries.json
+                    format: uri
+                    readOnly: true
+                    type: string
+                buckets:
+                    description: Time-bucketed data
+                    items:
+                        $ref: '#/components/schemas/UsageBucket'
+                    type:
+                        - array
+                        - "null"
+                interval:
+                    description: Bucket interval (hour, day)
+                    type: string
+            required:
+                - interval
+                - buckets
+            type: object
+            x-naming-convention: snake_case
+            x-naming-source: omniagent
+    securitySchemes:
+        BearerAuth:
+            description: Bearer token authentication. Use your API key as the token.
+            scheme: bearer
+            type: http
+info:
+    description: OpenAI-compatible API with OmniAgent extensions for agents, tools, cron jobs, usage analytics, and semantic memory.
+    title: OmniAgent API
+    version: 1.0.0
+openapi: 3.1.0
+paths:
+    /health:
+        get:
+            description: Returns the health status of the API server.
+            operationId: healthCheck
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/HealthOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Health check
+            tags:
+                - System
+    /v1/agents:
+        get:
+            description: Returns a list of all configured agents.
+            operationId: listAgents
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListAgentsOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: List configured agents
+            tags:
+                - Agents
+        post:
+            description: Creates a new agent configuration.
+            operationId: createAgent
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateAgentRequest'
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AgentInfo'
+                    description: Created
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Create a new agent
+            tags:
+                - Agents
+    /v1/agents/{id}:
+        delete:
+            description: Deletes an agent configuration.
+            operationId: deleteAgent
+            parameters:
+                - description: Agent ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Agent ID
+                    type: string
+            responses:
+                "204":
+                    description: No Content
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Delete an agent
+            tags:
+                - Agents
+        get:
+            description: Returns details for a specific agent.
+            operationId: getAgent
+            parameters:
+                - description: Agent ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Agent ID
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AgentInfo'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get agent details
+            tags:
+                - Agents
+        put:
+            description: Updates an existing agent configuration.
+            operationId: updateAgent
+            parameters:
+                - description: Agent ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Agent ID
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateAgentRequest'
+                required: true
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AgentInfo'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Update an agent
+            tags:
+                - Agents
+    /v1/agents/{id}/clone:
+        post:
+            description: Creates a copy of an existing agent with a new name.
+            operationId: cloneAgent
+            parameters:
+                - description: Source agent ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Source agent ID
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CloneAgentRequest'
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AgentInfo'
+                    description: Created
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Clone an agent
+            tags:
+                - Agents
+    /v1/agents/{id}/reload:
+        post:
+            description: Reloads an agent from its configuration.
+            operationId: reloadAgent
+            parameters:
+                - description: Agent ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Agent ID
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ReloadAgentOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Reload an agent
+            tags:
+                - Agents
+    /v1/chat/completions:
+        post:
+            operationId: createChatCompletion
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateChatCompletionRequest'
+                required: true
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateChatCompletionResponse'
+                    description: OK
+                "400":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Bad Request
+                "401":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Unauthorized
+                "500":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Internal Server Error
+            summary: Creates a model response for the given chat conversation
+            tags:
+                - Chat
+    /v1/cron/jobs:
+        get:
+            description: Returns a list of all scheduled cron jobs.
+            operationId: listCronJobs
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListCronJobsOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: List scheduled jobs
+            tags:
+                - Cron
+        post:
+            description: Creates a new scheduled cron job.
+            operationId: createCronJob
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateCronJobRequest'
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CronJobInfo'
+                    description: Created
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Create a scheduled job
+            tags:
+                - Cron
+    /v1/cron/jobs/{id}:
+        delete:
+            description: Deletes a cron job.
+            operationId: deleteCronJob
+            parameters:
+                - description: Cron job ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Cron job ID
+                    type: string
+            responses:
+                "204":
+                    description: No Content
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Delete a job
+            tags:
+                - Cron
+        get:
+            description: Returns details for a specific cron job.
+            operationId: getCronJob
+            parameters:
+                - description: Cron job ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Cron job ID
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CronJobInfo'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get job details
+            tags:
+                - Cron
+        put:
+            description: Updates an existing cron job.
+            operationId: updateCronJob
+            parameters:
+                - description: Cron job ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Cron job ID
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateCronJobRequest'
+                required: true
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CronJobInfo'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Update a job
+            tags:
+                - Cron
+    /v1/cron/jobs/{id}/disable:
+        post:
+            description: Disables a cron job without deleting it.
+            operationId: disableCronJob
+            parameters:
+                - description: Cron job ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Cron job ID
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EnableDisableCronJobOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Disable a job
+            tags:
+                - Cron
+    /v1/cron/jobs/{id}/enable:
+        post:
+            description: Enables a disabled cron job.
+            operationId: enableCronJob
+            parameters:
+                - description: Cron job ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Cron job ID
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/EnableDisableCronJobOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Enable a job
+            tags:
+                - Cron
+    /v1/cron/jobs/{id}/trigger:
+        post:
+            description: Runs a cron job immediately.
+            operationId: triggerCronJob
+            parameters:
+                - description: Cron job ID
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    description: Cron job ID
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CronJobResult'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Trigger a job
+            tags:
+                - Cron
+    /v1/memories:
+        get:
+            description: Returns memories from a collection.
+            operationId: listMemories
+            parameters:
+                - description: Collection name
+                  explode: false
+                  in: query
+                  name: collection
+                  schema:
+                    default: default
+                    description: Collection name
+                    type: string
+                - description: Maximum number of memories to return
+                  explode: false
+                  in: query
+                  name: limit
+                  schema:
+                    default: 50
+                    description: Maximum number of memories to return
+                    format: int64
+                    type: integer
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListMemoriesOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: List memories
+            tags:
+                - Memory
+        post:
+            description: Stores a new memory in a collection.
+            operationId: storeMemory
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StoreMemoryRequest'
+                required: true
+            responses:
+                "201":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MemoryRecord'
+                    description: Created
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Store a memory
+            tags:
+                - Memory
+    /v1/memories/{key}:
+        delete:
+            description: Deletes a memory by key.
+            operationId: deleteMemory
+            parameters:
+                - description: Memory key
+                  in: path
+                  name: key
+                  required: true
+                  schema:
+                    description: Memory key
+                    type: string
+                - description: Collection name
+                  explode: false
+                  in: query
+                  name: collection
+                  schema:
+                    default: default
+                    description: Collection name
+                    type: string
+            responses:
+                "204":
+                    description: No Content
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Delete a memory
+            tags:
+                - Memory
+    /v1/memories/collections:
+        get:
+            description: Returns all memory collections.
+            operationId: listCollections
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListCollectionsOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: List collections
+            tags:
+                - Memory
+    /v1/memories/search:
+        get:
+            description: Performs semantic search on memories.
+            operationId: searchMemories
+            parameters:
+                - description: Search query
+                  explode: false
+                  in: query
+                  name: q
+                  required: true
+                  schema:
+                    description: Search query
+                    type: string
+                - description: Collection name
+                  explode: false
+                  in: query
+                  name: collection
+                  schema:
+                    default: default
+                    description: Collection name
+                    type: string
+                - description: Maximum number of results
+                  explode: false
+                  in: query
+                  name: limit
+                  schema:
+                    default: 10
+                    description: Maximum number of results
+                    format: int64
+                    type: integer
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SearchMemoriesOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Search memories
+            tags:
+                - Memory
+    /v1/models:
+        get:
+            operationId: listModels
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListModelsResponse'
+                    description: OK
+            summary: Lists the currently available models
+            tags:
+                - Models
+    /v1/models/{model}:
+        get:
+            operationId: retrieveModel
+            parameters:
+                - description: The ID of the model to retrieve
+                  in: path
+                  name: model
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Model'
+                    description: OK
+                "404":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorResponse'
+                    description: Model not found
+            summary: Retrieves a model instance
+            tags:
+                - Models
+    /v1/tools:
+        get:
+            description: Returns a list of all tools registered with the agent.
+            operationId: listTools
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListToolsOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: List available tools
+            tags:
+                - Tools
+    /v1/usage:
+        get:
+            description: Returns aggregated usage statistics for a time range.
+            operationId: getUsageSummary
+            parameters:
+                - description: 'Start time (RFC3339 or relative: 1h, 24h, 7d, 30d)'
+                  explode: false
+                  in: query
+                  name: since
+                  schema:
+                    description: 'Start time (RFC3339 or relative: 1h, 24h, 7d, 30d)'
+                    type: string
+                - description: End time (RFC3339, defaults to now)
+                  explode: false
+                  in: query
+                  name: until
+                  schema:
+                    description: End time (RFC3339, defaults to now)
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UsageSummary'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get usage summary
+            tags:
+                - Usage
+    /v1/usage/chart/cost:
+        get:
+            description: Returns a ChartIR representation of cost over time.
+            operationId: getUsageChartCost
+            parameters:
+                - description: Start time (RFC3339 or relative)
+                  explode: false
+                  in: query
+                  name: since
+                  schema:
+                    description: Start time (RFC3339 or relative)
+                    type: string
+                - description: End time (RFC3339)
+                  explode: false
+                  in: query
+                  name: until
+                  schema:
+                    description: End time (RFC3339)
+                    type: string
+                - description: Bucket interval (minute, hour, day)
+                  explode: false
+                  in: query
+                  name: interval
+                  schema:
+                    default: hour
+                    description: Bucket interval (minute, hour, day)
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChartIR'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get cost chart
+            tags:
+                - Usage
+    /v1/usage/chart/models:
+        get:
+            description: Returns a ChartIR representation of usage by model.
+            operationId: getUsageChartModels
+            parameters:
+                - description: 'Start time (RFC3339 or relative: 1h, 24h, 7d, 30d)'
+                  explode: false
+                  in: query
+                  name: since
+                  schema:
+                    description: 'Start time (RFC3339 or relative: 1h, 24h, 7d, 30d)'
+                    type: string
+                - description: End time (RFC3339, defaults to now)
+                  explode: false
+                  in: query
+                  name: until
+                  schema:
+                    description: End time (RFC3339, defaults to now)
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChartIR'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get model distribution chart
+            tags:
+                - Usage
+    /v1/usage/chart/tokens:
+        get:
+            description: Returns a ChartIR representation of token usage over time.
+            operationId: getUsageChartTokens
+            parameters:
+                - description: Start time (RFC3339 or relative)
+                  explode: false
+                  in: query
+                  name: since
+                  schema:
+                    description: Start time (RFC3339 or relative)
+                    type: string
+                - description: End time (RFC3339)
+                  explode: false
+                  in: query
+                  name: until
+                  schema:
+                    description: End time (RFC3339)
+                    type: string
+                - description: Bucket interval (minute, hour, day)
+                  explode: false
+                  in: query
+                  name: interval
+                  schema:
+                    default: hour
+                    description: Bucket interval (minute, hour, day)
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChartIR'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get token usage chart
+            tags:
+                - Usage
+    /v1/usage/records:
+        get:
+            description: Returns recent usage records.
+            operationId: getUsageRecords
+            parameters:
+                - description: Maximum number of records to return
+                  explode: false
+                  in: query
+                  name: limit
+                  schema:
+                    default: 100
+                    description: Maximum number of records to return
+                    format: int64
+                    type: integer
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UsageRecordsOutputBody'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get usage records
+            tags:
+                - Usage
+    /v1/usage/timeseries:
+        get:
+            description: Returns time-bucketed usage data.
+            operationId: getUsageTimeseries
+            parameters:
+                - description: Start time (RFC3339 or relative)
+                  explode: false
+                  in: query
+                  name: since
+                  schema:
+                    description: Start time (RFC3339 or relative)
+                    type: string
+                - description: End time (RFC3339)
+                  explode: false
+                  in: query
+                  name: until
+                  schema:
+                    description: End time (RFC3339)
+                    type: string
+                - description: Bucket interval (minute, hour, day)
+                  explode: false
+                  in: query
+                  name: interval
+                  schema:
+                    default: hour
+                    description: Bucket interval (minute, hour, day)
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UsageTimeseries'
+                    description: OK
+                default:
+                    content:
+                        application/problem+json:
+                            schema:
+                                $ref: '#/components/schemas/ErrorModel'
+                    description: Error
+            summary: Get usage timeseries
+            tags:
+                - Usage
+servers:
+    - description: Local development server
+      url: http://localhost:8080
+    - description: Production server (replace with actual URL)
+      url: https://api.example.com
+tags:
+    - description: Chat completion endpoints (OpenAI-compatible)
+      name: Chat
+    - description: Model information endpoints
+      name: Models
+    - description: Tool management endpoints
+      name: Tools
+    - description: Agent management endpoints
+      name: Agents
+    - description: Scheduled job endpoints
+      name: Cron
+    - description: Usage analytics endpoints
+      name: Usage
+    - description: Semantic memory endpoints
+      name: Memory
+    - description: System endpoints
+      name: System
