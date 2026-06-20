@@ -264,6 +264,43 @@ Discord:
   Status: disabled
 ```
 
+## OpenAI
+
+### openai spec
+
+Generate OpenAPI specification from the API server.
+
+```bash
+omniagent openai spec [flags]
+```
+
+**Flags:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--output`, `-o` | Output file path | stdout |
+| `--format`, `-f` | Output format: `yaml`, `json` | `yaml` |
+
+**Examples:**
+
+```bash
+# Output to stdout (YAML)
+omniagent openai spec
+
+# Generate JSON file
+omniagent openai spec --format json --output docs/api/openapi.json
+
+# Generate YAML file
+omniagent openai spec -f yaml -o docs/api/openapi.yaml
+```
+
+The generated spec includes:
+
+- All API endpoints (chat completions, models, tools, agents, cron, usage)
+- Request/response schemas
+- Authentication requirements
+- OpenAPI 3.1 compatibility
+
 ## Config
 
 ### config show

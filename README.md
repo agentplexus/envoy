@@ -50,6 +50,8 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🎭 **Agent Profiles** - Bootstrap profiles and lean mode for resource optimization
 - 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
 - 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, Keeper
+- 🔗 **OpenAI-Compatible API** - Drop-in replacement for OpenAI client libraries with SSE streaming
+- 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
 
 ## Installation
 
@@ -141,6 +143,61 @@ Run with the config file:
 ```bash
 omniagent gateway run --config omniagent.yaml
 ```
+
+## OpenAI-Compatible API
+
+OmniAgent exposes an OpenAI-compatible REST API, allowing you to use standard OpenAI client libraries:
+
+```bash
+# Start the gateway with API enabled
+omniagent gateway run --config omniagent.yaml
+
+# Use with any OpenAI client
+curl http://localhost:18789/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $API_KEY" \
+  -d '{
+    "model": "omniagent",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": true
+  }'
+```
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /v1/chat/completions` | Chat completions with SSE streaming |
+| `GET /v1/models` | List available models |
+| `GET /v1/tools` | List registered tools |
+| `GET /v1/agents` | List configured agents |
+| `POST /v1/agents` | Create a new agent |
+| `GET /v1/cron/jobs` | List scheduled jobs |
+| `GET /health` | Health check |
+| `GET /docs` | Interactive API documentation (Scalar) |
+| `GET /openapi.json` | OpenAPI 3.1 specification |
+
+### Python Example
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:18789/v1",
+    api_key="your-api-key"
+)
+
+response = client.chat.completions.create(
+    model="omniagent",
+    messages=[{"role": "user", "content": "What tools do you have?"}],
+    stream=True
+)
+
+for chunk in response:
+    print(chunk.choices[0].delta.content, end="")
+```
+
+See [OpenAI API Guide](docs/guides/openai-api.md) for detailed documentation.
 
 ## Skills
 
@@ -597,6 +654,9 @@ omniagent skills check     # Validate skill requirements
 # Channels
 omniagent channels list    # List registered channels
 omniagent channels status  # Show channel connection status
+
+# OpenAI API
+omniagent openai spec      # Generate OpenAPI specification
 
 # Config
 omniagent config show      # Display current configuration

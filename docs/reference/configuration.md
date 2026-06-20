@@ -56,6 +56,59 @@ agent:
 | `anthropic` | `claude-sonnet-4-20250514`, `claude-3-opus-20240229` |
 | `gemini` | `gemini-2.0-flash`, `gemini-1.5-pro` |
 
+## Multi-Agent Configuration
+
+Configure multiple agents with different models and tool access:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `agents` | []AgentConfig | `[]` | List of agent configurations |
+| `agents[].id` | string | - | Unique agent identifier (required) |
+| `agents[].name` | string | - | Human-readable name |
+| `agents[].description` | string | - | Agent description |
+| `agents[].provider` | string | (from agent) | LLM provider |
+| `agents[].model` | string | (from agent) | Model name |
+| `agents[].api_key` | string | (from agent) | API key |
+| `agents[].base_url` | string | - | Custom API endpoint |
+| `agents[].temperature` | float | `0.7` | Sampling temperature |
+| `agents[].max_tokens` | int | `4096` | Max response tokens |
+| `agents[].system_prompt` | string | - | Custom system prompt |
+| `agents[].allowed_tools` | []string | - | Whitelist of allowed tools |
+| `agents[].denied_tools` | []string | - | Blacklist of denied tools |
+| `agents[].enabled` | bool | `true` | Whether agent is active |
+
+```yaml
+# Default agent settings (used as fallback)
+agent:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  api_key: ${ANTHROPIC_API_KEY}
+
+# Multiple agent configurations
+agents:
+  - id: general
+    name: General Assistant
+    # Inherits from agent section
+
+  - id: research
+    name: Research Agent
+    provider: openai
+    model: gpt-4o
+    api_key: ${OPENAI_API_KEY}
+    system_prompt: You are a research assistant.
+    allowed_tools:
+      - web_search
+      - read_url
+
+  - id: coder
+    name: Coding Agent
+    system_prompt: You are a senior software engineer.
+    denied_tools:
+      - web_search
+```
+
+See [Multi-Agent Guide](../guides/multi-agent.md) for detailed usage.
+
 ## Channels
 
 ### WhatsApp
