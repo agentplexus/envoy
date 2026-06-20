@@ -1,0 +1,7 @@
+generator:
+  ignore_not_implemented:
+    - "sse server response encoding"
+    - "all"
+  features:
+    enable:
+      - "paths/server"
