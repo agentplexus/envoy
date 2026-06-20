@@ -8,11 +8,13 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/mdp/qrterminal/v3"
 	"github.com/spf13/cobra"
 
 	"github.com/plexusone/omniagent/agent"
+	"github.com/plexusone/omniagent/agent/registry"
 	"github.com/plexusone/omniagent/gateway"
 	"github.com/plexusone/omniagent/voice"
 	"github.com/plexusone/omnichat/provider"
@@ -99,10 +101,125 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create agent if API key is configured
-	var agentInstance *agent.Agent
-	if cfg.Agent.APIKey != "" {
+	// Create agent factory for registry
+	agentFactory := func(regCfg *registry.AgentConfig) (*agent.Agent, error) {
 		agentConfig := agent.Config{
+			Provider:     regCfg.Provider,
+			Model:        regCfg.Model,
+			APIKey:       regCfg.APIKey,
+			BaseURL:      regCfg.BaseURL,
+			Temperature:  regCfg.Temperature,
+			MaxTokens:    regCfg.MaxTokens,
+			SystemPrompt: regCfg.SystemPrompt,
+			Logger:       logger,
+		}
+		// Only set hook if non-nil to avoid interface{type, nil} gotcha
+		if observabilityHook != nil {
+			agentConfig.ObservabilityHook = observabilityHook
+		}
+
+		ag, err := agent.New(agentConfig, getAgentOptions()...)
+		if err != nil {
+			return nil, fmt.Errorf("create agent: %w", err)
+		}
+
+		// Initialize compiled skills if any were registered
+		opts := getAgentOptions()
+		if len(opts) > 0 {
+			if err := ag.InitCompiledSkills(ctx); err != nil {
+				ag.Close()
+				return nil, fmt.Errorf("init compiled skills: %w", err)
+			}
+		}
+
+		// Register search tool if available
+		if searchTool, err := agent.NewSearchTool(); err == nil {
+			ag.RegisterTool(searchTool)
+			logger.Debug("search tool registered", "agent_id", regCfg.ID)
+		}
+
+		// Load skills if enabled and not using skill manager
+		if cfg.Skills.Enabled && ag.SkillManager() == nil {
+			searchPaths := cfg.Skills.Paths
+			if len(searchPaths) == 0 {
+				searchPaths = nil
+			}
+			if err := ag.LoadSkills(searchPaths); err != nil {
+				logger.Warn("failed to load skills", "agent_id", regCfg.ID, "error", err)
+			}
+		}
+
+		return ag, nil
+	}
+
+	// Create agent registry
+	agentRegistry := registry.New(registry.RegistryConfig{
+		Factory: agentFactory,
+		Logger:  logger,
+		Defaults: &registry.AgentConfig{
+			Provider: cfg.Agent.Provider,
+			Model:    cfg.Agent.Model,
+			APIKey:   cfg.Agent.APIKey,
+			BaseURL:  cfg.Agent.BaseURL,
+		},
+	})
+	defer agentRegistry.Close()
+
+	// Determine if we're in multi-agent or single-agent mode
+	var agentInstance *agent.Agent
+	if len(cfg.Agents) > 0 {
+		// Multi-agent mode: load all configured agents
+		for _, agentCfg := range cfg.Agents {
+			regCfg := &registry.AgentConfig{
+				ID:           agentCfg.ID,
+				Name:         agentCfg.Name,
+				Description:  agentCfg.Description,
+				Provider:     agentCfg.Provider,
+				Model:        agentCfg.Model,
+				APIKey:       agentCfg.APIKey,
+				BaseURL:      agentCfg.BaseURL,
+				Temperature:  agentCfg.Temperature,
+				MaxTokens:    agentCfg.MaxTokens,
+				SystemPrompt: agentCfg.SystemPrompt,
+				AllowedTools: agentCfg.AllowedTools,
+				DeniedTools:  agentCfg.DeniedTools,
+				Enabled:      agentCfg.Enabled,
+				CreatedAt:    time.Now(),
+				UpdatedAt:    time.Now(),
+			}
+
+			// Use defaults from single agent config if not specified
+			if regCfg.Provider == "" {
+				regCfg.Provider = cfg.Agent.Provider
+			}
+			if regCfg.Model == "" {
+				regCfg.Model = cfg.Agent.Model
+			}
+			if regCfg.APIKey == "" {
+				regCfg.APIKey = cfg.Agent.APIKey
+			}
+			if regCfg.BaseURL == "" {
+				regCfg.BaseURL = cfg.Agent.BaseURL
+			}
+
+			if err := agentRegistry.Create(ctx, regCfg); err != nil {
+				return fmt.Errorf("create agent %s: %w", agentCfg.ID, err)
+			}
+			logger.Info("agent registered", "id", regCfg.ID, "name", regCfg.Name, "model", regCfg.Model)
+		}
+
+		// Get default agent for gateway (first enabled agent)
+		var err error
+		agentInstance, err = agentRegistry.Default()
+		if err != nil {
+			return fmt.Errorf("no default agent available: %w", err)
+		}
+		logger.Info("multi-agent mode enabled", "count", agentRegistry.Count())
+	} else if cfg.Agent.APIKey != "" {
+		// Single-agent mode (backward compatible)
+		regCfg := &registry.AgentConfig{
+			ID:           "default",
+			Name:         "OmniAgent",
 			Provider:     cfg.Agent.Provider,
 			Model:        cfg.Agent.Model,
 			APIKey:       cfg.Agent.APIKey,
@@ -110,52 +227,24 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			Temperature:  cfg.Agent.Temperature,
 			MaxTokens:    cfg.Agent.MaxTokens,
 			SystemPrompt: cfg.Agent.SystemPrompt,
-			Logger:       logger,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
 		}
-		// Only set hook if non-nil to avoid interface{type, nil} gotcha
-		if observabilityHook != nil {
-			agentConfig.ObservabilityHook = observabilityHook
-		}
-		var err error
-		agentInstance, err = agent.New(agentConfig, getAgentOptions()...)
-		if err != nil {
-			return fmt.Errorf("create agent: %w", err)
-		}
-		defer agentInstance.Close()
 
-		// Log registered options
-		opts := getAgentOptions()
-		logger.Info("agent initialized",
+		if err := agentRegistry.Create(ctx, regCfg); err != nil {
+			return fmt.Errorf("create default agent: %w", err)
+		}
+
+		var err error
+		agentInstance, err = agentRegistry.Get("default")
+		if err != nil {
+			return fmt.Errorf("get default agent: %w", err)
+		}
+
+		logger.Info("single-agent mode",
 			"provider", cfg.Agent.Provider,
 			"model", cfg.Agent.Model,
-			"registered_options", len(opts))
-
-		// Initialize compiled skills if any were registered
-		if len(opts) > 0 {
-			if err := agentInstance.InitCompiledSkills(ctx); err != nil {
-				return fmt.Errorf("init compiled skills: %w", err)
-			}
-		}
-
-		// Register search tool if available
-		if searchTool, err := agent.NewSearchTool(); err == nil {
-			agentInstance.RegisterTool(searchTool)
-			logger.Info("search tool registered")
-		} else {
-			logger.Debug("search tool not available", "error", err)
-		}
-
-		// Load skills if enabled and not using skill manager
-		// (skill manager is configured via options like WithSkillPack)
-		if cfg.Skills.Enabled && agentInstance.SkillManager() == nil {
-			searchPaths := cfg.Skills.Paths
-			if len(searchPaths) == 0 {
-				searchPaths = nil // Use defaults
-			}
-			if err := agentInstance.LoadSkills(searchPaths); err != nil {
-				logger.Warn("failed to load skills", "error", err)
-			}
-		}
+			"registered_options", len(getAgentOptions()))
 	} else {
 		logger.Warn("no API key configured, agent disabled (messages will be echoed)")
 	}

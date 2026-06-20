@@ -60,6 +60,7 @@ func init() {
 	rootCmd.AddCommand(channelsCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(skillsCmd)
+	rootCmd.AddCommand(openaiCmd)
 	rootCmd.AddCommand(versionCmd)
 }
 
