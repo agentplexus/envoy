@@ -68,11 +68,11 @@ func RegisterAgentOperations(api huma.API, manager AgentManager) {
 		return
 	}
 
-	// GET /v1/agents - List all agents
+	// GET /api/v1/agents - List all agents
 	huma.Register(api, huma.Operation{
 		OperationID:   "listAgents",
 		Method:        http.MethodGet,
-		Path:          "/v1/agents",
+		Path:          "/api/v1/agents",
 		Summary:       "List configured agents",
 		Description:   "Returns a list of all configured agents.",
 		Tags:          []string{"Agents"},
@@ -88,11 +88,11 @@ func RegisterAgentOperations(api huma.API, manager AgentManager) {
 		return out, nil
 	})
 
-	// POST /v1/agents - Create a new agent
+	// POST /api/v1/agents - Create a new agent
 	huma.Register(api, huma.Operation{
 		OperationID:   "createAgent",
 		Method:        http.MethodPost,
-		Path:          "/v1/agents",
+		Path:          "/api/v1/agents",
 		Summary:       "Create a new agent",
 		Description:   "Creates a new agent configuration.",
 		Tags:          []string{"Agents"},
@@ -111,11 +111,11 @@ func RegisterAgentOperations(api huma.API, manager AgentManager) {
 		return &AgentOutput{Body: *agent}, nil
 	})
 
-	// GET /v1/agents/{id} - Get agent details
+	// GET /api/v1/agents/{id} - Get agent details
 	huma.Register(api, huma.Operation{
 		OperationID:   "getAgent",
 		Method:        http.MethodGet,
-		Path:          "/v1/agents/{id}",
+		Path:          "/api/v1/agents/{id}",
 		Summary:       "Get agent details",
 		Description:   "Returns details for a specific agent.",
 		Tags:          []string{"Agents"},
@@ -131,11 +131,11 @@ func RegisterAgentOperations(api huma.API, manager AgentManager) {
 		return &AgentOutput{Body: *agent}, nil
 	})
 
-	// PUT /v1/agents/{id} - Update an agent
+	// PUT /api/v1/agents/{id} - Update an agent
 	huma.Register(api, huma.Operation{
 		OperationID:   "updateAgent",
 		Method:        http.MethodPut,
-		Path:          "/v1/agents/{id}",
+		Path:          "/api/v1/agents/{id}",
 		Summary:       "Update an agent",
 		Description:   "Updates an existing agent configuration.",
 		Tags:          []string{"Agents"},
@@ -151,11 +151,11 @@ func RegisterAgentOperations(api huma.API, manager AgentManager) {
 		return &AgentOutput{Body: *agent}, nil
 	})
 
-	// DELETE /v1/agents/{id} - Delete an agent
+	// DELETE /api/v1/agents/{id} - Delete an agent
 	huma.Register(api, huma.Operation{
 		OperationID:   "deleteAgent",
 		Method:        http.MethodDelete,
-		Path:          "/v1/agents/{id}",
+		Path:          "/api/v1/agents/{id}",
 		Summary:       "Delete an agent",
 		Description:   "Deletes an agent configuration.",
 		Tags:          []string{"Agents"},
@@ -170,11 +170,11 @@ func RegisterAgentOperations(api huma.API, manager AgentManager) {
 		return nil, nil
 	})
 
-	// POST /v1/agents/{id}/clone - Clone an agent
+	// POST /api/v1/agents/{id}/clone - Clone an agent
 	huma.Register(api, huma.Operation{
 		OperationID:   "cloneAgent",
 		Method:        http.MethodPost,
-		Path:          "/v1/agents/{id}/clone",
+		Path:          "/api/v1/agents/{id}/clone",
 		Summary:       "Clone an agent",
 		Description:   "Creates a copy of an existing agent with a new name.",
 		Tags:          []string{"Agents"},
@@ -196,11 +196,11 @@ func RegisterAgentOperations(api huma.API, manager AgentManager) {
 		return &AgentOutput{Body: *agent}, nil
 	})
 
-	// POST /v1/agents/{id}/reload - Reload an agent
+	// POST /api/v1/agents/{id}/reload - Reload an agent
 	huma.Register(api, huma.Operation{
 		OperationID:   "reloadAgent",
 		Method:        http.MethodPost,
-		Path:          "/v1/agents/{id}/reload",
+		Path:          "/api/v1/agents/{id}/reload",
 		Summary:       "Reload an agent",
 		Description:   "Reloads an agent from its configuration.",
 		Tags:          []string{"Agents"},

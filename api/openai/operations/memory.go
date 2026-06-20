@@ -70,11 +70,11 @@ func RegisterMemoryOperations(api huma.API, handler MemoryHandler) {
 		return
 	}
 
-	// GET /v1/memories - List memories
+	// GET /api/v1/memories - List memories
 	huma.Register(api, huma.Operation{
 		OperationID:   "listMemories",
 		Method:        http.MethodGet,
-		Path:          "/v1/memories",
+		Path:          "/api/v1/memories",
 		Summary:       "List memories",
 		Description:   "Returns memories from a collection.",
 		Tags:          []string{"Memory"},
@@ -99,11 +99,11 @@ func RegisterMemoryOperations(api huma.API, handler MemoryHandler) {
 		return out, nil
 	})
 
-	// POST /v1/memories - Store a memory
+	// POST /api/v1/memories - Store a memory
 	huma.Register(api, huma.Operation{
 		OperationID:   "storeMemory",
 		Method:        http.MethodPost,
-		Path:          "/v1/memories",
+		Path:          "/api/v1/memories",
 		Summary:       "Store a memory",
 		Description:   "Stores a new memory in a collection.",
 		Tags:          []string{"Memory"},
@@ -119,11 +119,11 @@ func RegisterMemoryOperations(api huma.API, handler MemoryHandler) {
 		return &MemoryOutput{Body: *memory}, nil
 	})
 
-	// GET /v1/memories/search - Search memories
+	// GET /api/v1/memories/search - Search memories
 	huma.Register(api, huma.Operation{
 		OperationID:   "searchMemories",
 		Method:        http.MethodGet,
-		Path:          "/v1/memories/search",
+		Path:          "/api/v1/memories/search",
 		Summary:       "Search memories",
 		Description:   "Performs semantic search on memories.",
 		Tags:          []string{"Memory"},
@@ -152,11 +152,11 @@ func RegisterMemoryOperations(api huma.API, handler MemoryHandler) {
 		return out, nil
 	})
 
-	// DELETE /v1/memories/{key} - Delete a memory
+	// DELETE /api/v1/memories/{key} - Delete a memory
 	huma.Register(api, huma.Operation{
 		OperationID:   "deleteMemory",
 		Method:        http.MethodDelete,
-		Path:          "/v1/memories/{key}",
+		Path:          "/api/v1/memories/{key}",
 		Summary:       "Delete a memory",
 		Description:   "Deletes a memory by key.",
 		Tags:          []string{"Memory"},
@@ -175,11 +175,11 @@ func RegisterMemoryOperations(api huma.API, handler MemoryHandler) {
 		return nil, nil
 	})
 
-	// GET /v1/memories/collections - List collections
+	// GET /api/v1/memories/collections - List collections
 	huma.Register(api, huma.Operation{
 		OperationID:   "listCollections",
 		Method:        http.MethodGet,
-		Path:          "/v1/memories/collections",
+		Path:          "/api/v1/memories/collections",
 		Summary:       "List collections",
 		Description:   "Returns all memory collections.",
 		Tags:          []string{"Memory"},

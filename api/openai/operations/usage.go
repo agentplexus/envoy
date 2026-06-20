@@ -56,11 +56,11 @@ func RegisterUsageOperations(api huma.API, store UsageStore) {
 		return
 	}
 
-	// GET /v1/usage - Usage summary
+	// GET /api/v1/usage - Usage summary
 	huma.Register(api, huma.Operation{
 		OperationID:   "getUsageSummary",
 		Method:        http.MethodGet,
-		Path:          "/v1/usage",
+		Path:          "/api/v1/usage",
 		Summary:       "Get usage summary",
 		Description:   "Returns aggregated usage statistics for a time range.",
 		Tags:          []string{"Usage"},
@@ -71,11 +71,11 @@ func RegisterUsageOperations(api huma.API, store UsageStore) {
 		return &UsageSummaryOutput{Body: *summary}, nil
 	})
 
-	// GET /v1/usage/timeseries - Usage timeseries
+	// GET /api/v1/usage/timeseries - Usage timeseries
 	huma.Register(api, huma.Operation{
 		OperationID:   "getUsageTimeseries",
 		Method:        http.MethodGet,
-		Path:          "/v1/usage/timeseries",
+		Path:          "/api/v1/usage/timeseries",
 		Summary:       "Get usage timeseries",
 		Description:   "Returns time-bucketed usage data.",
 		Tags:          []string{"Usage"},
@@ -90,11 +90,11 @@ func RegisterUsageOperations(api huma.API, store UsageStore) {
 		return &UsageTimeseriesOutput{Body: *ts}, nil
 	})
 
-	// GET /v1/usage/records - Recent usage records
+	// GET /api/v1/usage/records - Recent usage records
 	huma.Register(api, huma.Operation{
 		OperationID:   "getUsageRecords",
 		Method:        http.MethodGet,
-		Path:          "/v1/usage/records",
+		Path:          "/api/v1/usage/records",
 		Summary:       "Get usage records",
 		Description:   "Returns recent usage records.",
 		Tags:          []string{"Usage"},
@@ -111,11 +111,11 @@ func RegisterUsageOperations(api huma.API, store UsageStore) {
 		return out, nil
 	})
 
-	// GET /v1/usage/chart/tokens - Token usage chart
+	// GET /api/v1/usage/chart/tokens - Token usage chart
 	huma.Register(api, huma.Operation{
 		OperationID:   "getUsageChartTokens",
 		Method:        http.MethodGet,
-		Path:          "/v1/usage/chart/tokens",
+		Path:          "/api/v1/usage/chart/tokens",
 		Summary:       "Get token usage chart",
 		Description:   "Returns a ChartIR representation of token usage over time.",
 		Tags:          []string{"Usage"},
@@ -131,11 +131,11 @@ func RegisterUsageOperations(api huma.API, store UsageStore) {
 		return &ChartOutput{Body: *chart}, nil
 	})
 
-	// GET /v1/usage/chart/cost - Cost chart
+	// GET /api/v1/usage/chart/cost - Cost chart
 	huma.Register(api, huma.Operation{
 		OperationID:   "getUsageChartCost",
 		Method:        http.MethodGet,
-		Path:          "/v1/usage/chart/cost",
+		Path:          "/api/v1/usage/chart/cost",
 		Summary:       "Get cost chart",
 		Description:   "Returns a ChartIR representation of cost over time.",
 		Tags:          []string{"Usage"},
@@ -151,11 +151,11 @@ func RegisterUsageOperations(api huma.API, store UsageStore) {
 		return &ChartOutput{Body: *chart}, nil
 	})
 
-	// GET /v1/usage/chart/models - Model distribution chart
+	// GET /api/v1/usage/chart/models - Model distribution chart
 	huma.Register(api, huma.Operation{
 		OperationID:   "getUsageChartModels",
 		Method:        http.MethodGet,
-		Path:          "/v1/usage/chart/models",
+		Path:          "/api/v1/usage/chart/models",
 		Summary:       "Get model distribution chart",
 		Description:   "Returns a ChartIR representation of usage by model.",
 		Tags:          []string{"Usage"},

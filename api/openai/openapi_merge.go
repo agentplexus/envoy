@@ -88,14 +88,14 @@ func (s *Server) getMergedSpec() (*openapi3.T, error) {
 		},
 	}
 
-	// Merge ogen paths (OpenAI endpoints)
+	// Merge ogen paths (OpenAI-compatible endpoints)
 	if ogenSpec.Paths != nil {
 		if merged.Paths == nil {
 			merged.Paths = openapi3.NewPaths()
 		}
 		for path, item := range ogenSpec.Paths.Map() {
-			// Add prefix to ogen paths
-			fullPath := s.config.Prefix + path
+			// Add OpenAI prefix to ogen paths
+			fullPath := s.config.OpenAIPrefix + path
 			merged.Paths.Set(fullPath, item)
 		}
 	}

@@ -20,7 +20,7 @@ func RegisterToolOperations(api huma.API, handler Handler) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "listTools",
 		Method:        http.MethodGet,
-		Path:          "/v1/tools",
+		Path:          "/api/v1/tools",
 		Summary:       "List available tools",
 		Description:   "Returns a list of all tools registered with the agent.",
 		Tags:          []string{"Tools"},

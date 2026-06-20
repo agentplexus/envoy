@@ -67,11 +67,11 @@ type EnableDisableCronJobOutput struct {
 
 // RegisterCronOperations registers cron job API operations.
 func RegisterCronOperations(api huma.API, handler Handler) {
-	// GET /v1/cron/jobs - List all cron jobs
+	// GET /api/v1/cron/jobs - List all cron jobs
 	huma.Register(api, huma.Operation{
 		OperationID:   "listCronJobs",
 		Method:        http.MethodGet,
-		Path:          "/v1/cron/jobs",
+		Path:          "/api/v1/cron/jobs",
 		Summary:       "List scheduled jobs",
 		Description:   "Returns a list of all scheduled cron jobs.",
 		Tags:          []string{"Cron"},
@@ -87,11 +87,11 @@ func RegisterCronOperations(api huma.API, handler Handler) {
 		return out, nil
 	})
 
-	// POST /v1/cron/jobs - Create a new cron job
+	// POST /api/v1/cron/jobs - Create a new cron job
 	huma.Register(api, huma.Operation{
 		OperationID:   "createCronJob",
 		Method:        http.MethodPost,
-		Path:          "/v1/cron/jobs",
+		Path:          "/api/v1/cron/jobs",
 		Summary:       "Create a scheduled job",
 		Description:   "Creates a new scheduled cron job.",
 		Tags:          []string{"Cron"},
@@ -104,11 +104,11 @@ func RegisterCronOperations(api huma.API, handler Handler) {
 		return &CronJobOutput{Body: *job}, nil
 	})
 
-	// GET /v1/cron/jobs/{id} - Get cron job details
+	// GET /api/v1/cron/jobs/{id} - Get cron job details
 	huma.Register(api, huma.Operation{
 		OperationID:   "getCronJob",
 		Method:        http.MethodGet,
-		Path:          "/v1/cron/jobs/{id}",
+		Path:          "/api/v1/cron/jobs/{id}",
 		Summary:       "Get job details",
 		Description:   "Returns details for a specific cron job.",
 		Tags:          []string{"Cron"},
@@ -124,11 +124,11 @@ func RegisterCronOperations(api huma.API, handler Handler) {
 		return &CronJobOutput{Body: *job}, nil
 	})
 
-	// PUT /v1/cron/jobs/{id} - Update a cron job
+	// PUT /api/v1/cron/jobs/{id} - Update a cron job
 	huma.Register(api, huma.Operation{
 		OperationID:   "updateCronJob",
 		Method:        http.MethodPut,
-		Path:          "/v1/cron/jobs/{id}",
+		Path:          "/api/v1/cron/jobs/{id}",
 		Summary:       "Update a job",
 		Description:   "Updates an existing cron job.",
 		Tags:          []string{"Cron"},
@@ -144,11 +144,11 @@ func RegisterCronOperations(api huma.API, handler Handler) {
 		return &CronJobOutput{Body: *job}, nil
 	})
 
-	// DELETE /v1/cron/jobs/{id} - Delete a cron job
+	// DELETE /api/v1/cron/jobs/{id} - Delete a cron job
 	huma.Register(api, huma.Operation{
 		OperationID:   "deleteCronJob",
 		Method:        http.MethodDelete,
-		Path:          "/v1/cron/jobs/{id}",
+		Path:          "/api/v1/cron/jobs/{id}",
 		Summary:       "Delete a job",
 		Description:   "Deletes a cron job.",
 		Tags:          []string{"Cron"},
@@ -163,11 +163,11 @@ func RegisterCronOperations(api huma.API, handler Handler) {
 		return nil, nil
 	})
 
-	// POST /v1/cron/jobs/{id}/trigger - Trigger a cron job
+	// POST /api/v1/cron/jobs/{id}/trigger - Trigger a cron job
 	huma.Register(api, huma.Operation{
 		OperationID:   "triggerCronJob",
 		Method:        http.MethodPost,
-		Path:          "/v1/cron/jobs/{id}/trigger",
+		Path:          "/api/v1/cron/jobs/{id}/trigger",
 		Summary:       "Trigger a job",
 		Description:   "Runs a cron job immediately.",
 		Tags:          []string{"Cron"},
@@ -183,11 +183,11 @@ func RegisterCronOperations(api huma.API, handler Handler) {
 		return &TriggerCronJobOutput{Body: *result}, nil
 	})
 
-	// POST /v1/cron/jobs/{id}/enable - Enable a cron job
+	// POST /api/v1/cron/jobs/{id}/enable - Enable a cron job
 	huma.Register(api, huma.Operation{
 		OperationID:   "enableCronJob",
 		Method:        http.MethodPost,
-		Path:          "/v1/cron/jobs/{id}/enable",
+		Path:          "/api/v1/cron/jobs/{id}/enable",
 		Summary:       "Enable a job",
 		Description:   "Enables a disabled cron job.",
 		Tags:          []string{"Cron"},
@@ -205,11 +205,11 @@ func RegisterCronOperations(api huma.API, handler Handler) {
 		return out, nil
 	})
 
-	// POST /v1/cron/jobs/{id}/disable - Disable a cron job
+	// POST /api/v1/cron/jobs/{id}/disable - Disable a cron job
 	huma.Register(api, huma.Operation{
 		OperationID:   "disableCronJob",
 		Method:        http.MethodPost,
-		Path:          "/v1/cron/jobs/{id}/disable",
+		Path:          "/api/v1/cron/jobs/{id}/disable",
 		Summary:       "Disable a job",
 		Description:   "Disables a cron job without deleting it.",
 		Tags:          []string{"Cron"},

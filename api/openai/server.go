@@ -31,8 +31,11 @@ type Config struct {
 	// APIKeys is a list of valid API keys. If empty, no authentication is required.
 	APIKeys []string
 
-	// Prefix is the URL prefix for all routes (default: "/v1").
-	Prefix string
+	// OpenAIPrefix is the URL prefix for OpenAI-compatible routes (default: "/openai/v1").
+	OpenAIPrefix string
+
+	// APIPrefix is the URL prefix for OmniAgent API routes (default: "/api").
+	APIPrefix string
 
 	// WebUI enables the embedded chat web UI at the root path.
 	WebUI bool
@@ -51,10 +54,17 @@ func WithAPIKeys(keys ...string) Option {
 	}
 }
 
-// WithPrefix sets the URL prefix.
-func WithPrefix(prefix string) Option {
+// WithOpenAIPrefix sets the URL prefix for OpenAI-compatible endpoints.
+func WithOpenAIPrefix(prefix string) Option {
 	return func(c *Config) {
-		c.Prefix = prefix
+		c.OpenAIPrefix = prefix
+	}
+}
+
+// WithAPIPrefix sets the URL prefix for OmniAgent API endpoints.
+func WithAPIPrefix(prefix string) Option {
+	return func(c *Config) {
+		c.APIPrefix = prefix
 	}
 }
 
@@ -75,7 +85,8 @@ func WithPhoneNumber(phone string) Option {
 // New creates a new OpenAI-compatible API server.
 func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	cfg := Config{
-		Prefix: "/v1",
+		OpenAIPrefix: "/openai/v1",
+		APIPrefix:    "/api",
 	}
 	for _, opt := range opts {
 		opt(&cfg)
@@ -110,9 +121,9 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 
 	// 4. Mount ogen routes for OpenAI-compatible endpoints
 	// These bypass Huma for streaming and ogen compatibility
-	r.Post(cfg.Prefix+"/chat/completions", streamingHandler.ServeHTTP)
-	r.Get(cfg.Prefix+"/models", s.handleOgenModels)
-	r.Get(cfg.Prefix+"/models/{model}", s.handleOgenModel)
+	r.Post(cfg.OpenAIPrefix+"/chat/completions", streamingHandler.ServeHTTP)
+	r.Get(cfg.OpenAIPrefix+"/models", s.handleOgenModels)
+	r.Get(cfg.OpenAIPrefix+"/models/{model}", s.handleOgenModel)
 
 	// 5. Create Huma API for custom endpoints
 	humaConfig := huma.DefaultConfig("OmniAgent API", "1.0.0")
@@ -146,9 +157,9 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	opsUsage := &operationsUsageAdapter{store: s.usageStore}
 	operations.RegisterUsageOperations(api, opsUsage)
 
-	// 7. Serve OpenAPI spec
-	r.Get("/openapi.json", s.handleOpenAPIJSON)
-	r.Get("/openapi.yaml", s.handleOpenAPIYAML)
+	// 7. Serve OpenAPI spec under /api/
+	r.Get(cfg.APIPrefix+"/openapi.json", s.handleOpenAPIJSON)
+	r.Get(cfg.APIPrefix+"/openapi.yaml", s.handleOpenAPIYAML)
 
 	// 8. Serve API documentation with Scalar
 	r.Get("/docs", s.handleScalarDocs)
@@ -181,12 +192,12 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	return s, nil
 }
 
-// handleOgenModels handles GET /v1/models through ogen
+// handleOgenModels handles GET /openai/v1/models through ogen
 func (s *Server) handleOgenModels(w http.ResponseWriter, r *http.Request) {
 	s.ogenSrv.ServeHTTP(w, r)
 }
 
-// handleOgenModel handles GET /v1/models/{model} through ogen
+// handleOgenModel handles GET /openai/v1/models/{model} through ogen
 func (s *Server) handleOgenModel(w http.ResponseWriter, r *http.Request) {
 	s.ogenSrv.ServeHTTP(w, r)
 }

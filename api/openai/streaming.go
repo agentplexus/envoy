@@ -87,8 +87,9 @@ func (h *StreamingHandler) SetUsageStore(store *UsageStore) {
 
 // ServeHTTP implements http.Handler.
 func (h *StreamingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Only intercept POST /chat/completions
-	if r.Method != http.MethodPost || r.URL.Path != "/chat/completions" {
+	// Only intercept POST to chat/completions endpoints
+	// This handler is mounted at the specific path, so we don't need to check the full path
+	if r.Method != http.MethodPost {
 		h.ogenHandler.ServeHTTP(w, r)
 		return
 	}

@@ -19,7 +19,7 @@ func RegisterHealthOperation(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "healthCheck",
 		Method:        http.MethodGet,
-		Path:          "/health",
+		Path:          "/api/health",
 		Summary:       "Health check",
 		Description:   "Returns the health status of the API server.",
 		Tags:          []string{"System"},

@@ -9,7 +9,7 @@ import (
 // handleScalarDocs serves the Scalar API documentation UI.
 func (s *Server) handleScalarDocs(w http.ResponseWriter, _ *http.Request) {
 	html, err := scalargo.NewV2(
-		scalargo.WithSpecURL("/openapi.json"),
+		scalargo.WithSpecURL(s.config.APIPrefix+"/openapi.json"),
 		scalargo.WithMetaDataOpts(
 			scalargo.WithTitle("OmniAgent API"),
 		),

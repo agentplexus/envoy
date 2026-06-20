@@ -278,9 +278,8 @@ func runOpenAIServer(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	// Create server
+	// Create server (uses default prefixes: /openai/v1 for OpenAI-compat, /api for custom)
 	serverOpts := []openai.Option{
-		openai.WithPrefix("/v1"),
 		openai.WithWebUI(openaiWebUI),
 	}
 	if len(openaiAPIKeys) > 0 {
@@ -328,8 +327,8 @@ func runOpenAISpec(_ *cobra.Command, _ []string) error {
 	// Create a minimal mock handler for spec generation
 	handler := &specMockHandler{}
 
-	// Create server with mock handler
-	srv, err := openai.New(handler, openai.WithPrefix("/v1"))
+	// Create server with mock handler (uses default prefixes)
+	srv, err := openai.New(handler)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
 	}
