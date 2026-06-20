@@ -264,7 +264,7 @@ func (m *mockAgentHandler) CloneAgent(ctx context.Context, id string, req *Clone
 func setupTestServer(t *testing.T) (*Server, *mockAgentHandler) {
 	t.Helper()
 	handler := newMockAgentHandler()
-	srv, err := New(handler, WithPrefix("/v1"))
+	srv, err := New(handler)
 	if err != nil {
 		t.Fatalf("failed to create server: %v", err)
 	}
@@ -276,7 +276,7 @@ func setupTestServer(t *testing.T) (*Server, *mockAgentHandler) {
 func TestHealthEndpoint(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -305,7 +305,7 @@ func TestListTools(t *testing.T) {
 		{Name: "read_file", Description: "Read a file", Category: "filesystem"},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/tools", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/tools", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -334,7 +334,7 @@ func TestListTools(t *testing.T) {
 func TestListTools_MethodNotAllowed(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/tools", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/tools", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -363,7 +363,7 @@ func TestListAgents(t *testing.T) {
 		CreatedAt: time.Now(),
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/agents", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/agents", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -393,7 +393,7 @@ func TestCreateAgent(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
 	body := `{"name": "Test Agent", "provider": "anthropic", "model": "claude-sonnet-4-20250514"}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/agents", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/agents", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -421,7 +421,7 @@ func TestCreateAgent_MissingName(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
 	body := `{"provider": "anthropic"}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/agents", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/agents", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -439,7 +439,7 @@ func TestCreateAgent_Duplicate(t *testing.T) {
 	handler.agents["existing"] = &AgentInfo{ID: "existing", Name: "Existing"}
 
 	body := `{"id": "existing", "name": "Duplicate"}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/agents", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/agents", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -461,7 +461,7 @@ func TestGetAgent(t *testing.T) {
 		CreatedAt: time.Now(),
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/agents/test-id", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/agents/test-id", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -483,7 +483,7 @@ func TestGetAgent(t *testing.T) {
 func TestGetAgent_NotFound(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/agents/nonexistent", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/agents/nonexistent", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -505,7 +505,7 @@ func TestUpdateAgent(t *testing.T) {
 	}
 
 	body := `{"name": "Updated Name", "temperature": 0.5}`
-	req := httptest.NewRequest(http.MethodPut, "/v1/agents/test-id", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/agents/test-id", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -533,7 +533,7 @@ func TestUpdateAgent_NotFound(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
 	body := `{"name": "Updated"}`
-	req := httptest.NewRequest(http.MethodPut, "/v1/agents/nonexistent", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/agents/nonexistent", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -549,7 +549,7 @@ func TestDeleteAgent(t *testing.T) {
 
 	handler.agents["test-id"] = &AgentInfo{ID: "test-id", Name: "Test"}
 
-	req := httptest.NewRequest(http.MethodDelete, "/v1/agents/test-id", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/agents/test-id", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -566,7 +566,7 @@ func TestDeleteAgent(t *testing.T) {
 func TestDeleteAgent_NotFound(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
-	req := httptest.NewRequest(http.MethodDelete, "/v1/agents/nonexistent", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/agents/nonexistent", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -590,7 +590,7 @@ func TestCloneAgent(t *testing.T) {
 	}
 
 	body := `{"new_id": "clone-id", "new_name": "Cloned Agent"}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/agents/original/clone", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/agents/original/clone", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -625,7 +625,7 @@ func TestCloneAgent_MissingName(t *testing.T) {
 	handler.agents["original"] = &AgentInfo{ID: "original", Name: "Original"}
 
 	body := `{"new_id": "clone-id"}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/agents/original/clone", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/agents/original/clone", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -641,7 +641,7 @@ func TestCloneAgent_NotFound(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
 	body := `{"new_name": "Clone"}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/agents/nonexistent/clone", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/agents/nonexistent/clone", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -664,7 +664,7 @@ func TestListCronJobs(t *testing.T) {
 		CreatedAt: time.Now(),
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/cron/jobs", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/cron/jobs", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -694,7 +694,7 @@ func TestCreateCronJob(t *testing.T) {
 		"schedule": {"cron": "0 * * * *"},
 		"action": {"type": "send_message", "message": "Hello"}
 	}`
-	req := httptest.NewRequest(http.MethodPost, "/v1/cron/jobs", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/cron/jobs", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -724,7 +724,7 @@ func TestGetCronJob(t *testing.T) {
 		CreatedAt: time.Now(),
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/cron/jobs/job-1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/cron/jobs/job-1", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -737,7 +737,7 @@ func TestGetCronJob(t *testing.T) {
 func TestGetCronJob_NotFound(t *testing.T) {
 	srv, _ := setupTestServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/cron/jobs/nonexistent", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/cron/jobs/nonexistent", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -757,7 +757,7 @@ func TestUpdateCronJob(t *testing.T) {
 	}
 
 	body := `{"name": "Updated Job"}`
-	req := httptest.NewRequest(http.MethodPut, "/v1/cron/jobs/job-1", bytes.NewBufferString(body))
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/cron/jobs/job-1", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -773,7 +773,7 @@ func TestDeleteCronJob(t *testing.T) {
 
 	handler.cronJobs["job-1"] = &CronJobInfo{ID: "job-1", Name: "Test"}
 
-	req := httptest.NewRequest(http.MethodDelete, "/v1/cron/jobs/job-1", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/cron/jobs/job-1", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -788,7 +788,7 @@ func TestTriggerCronJob(t *testing.T) {
 
 	handler.cronJobs["job-1"] = &CronJobInfo{ID: "job-1", Name: "Test"}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/cron/jobs/job-1/trigger", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/cron/jobs/job-1/trigger", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -812,7 +812,7 @@ func TestEnableCronJob(t *testing.T) {
 
 	handler.cronJobs["job-1"] = &CronJobInfo{ID: "job-1", Status: "disabled"}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/cron/jobs/job-1/enable", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/cron/jobs/job-1/enable", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -831,7 +831,7 @@ func TestDisableCronJob(t *testing.T) {
 
 	handler.cronJobs["job-1"] = &CronJobInfo{ID: "job-1", Status: "active"}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/cron/jobs/job-1/disable", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/cron/jobs/job-1/disable", nil)
 	w := httptest.NewRecorder()
 
 	srv.ServeHTTP(w, req)
@@ -849,7 +849,7 @@ func TestDisableCronJob(t *testing.T) {
 
 func TestWithAPIKeys(t *testing.T) {
 	handler := newMockAgentHandler()
-	srv, err := New(handler, WithPrefix("/v1"), WithAPIKeys("test-key"))
+	srv, err := New(handler, WithAPIKeys("test-key"))
 	if err != nil {
 		t.Fatalf("failed to create server: %v", err)
 	}
@@ -861,7 +861,7 @@ func TestWithAPIKeys(t *testing.T) {
 
 func TestWithWebUI(t *testing.T) {
 	handler := newMockAgentHandler()
-	srv, err := New(handler, WithPrefix("/v1"), WithWebUI(true))
+	srv, err := New(handler, WithWebUI(true))
 	if err != nil {
 		t.Fatalf("failed to create server: %v", err)
 	}
@@ -888,7 +888,7 @@ func TestWithWebUI(t *testing.T) {
 
 func TestWithPhoneNumber(t *testing.T) {
 	handler := newMockAgentHandler()
-	srv, err := New(handler, WithPrefix("/v1"), WithWebUI(true), WithPhoneNumber("+1234567890"))
+	srv, err := New(handler, WithWebUI(true), WithPhoneNumber("+1234567890"))
 	if err != nil {
 		t.Fatalf("failed to create server: %v", err)
 	}
