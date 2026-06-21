@@ -82,7 +82,7 @@ func (s *Store) Save(ctx context.Context, cfg *AgentConfig) error {
 		return fmt.Errorf("agent ID is required")
 	}
 
-	data, err := json.Marshal(cfg)
+	data, err := json.Marshal(cfg) //nolint:gosec // G117: Agent config storage requires persisting API key
 	if err != nil {
 		return fmt.Errorf("marshal agent: %w", err)
 	}

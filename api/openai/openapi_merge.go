@@ -189,6 +189,8 @@ func (s *Server) getMergedSpec() (*openapi3.T, error) {
 }
 
 // schemaDescriptions maps schema names to their descriptions.
+//
+//nolint:gosec // G101: False positive - this is a map of schema names to descriptions, not credentials
 var schemaDescriptions = map[string]string{
 	"AgentInfo":                          "Agent configuration and metadata",
 	"AgentUsage":                         "Usage statistics for an agent",
