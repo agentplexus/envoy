@@ -385,7 +385,7 @@ func runOpenAISpec(_ *cobra.Command, _ []string) error {
 	}
 
 	// Write to file
-	if err := os.WriteFile(openaiSpecOutput, output, 0o644); err != nil {
+	if err := os.WriteFile(openaiSpecOutput, output, 0o600); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
 

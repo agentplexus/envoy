@@ -12,29 +12,29 @@ type ChartTool struct{}
 
 // ChartArgs are the arguments for the chart tool.
 type ChartArgs struct {
-	Title     string          `json:"title"`
-	ChartType string          `json:"chart_type"` // "line", "bar", "pie", "area", "scatter"
-	XColumn   string          `json:"x_column"`   // Name of x-axis column
-	YColumns  []string        `json:"y_columns"`  // Names of y-axis columns (for multi-series)
-	Data      [][]interface{} `json:"data"`       // Array of rows, each row matches columns order
-	Smooth    bool            `json:"smooth,omitempty"`
-	Stacked   bool            `json:"stacked,omitempty"`
-	ShowLegend bool           `json:"show_legend,omitempty"`
+	Title      string          `json:"title"`
+	ChartType  string          `json:"chart_type"` // "line", "bar", "pie", "area", "scatter"
+	XColumn    string          `json:"x_column"`   // Name of x-axis column
+	YColumns   []string        `json:"y_columns"`  // Names of y-axis columns (for multi-series)
+	Data       [][]interface{} `json:"data"`       // Array of rows, each row matches columns order
+	Smooth     bool            `json:"smooth,omitempty"`
+	Stacked    bool            `json:"stacked,omitempty"`
+	ShowLegend bool            `json:"show_legend,omitempty"`
 }
 
 // ChartIR represents the intermediate representation for charts.
 type ChartIR struct {
-	Title    string       `json:"title,omitempty"`
-	Datasets []Dataset    `json:"datasets"`
-	Marks    []Mark       `json:"marks"`
-	Axes     []Axis       `json:"axes,omitempty"`
-	Legend   *Legend      `json:"legend,omitempty"`
-	Tooltip  *Tooltip     `json:"tooltip,omitempty"`
+	Title    string    `json:"title,omitempty"`
+	Datasets []Dataset `json:"datasets"`
+	Marks    []Mark    `json:"marks"`
+	Axes     []Axis    `json:"axes,omitempty"`
+	Legend   *Legend   `json:"legend,omitempty"`
+	Tooltip  *Tooltip  `json:"tooltip,omitempty"`
 }
 
 type Dataset struct {
-	ID      string   `json:"id"`
-	Columns []Column `json:"columns"`
+	ID      string     `json:"id"`
+	Columns []Column   `json:"columns"`
 	Rows    [][]string `json:"rows"`
 }
 
