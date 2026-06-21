@@ -22,15 +22,15 @@ require (
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omnillm v0.16.1
 	github.com/plexusone/omnillm-core v0.17.0
-	github.com/plexusone/omniobserve v0.10.0
+	github.com/plexusone/omniobserve v0.11.0
 	github.com/plexusone/omniretrieve v0.3.0
-	github.com/plexusone/omniserp v0.8.1
-	github.com/plexusone/omniskill v0.8.0
+	github.com/plexusone/omniserp v0.9.0
+	github.com/plexusone/omniskill v0.9.0
 	github.com/plexusone/omnistorage-core v0.5.0
 	github.com/plexusone/omnitoken v0.1.0
 	github.com/plexusone/omnivault v0.5.0
 	github.com/plexusone/omnivault-desktop v0.1.0
-	github.com/plexusone/omnivoice v0.11.0
+	github.com/plexusone/omnivoice v0.11.1
 	github.com/plexusone/omnivoice-core v0.14.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
@@ -129,7 +129,7 @@ require (
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
 	github.com/petermattis/goid v0.0.0-20260619124436-7ab4bde3d003 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/plexusone/elevenlabs-go v0.11.0 // indirect
+	github.com/plexusone/elevenlabs-go v0.13.0 // indirect
 	github.com/plexusone/ogen-tools v0.3.0 // indirect
 	github.com/plexusone/omni-anthropic v0.2.2 // indirect
 	github.com/plexusone/omni-aws v0.8.2 // indirect
