@@ -217,9 +217,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
-// ListenAndServe starts the HTTP server.
+// ListenAndServe starts the HTTP server with appropriate timeouts.
 func (s *Server) ListenAndServe(addr string) error {
-	return http.ListenAndServe(addr, s)
+	srv := &http.Server{
+		Addr:         addr,
+		Handler:      s,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 120 * time.Second, // Allow longer for streaming responses
+		IdleTimeout:  120 * time.Second,
+	}
+	return srv.ListenAndServe()
 }
 
 // UsageStore returns the server's usage store for external recording.
