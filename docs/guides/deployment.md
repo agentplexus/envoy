@@ -12,6 +12,166 @@ OmniAgent applications can be deployed as:
 
 This guide covers containerized deployment using [OmniDeploy](https://github.com/plexusone/omnideploy).
 
+## Deployment Checklist
+
+Follow these steps to deploy your OmniAgent application to AWS LightSail.
+
+### Prerequisites
+
+Before starting, ensure you have:
+
+- [ ] Go 1.24+ installed
+- [ ] Docker installed and running
+- [ ] AWS CLI configured
+- [ ] GitHub account (for container registry)
+
+### Step 1: Prepare Deployment Files
+
+Ensure your project has these files:
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Multi-stage container build |
+| `deploy.yaml` | OmniDeploy configuration |
+| `.github/workflows/build.yaml` | CI container build (optional) |
+
+### Step 2: Commit and Push to GitHub
+
+```bash
+# Add deployment files
+git add Dockerfile deploy.yaml .github/
+
+# Commit
+git commit -m "build: add Docker and OmniDeploy deployment configuration"
+
+# Push to trigger CI build
+git push origin main
+```
+
+### Step 3: Build Container Image
+
+**Option A: Via GitHub Actions (recommended)**
+
+Pushing to GitHub triggers the build workflow automatically. The image is pushed to `ghcr.io/<owner>/<repo>:latest`.
+
+**Option B: Build locally**
+
+```bash
+# Start Docker if not running
+open -a Docker  # macOS
+
+# Build
+docker build -t ghcr.io/<owner>/<repo>:latest .
+
+# Login to GHCR
+echo $GITHUB_TOKEN | docker login ghcr.io -u <username> --password-stdin
+
+# Push
+docker push ghcr.io/<owner>/<repo>:latest
+```
+
+### Step 4: Install OmniDeploy
+
+```bash
+go install github.com/plexusone/omnideploy/cmd/omnideploy@latest
+```
+
+Verify installation:
+
+```bash
+omnideploy --version
+```
+
+### Step 5: Configure AWS Credentials
+
+```bash
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+export AWS_REGION="us-east-1"
+```
+
+Or use AWS CLI profiles:
+
+```bash
+export AWS_PROFILE="your-profile"
+```
+
+### Step 6: Store Secrets in AWS SSM (Recommended)
+
+Store API keys securely instead of in environment variables:
+
+```bash
+# Anthropic API key
+aws ssm put-parameter \
+    --name "/<app-name>/anthropic-api-key" \
+    --value "sk-ant-..." \
+    --type SecureString
+
+# Other API keys
+aws ssm put-parameter \
+    --name "/<app-name>/other-api-key" \
+    --value "..." \
+    --type SecureString
+```
+
+Update `deploy.yaml` to reference secrets:
+
+```yaml
+secrets:
+  - name: ANTHROPIC_API_KEY
+    source: ssm:/<app-name>/anthropic-api-key
+```
+
+### Step 7: Preview Deployment
+
+```bash
+omnideploy preview \
+    --config deploy.yaml \
+    --target lightsail \
+    --backend pulumi
+```
+
+Review the resources that will be created.
+
+### Step 8: Deploy
+
+```bash
+omnideploy up \
+    --config deploy.yaml \
+    --target lightsail \
+    --backend pulumi \
+    --yes
+```
+
+The deployment outputs the service URL.
+
+### Step 9: Verify Deployment
+
+```bash
+# Health check
+curl https://<service-url>/health
+
+# Test chat endpoint
+curl https://<service-url>/openai/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{"model":"default","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+### Step 10: Monitor and Maintain
+
+```bash
+# View logs (via AWS Console or CLI)
+aws lightsail get-container-log \
+    --service-name <app-name> \
+    --container-name <app-name>
+
+# Update deployment (after pushing new image)
+omnideploy up --config deploy.yaml --target lightsail --backend pulumi --yes
+
+# Destroy when done
+omnideploy destroy --stack <app-name> --yes
+```
+
 ## Building a Custom Agent
 
 Before deployment, you typically create a custom agent that bundles compiled skills with OmniAgent.
