@@ -56,6 +56,7 @@ nav:
   - Getting Started: getting-started.md
   - Guides:
     - OpenAI-Compatible API: guides/openai-api.md
+    - Web UI Authentication: guides/authentication.md
     - Multi-Agent Setup: guides/multi-agent.md
     - Deployment: guides/deployment.md
     - Twilio Setup: guides/twilio.md

@@ -107,6 +107,33 @@ Complete reference for OmniAgent environment variables.
 |----------|-------------|
 | `NGROK_AUTHTOKEN` | ngrok auth token (for `--ngrok` flag) |
 
+## Web UI Authentication
+
+OAuth 2.0 SSO authentication for the web UI. See [Authentication Guide](../guides/authentication.md) for setup instructions.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AUTH_ENABLED` | Enable OAuth authentication | `false` |
+| `AUTH_SESSION_SECRET` | Secret for signing session cookies (min 32 bytes) | - |
+| `AUTH_COOKIE_DOMAIN` | Cookie domain for multi-subdomain setups | (auto) |
+| `AUTH_BASE_URL` | Public URL for OAuth callbacks | `http://localhost:8080` |
+
+### OAuth Providers
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_GITHUB_CLIENT_ID` | GitHub OAuth client ID |
+| `AUTH_GITHUB_CLIENT_SECRET` | GitHub OAuth client secret |
+| `AUTH_GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `AUTH_GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+
+### Access Control
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_ALLOWED_EMAILS` | Comma-separated allowed email addresses |
+| `AUTH_ALLOWED_DOMAINS` | Comma-separated allowed domains (e.g., `@company.com`) |
+
 ## Gateway
 
 | Variable | Description | Default |

@@ -297,6 +297,8 @@ Health check endpoint.
 
 ## Authentication
 
+### API Authentication (Bearer Token)
+
 The API supports Bearer token authentication:
 
 ```bash
@@ -317,6 +319,21 @@ Or via environment variable:
 ```bash
 export OMNIAGENT_GATEWAY_API_KEYS="sk-key1,sk-key2"
 ```
+
+### Web UI Authentication (OAuth SSO)
+
+The embedded web UI supports OAuth 2.0 SSO with GitHub and Google. When enabled, users must authenticate before accessing the chat interface.
+
+```bash
+export AUTH_ENABLED=true
+export AUTH_SESSION_SECRET="your-32-byte-secret-key-here!!!"
+export AUTH_GITHUB_CLIENT_ID="your-client-id"
+export AUTH_GITHUB_CLIENT_SECRET="your-secret"
+
+omniagent openai serve --web-ui --address :8080
+```
+
+See [Web UI Authentication](authentication.md) for full setup instructions.
 
 ## API Documentation
 
