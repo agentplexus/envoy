@@ -398,3 +398,4 @@ agent.WithWebhookHook(&hooks.WebhookHook{
 - [Sessions](sessions.md) - Session management and storage
 - [Cron](cron.md) - Scheduled job execution
 - [Compiled Skills](skills.md#compiled-skills) - Creating Go-based skills
+- [Observability](observability.md) - Building observability integrations
