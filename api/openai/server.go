@@ -3,6 +3,7 @@ package openai
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -142,12 +143,13 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	r.Use(middleware.Recoverer)
 
 	// 2. Setup OAuth authentication if enabled
+	var sessions *auth.SessionManager
 	if cfg.Auth != nil && cfg.Auth.Enabled {
 		if err := cfg.Auth.Validate(); err != nil {
 			return nil, err
 		}
 
-		sessions := auth.NewSessionManager(cfg.Auth)
+		sessions = auth.NewSessionManager(cfg.Auth)
 		providers := auth.NewProviders(cfg.Auth, cfg.BaseURL)
 		acl := auth.NewACL(cfg.Auth)
 
@@ -269,7 +271,17 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 				content = bytes.Replace(content, []byte("</head>"), append(injection, []byte("</head>")...), 1)
 			}
 
+			// Inject user info if authenticated
+			if sessions != nil {
+				if user := sessions.GetUser(req); user != nil {
+					userJSON := fmt.Sprintf(`<script>window.OMNIAGENT_USER={"email":%q,"name":%q,"picture":%q};</script>`,
+						user.Email, user.Name, user.Picture)
+					content = bytes.Replace(content, []byte("</head>"), append([]byte(userJSON), []byte("</head>")...), 1)
+				}
+			}
+
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			//nolint:gosec // G705: user data from trusted OAuth provider, %q format escapes strings
 			_, _ = w.Write(content)
 		})
 	}

@@ -290,6 +290,24 @@
         </div>
       </div>
 
+      <!-- User Section (shown when authenticated) -->
+      <div id="user-section" class="hidden p-3 border-t border-gray-800">
+        <div class="flex items-center gap-3">
+          <div id="user-avatar" class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+            <span id="user-initial" class="text-white font-medium text-sm">U</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p id="user-name" class="text-sm font-medium text-white truncate"></p>
+            <p id="user-email" class="text-xs text-gray-400 truncate"></p>
+          </div>
+          <a href="/logout" class="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors" title="Sign out">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
     </aside>
 
     <!-- Main Content -->
@@ -1515,6 +1533,7 @@
       loadConversations();
       loadModels();
       loadPhoneNumber();
+      loadUserInfo();
       initSpeechRecognition();
       startHealthCheck();
       setupModelSelectListener();
@@ -1562,6 +1581,53 @@
         phoneNumber.textContent = phone;
         phoneNumber.href = `tel:${phone.replace(/[^+\d]/g, '')}`;
       }
+    }
+
+    // Load user info from server-injected data (OAuth session)
+    function loadUserInfo() {
+      const user = window.OMNIAGENT_USER;
+      if (!user) return;
+
+      const userSection = document.getElementById('user-section');
+      const userAvatar = document.getElementById('user-avatar');
+      const userInitial = document.getElementById('user-initial');
+      const userName = document.getElementById('user-name');
+      const userEmail = document.getElementById('user-email');
+
+      if (userSection) {
+        userSection.classList.remove('hidden');
+      }
+
+      if (userName) {
+        userName.textContent = user.name || user.email.split('@')[0];
+      }
+
+      if (userEmail) {
+        userEmail.textContent = user.email;
+      }
+
+      // Show avatar image if available, otherwise show initial
+      if (user.picture) {
+        const img = document.createElement('img');
+        img.src = user.picture;
+        img.alt = user.name || 'User';
+        img.className = 'w-8 h-8 rounded-full object-cover';
+        img.onerror = () => {
+          // Fallback to initial if image fails to load
+          img.remove();
+          if (userInitial) {
+            userInitial.textContent = (user.name || user.email || 'U')[0].toUpperCase();
+          }
+        };
+        if (userAvatar) {
+          userAvatar.innerHTML = '';
+          userAvatar.appendChild(img);
+        }
+      } else if (userInitial) {
+        userInitial.textContent = (user.name || user.email || 'U')[0].toUpperCase();
+      }
+
+      logActivity('system', 'Authenticated', `User: ${user.email}`);
     }
 
     // Status bar functions
