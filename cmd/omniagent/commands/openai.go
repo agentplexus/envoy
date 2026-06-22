@@ -18,6 +18,7 @@ import (
 	"github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omniagent/agent/registry"
 	"github.com/plexusone/omniagent/api/openai"
+	"github.com/plexusone/omniagent/api/openai/auth"
 	openaiAdapter "github.com/plexusone/omniagent/openai"
 	"github.com/plexusone/omniobserve/integrations/omnillm"
 	"github.com/plexusone/omniobserve/llmops"
@@ -246,6 +247,7 @@ func runOpenAIServer(cmd *cobra.Command, args []string) error {
 	// Create server (uses default prefixes: /openai/v1 for OpenAI-compat, /api for custom)
 	serverOpts := []openai.Option{
 		openai.WithWebUI(openaiWebUI),
+		openai.WithLogger(logger),
 	}
 	if len(openaiAPIKeys) > 0 {
 		serverOpts = append(serverOpts, openai.WithAPIKeys(openaiAPIKeys...))
@@ -258,6 +260,34 @@ func runOpenAIServer(cmd *cobra.Command, args []string) error {
 	if phoneNumber := os.Getenv("TWILIO_PHONE_NUMBER"); phoneNumber != "" {
 		serverOpts = append(serverOpts, openai.WithPhoneNumber(phoneNumber))
 		logger.Info("phone number configured for web UI", "phone", phoneNumber)
+	}
+
+	// Load and configure OAuth authentication
+	authConfig := auth.LoadFromEnv()
+	if authConfig.Enabled {
+		if err := authConfig.Validate(); err != nil {
+			return fmt.Errorf("auth config validation: %w", err)
+		}
+
+		serverOpts = append(serverOpts, openai.WithAuth(authConfig))
+
+		// Set base URL for OAuth callbacks
+		baseURL := os.Getenv("AUTH_BASE_URL")
+		if baseURL == "" {
+			// Default to http://localhost with the configured address
+			port := openaiAddress
+			if strings.HasPrefix(port, ":") {
+				baseURL = "http://localhost" + port
+			} else {
+				baseURL = "http://" + port
+			}
+		}
+		serverOpts = append(serverOpts, openai.WithBaseURL(baseURL))
+
+		logger.Info("OAuth authentication enabled",
+			"base_url", baseURL,
+			"github", authConfig.HasGitHub(),
+			"google", authConfig.HasGoogle())
 	}
 
 	srv, err := openai.New(adapter, serverOpts...)

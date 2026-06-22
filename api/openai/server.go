@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/plexusone/omniagent/api/openai/auth"
 	"github.com/plexusone/omniagent/api/openai/internal/ogen"
 	"github.com/plexusone/omniagent/api/openai/operations"
 	"github.com/plexusone/omniagent/api/openai/web"
@@ -42,6 +44,15 @@ type Config struct {
 
 	// PhoneNumber is the phone number to display in the web UI for voice calls.
 	PhoneNumber string
+
+	// Auth holds OAuth authentication configuration for the web UI.
+	Auth *auth.Config
+
+	// BaseURL is the public URL of the server (required for OAuth callbacks).
+	BaseURL string
+
+	// Logger is the logger for the server.
+	Logger *slog.Logger
 }
 
 // Option configures the server.
@@ -82,14 +93,41 @@ func WithPhoneNumber(phone string) Option {
 	}
 }
 
+// WithAuth sets the OAuth authentication configuration.
+func WithAuth(cfg *auth.Config) Option {
+	return func(c *Config) {
+		c.Auth = cfg
+	}
+}
+
+// WithBaseURL sets the public URL of the server for OAuth callbacks.
+func WithBaseURL(url string) Option {
+	return func(c *Config) {
+		c.BaseURL = url
+	}
+}
+
+// WithLogger sets the logger for the server.
+func WithLogger(logger *slog.Logger) Option {
+	return func(c *Config) {
+		c.Logger = logger
+	}
+}
+
 // New creates a new OpenAI-compatible API server.
 func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	cfg := Config{
 		OpenAIPrefix: "/openai/v1",
 		APIPrefix:    "/api",
+		BaseURL:      "http://localhost:8080",
 	}
 	for _, opt := range opts {
 		opt(&cfg)
+	}
+
+	logger := cfg.Logger
+	if logger == nil {
+		logger = slog.Default()
 	}
 
 	s := &Server{
@@ -102,6 +140,53 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	r := chi.NewRouter()
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+
+	// 2. Setup OAuth authentication if enabled
+	if cfg.Auth != nil && cfg.Auth.Enabled {
+		if err := cfg.Auth.Validate(); err != nil {
+			return nil, err
+		}
+
+		sessions := auth.NewSessionManager(cfg.Auth)
+		providers := auth.NewProviders(cfg.Auth, cfg.BaseURL)
+		acl := auth.NewACL(cfg.Auth)
+
+		// Enable development mode if using localhost
+		if cfg.BaseURL == "http://localhost:8080" || cfg.BaseURL[:16] == "http://localhost" || cfg.BaseURL[:17] == "http://127.0.0.1:" {
+			sessions.SetDevelopmentMode(true)
+		}
+
+		authHandlers, err := auth.NewHandlers(auth.HandlersConfig{
+			Config:    cfg.Auth,
+			Sessions:  sessions,
+			Providers: providers,
+			ACL:       acl,
+			Assets:    web.Assets,
+			Logger:    logger,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Apply auth middleware
+		authMiddleware := auth.NewMiddleware(sessions, cfg.Auth)
+		r.Use(authMiddleware.RequireAuth)
+
+		// Register auth routes
+		r.Get("/login", authHandlers.HandleLogin)
+		r.Get("/logout", authHandlers.HandleLogout)
+		r.Get("/auth/github", authHandlers.HandleOAuthStart(auth.ProviderGitHub))
+		r.Get("/auth/github/callback", authHandlers.HandleOAuthCallback(auth.ProviderGitHub))
+		r.Get("/auth/google", authHandlers.HandleOAuthStart(auth.ProviderGoogle))
+		r.Get("/auth/google/callback", authHandlers.HandleOAuthCallback(auth.ProviderGoogle))
+
+		logger.Info("OAuth authentication enabled",
+			"github", cfg.Auth.HasGitHub(),
+			"google", cfg.Auth.HasGoogle(),
+			"acl_emails", len(cfg.Auth.AllowedEmails),
+			"acl_domains", len(cfg.Auth.AllowedDomains))
+	}
+
 	s.router = r
 
 	// 2. Create ogen server for OpenAI-compatible endpoints
