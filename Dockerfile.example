@@ -1,0 +1,69 @@
+# OmniAgent Dockerfile Template
+# Copy this file to your omniagent-based project and customize.
+#
+# Customization points:
+# - Line 20: Change ./cmd/omniagent to your entry point
+# - Line 22: Change binary name
+# - Line 39-40: Update config file paths
+# - Line 47: Update ports if needed
+
+# Build stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Install git for private dependencies (if needed)
+RUN apk add --no-cache git ca-certificates
+
+# Copy go mod files first for caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build binary
+# CUSTOMIZE: Change entry point and binary name
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags="-s -w" \
+    -o /app/omniagent \
+    ./cmd/omniagent
+
+# Runtime stage
+FROM alpine:3.20
+
+# Install ca-certificates for HTTPS calls to LLM providers
+RUN apk add --no-cache ca-certificates tzdata
+
+# Create non-root user
+RUN adduser -D -u 1000 omniagent
+
+# Create data directory for SQLite and other storage
+RUN mkdir -p /data /opt/omniagent && chown -R omniagent:omniagent /data /opt/omniagent
+
+WORKDIR /opt/omniagent
+
+# Copy binary from builder
+COPY --from=builder /app/omniagent /opt/omniagent/omniagent
+
+# CUSTOMIZE: Copy your config files (optional, can override with volume)
+# COPY --from=builder /app/config/config.yaml /opt/omniagent/config.yaml
+# COPY --from=builder /app/config/omniagent.yaml /opt/omniagent/omniagent.yaml
+
+# Switch to non-root user
+USER omniagent
+
+# CUSTOMIZE: Expose ports (8080=HTTP API, 8081=WebSocket, etc.)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -q --spider http://localhost:8080/health || exit 1
+
+# Environment variables (override via -e or deploy config)
+ENV ADDR=":8080" \
+    STORAGE_PATH="/data/omniagent.db"
+
+# Run
+ENTRYPOINT ["/opt/omniagent/omniagent"]
+CMD ["gateway", "run"]

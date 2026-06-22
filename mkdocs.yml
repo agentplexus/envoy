@@ -57,6 +57,7 @@ nav:
   - Guides:
     - OpenAI-Compatible API: guides/openai-api.md
     - Multi-Agent Setup: guides/multi-agent.md
+    - Deployment: guides/deployment.md
     - Twilio Setup: guides/twilio.md
     - WhatsApp Setup: guides/whatsapp.md
     - Voice Integration: guides/voice.md
