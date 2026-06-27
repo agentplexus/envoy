@@ -10,6 +10,7 @@ require (
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.2.0
 	github.com/go-rod/rod v0.116.2
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.3
@@ -20,6 +21,7 @@ require (
 	github.com/moby/moby/client v0.5.0
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/ogen-go/ogen v1.22.0
+	github.com/plexusone/agentauth v0.1.0
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omnillm v0.16.1
 	github.com/plexusone/omnillm-core v0.17.0
@@ -31,8 +33,8 @@ require (
 	github.com/plexusone/omnitoken v0.1.0
 	github.com/plexusone/omnivault v0.5.0
 	github.com/plexusone/omnivault-desktop v0.1.0
-	github.com/plexusone/omnivoice v0.11.1
-	github.com/plexusone/omnivoice-core v0.14.0
+	github.com/plexusone/omnivoice v0.12.0
+	github.com/plexusone/omnivoice-core v0.15.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
 	github.com/tetratelabs/wazero v1.12.0
@@ -53,6 +55,7 @@ require (
 	github.com/1password/onepassword-sdk-go v0.4.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/OpenRouterTeam/go-sdk v0.5.0 // indirect
+	github.com/aistandardsio/agent-protocols v0.6.0 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.51.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.13 // indirect
@@ -69,7 +72,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.31.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.3 // indirect
-	github.com/aws/smithy-go v1.27.2 // indirect
+	github.com/aws/smithy-go v1.27.3 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/beeper/argo-go v1.1.2 // indirect
 	github.com/bitwarden/sdk-go/v2 v2.1.0 // indirect
@@ -99,7 +102,6 @@ require (
 	github.com/go-openapi/swag/jsonname v0.26.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
@@ -153,7 +155,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spyzhov/ajson v0.9.6 // indirect
 	github.com/standard-webhooks/standard-webhooks/libraries v0.0.1 // indirect
-	github.com/team-telnyx/telnyx-go/v4 v4.80.0 // indirect
+	github.com/team-telnyx/telnyx-go/v4 v4.82.0 // indirect
 	github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834 // indirect
 	github.com/tidwall/gjson v1.19.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
@@ -186,7 +188,7 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 	google.golang.org/api v0.285.0 // indirect
 	google.golang.org/genai v1.61.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260618152121-87f3d3e198d3 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d // indirect
 	google.golang.org/grpc v1.81.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/telebot.v3 v3.3.8 // indirect
@@ -207,3 +209,9 @@ replace github.com/ysmood/fetchup => github.com/ysmood/fetchup v0.2.3
 
 // Force log15/v3 to version compatible with ngrok v1.13.0 (has ext.RandId)
 replace github.com/inconshreveable/log15/v3 => github.com/inconshreveable/log15/v3 v3.0.0-testing.5
+
+// Use local agent-protocols for development
+replace github.com/aistandardsio/agent-protocols => ../../aistandardsio/agent-protocols
+
+// Use local agentauth for development (orchestration layer)
+replace github.com/plexusone/agentauth => ../agentauth
