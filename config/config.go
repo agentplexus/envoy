@@ -11,9 +11,31 @@ type Config struct {
 	Channels      ChannelsConfig      `json:"channels" yaml:"channels"`
 	Tools         ToolsConfig         `json:"tools" yaml:"tools"`
 	Skills        SkillsConfig        `json:"skills" yaml:"skills"`
+	Memory        MemoryConfig        `json:"memory" yaml:"memory"`
 	Voice         VoiceConfig         `json:"voice" yaml:"voice"`
 	Observability ObservabilityConfig `json:"observability" yaml:"observability"`
 	Tokens        TokenConfig         `json:"tokens" yaml:"tokens"`
+}
+
+// MemoryConfig configures the omnimemory integration.
+type MemoryConfig struct {
+	Enabled   bool           `json:"enabled" yaml:"enabled"`
+	Provider  string         `json:"provider" yaml:"provider"`     // memory, postgres, kvs, mem0, twilio
+	DSN       string         `json:"dsn" yaml:"dsn"`               // Database connection string (postgres)
+	APIKey    string         `json:"api_key" yaml:"api_key"`       // API key (mem0, twilio) //nolint:gosec // G117: APIKey loaded from config file
+	Endpoint  string         `json:"endpoint" yaml:"endpoint"`     // API endpoint (mem0, twilio)
+	TenantID  string         `json:"tenant_id" yaml:"tenant_id"`   // Default tenant for this agent
+	AgentID   string         `json:"agent_id" yaml:"agent_id"`     // Agent identifier
+	Options   map[string]any `json:"options" yaml:"options"`       // Provider-specific options
+	Embedder  EmbedderConfig `json:"embedder" yaml:"embedder"`     // Optional embedder configuration
+	RecallMax int            `json:"recall_max" yaml:"recall_max"` // Max memories to recall per request
+}
+
+// EmbedderConfig configures the embedding model for semantic memory.
+type EmbedderConfig struct {
+	Provider string `json:"provider" yaml:"provider"` // openai, bedrock, etc.
+	Model    string `json:"model" yaml:"model"`       // text-embedding-3-small, etc.
+	APIKey   string `json:"api_key" yaml:"api_key"`   //nolint:gosec // G117: APIKey loaded from config file
 }
 
 // GatewayConfig configures the WebSocket gateway.
