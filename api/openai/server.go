@@ -383,9 +383,9 @@ func (s *Server) GetMergedSpec() (any, error) {
 
 // securityHandler implements ogen.SecurityHandler.
 type securityHandler struct {
-	apiKeys            []string
-	aauthVerifier      *auth.AAuthVerifier      // Deprecated: kept for backward compatibility
-	agentAuthVerifier  *auth.AgentAuthVerifier  // New unified verifier
+	apiKeys           []string
+	aauthVerifier     *auth.AAuthVerifier     // Deprecated: kept for backward compatibility
+	agentAuthVerifier *auth.AgentAuthVerifier // New unified verifier
 }
 
 // aauthClaimsKey is the context key for AAuth claims (legacy).
