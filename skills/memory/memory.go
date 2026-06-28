@@ -7,43 +7,46 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/plexusone/omniretrieve/memory"
-	"github.com/plexusone/omniretrieve/vector"
+	"github.com/plexusone/omnimemory/core"
 	"github.com/plexusone/omniskill/skill"
-	"github.com/plexusone/omnistorage-core/kvs"
 )
 
 const (
 	// SkillName is the name of the memory skill.
 	SkillName = "memory"
 
-	// DefaultCollection is the default memory collection name.
-	DefaultCollection = "default"
+	// DefaultScope is the default memory scope.
+	DefaultScope = core.ScopeSession
 )
 
-// Skill implements compiled.Skill for memory operations.
+// Skill implements compiled.Skill for memory operations using omnimemory.
 type Skill struct {
-	manager  *memory.Manager
-	embedder vector.Embedder
-	storage  kvs.Store
+	client   *core.Client
+	tenantID string
+	agentID  string
+	config   Config
 }
 
 // Config configures the memory skill.
 type Config struct {
-	// Embedder computes vector embeddings for semantic search.
-	Embedder vector.Embedder
+	// Client is an existing omnimemory client.
+	// If nil, a new in-memory client will be created.
+	Client *core.Client
+
+	// TenantID is the default tenant for memory operations.
+	TenantID string
+
+	// AgentID is the agent identifier for memory attribution.
+	AgentID string
 }
 
 // NewSkill creates a new memory skill.
 func NewSkill(cfg Config) *Skill {
-	embedder := cfg.Embedder
-	if embedder == nil {
-		// Use hash embedder for testing (not suitable for production)
-		embedder = memory.NewHashEmbedder(384)
-	}
-
 	return &Skill{
-		embedder: embedder,
+		client:   cfg.Client,
+		tenantID: cfg.TenantID,
+		agentID:  cfg.AgentID,
+		config:   cfg,
 	}
 }
 
@@ -54,29 +57,53 @@ func (s *Skill) Name() string {
 
 // Description implements compiled.Skill.
 func (s *Skill) Description() string {
-	return "Semantic memory for storing and retrieving information using vector search"
-}
-
-// SetStorage implements compiled.StorageAware.
-func (s *Skill) SetStorage(store kvs.Store) {
-	s.storage = store
+	return "Semantic memory for storing and retrieving information using omnimemory"
 }
 
 // Init implements compiled.Skill.
 func (s *Skill) Init(ctx context.Context) error {
-	s.manager = memory.NewManager(memory.ManagerConfig{
-		Embedder: s.embedder,
-	})
+	// If no client provided, create an in-memory client for testing
+	if s.client == nil {
+		client, err := core.NewClient(core.ClientConfig{
+			Providers: []core.ProviderConfig{
+				{Name: core.ProviderNameMemory},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("create memory client: %w", err)
+		}
+		s.client = client
+	}
 
-	// Create default collection
-	_, _ = s.manager.GetOrCreateCollection(ctx, DefaultCollection, "Default memory collection")
+	// Set defaults
+	if s.tenantID == "" {
+		s.tenantID = "default"
+	}
+	if s.agentID == "" {
+		s.agentID = "agent"
+	}
 
 	return nil
 }
 
 // Close implements compiled.Skill.
 func (s *Skill) Close() error {
+	// Only close the client if we created it
+	if s.config.Client == nil && s.client != nil {
+		return s.client.Close()
+	}
 	return nil
+}
+
+// SetMemory sets the omnimemory client.
+// This is called when the skill is registered with an agent that has memory configured.
+func (s *Skill) SetMemory(client *core.Client) {
+	s.client = client
+}
+
+// Client returns the omnimemory client.
+func (s *Skill) Client() *core.Client {
+	return s.client
 }
 
 // Tools implements compiled.Skill.
@@ -91,14 +118,19 @@ func (s *Skill) Tools() []skill.Tool {
 					Description: "The content to store in memory",
 					Required:    true,
 				},
-				"key": {
+				"type": {
 					Type:        "string",
-					Description: "Optional unique key for the memory (auto-generated if not provided)",
+					Description: "Memory type: observation, fact, preference, summary, trait, relationship (default: observation)",
 					Required:    false,
 				},
-				"collection": {
+				"scope": {
 					Type:        "string",
-					Description: "Optional collection name (default: 'default')",
+					Description: "Memory scope: user, agent, tenant, team, session, domain (default: session)",
+					Required:    false,
+				},
+				"subject_id": {
+					Type:        "string",
+					Description: "Subject ID (who this memory is about)",
 					Required:    false,
 				},
 				"metadata": {
@@ -118,9 +150,14 @@ func (s *Skill) Tools() []skill.Tool {
 					Description: "The search query",
 					Required:    true,
 				},
-				"collection": {
-					Type:        "string",
-					Description: "Optional collection name (default: 'default')",
+				"types": {
+					Type:        "array",
+					Description: "Filter by memory types (observation, fact, preference, etc.)",
+					Required:    false,
+				},
+				"scopes": {
+					Type:        "array",
+					Description: "Filter by memory scopes (user, session, etc.)",
 					Required:    false,
 				},
 				"limit": {
@@ -132,12 +169,39 @@ func (s *Skill) Tools() []skill.Tool {
 			handler: s.handleSearch,
 		},
 		&memoryTool{
-			name:        "memory_list",
-			description: "List all memories in a collection",
+			name:        "memory_recall",
+			description: "Recall relevant memories for the current context",
 			params: map[string]skill.Parameter{
-				"collection": {
+				"query": {
 					Type:        "string",
-					Description: "Optional collection name (default: 'default')",
+					Description: "Query or context to recall memories for",
+					Required:    true,
+				},
+				"max_results": {
+					Type:        "integer",
+					Description: "Maximum number of memories to recall (default: 5)",
+					Required:    false,
+				},
+				"types": {
+					Type:        "array",
+					Description: "Filter by memory types",
+					Required:    false,
+				},
+			},
+			handler: s.handleRecall,
+		},
+		&memoryTool{
+			name:        "memory_list",
+			description: "List memories with optional filters",
+			params: map[string]skill.Parameter{
+				"types": {
+					Type:        "array",
+					Description: "Filter by memory types",
+					Required:    false,
+				},
+				"scopes": {
+					Type:        "array",
+					Description: "Filter by memory scopes",
 					Required:    false,
 				},
 				"limit": {
@@ -150,40 +214,37 @@ func (s *Skill) Tools() []skill.Tool {
 		},
 		&memoryTool{
 			name:        "memory_delete",
-			description: "Delete a memory by key",
+			description: "Delete a memory by ID",
 			params: map[string]skill.Parameter{
-				"key": {
+				"id": {
 					Type:        "string",
-					Description: "The key of the memory to delete",
+					Description: "The ID of the memory to delete",
 					Required:    true,
-				},
-				"collection": {
-					Type:        "string",
-					Description: "Optional collection name (default: 'default')",
-					Required:    false,
 				},
 			},
 			handler: s.handleDelete,
 		},
-		&memoryTool{
-			name:        "memory_collections",
-			description: "List all memory collections",
-			params:      map[string]skill.Parameter{},
-			handler:     s.handleListCollections,
-		},
 	}
 }
 
-// Manager returns the memory manager.
-func (s *Skill) Manager() *memory.Manager {
-	return s.manager
+// memoryContext creates an omnimemory context for operations.
+func (s *Skill) memoryContext(subjectID string) core.Context {
+	if subjectID == "" {
+		subjectID = s.tenantID // Default to tenant if no subject specified
+	}
+	return core.Context{
+		TenantID:  s.tenantID,
+		SubjectID: subjectID,
+		AgentID:   s.agentID,
+	}
 }
 
 type storeInput struct {
-	Content    string            `json:"content"`
-	Key        string            `json:"key"`
-	Collection string            `json:"collection"`
-	Metadata   map[string]string `json:"metadata"`
+	Content   string         `json:"content"`
+	Type      string         `json:"type"`
+	Scope     string         `json:"scope"`
+	SubjectID string         `json:"subject_id"`
+	Metadata  map[string]any `json:"metadata"`
 }
 
 func (s *Skill) handleStore(ctx context.Context, params map[string]any) (any, error) {
@@ -193,37 +254,48 @@ func (s *Skill) handleStore(ctx context.Context, params map[string]any) (any, er
 		return nil, err
 	}
 
-	collection := input.Collection
-	if collection == "" {
-		collection = DefaultCollection
+	memType := core.MemoryTypeObservation
+	if input.Type != "" {
+		memType = core.MemoryType(input.Type)
+		if !memType.Valid() {
+			return nil, fmt.Errorf("invalid memory type: %s", input.Type)
+		}
 	}
 
-	key := input.Key
-	if key == "" {
-		key = fmt.Sprintf("mem_%d", time.Now().UnixNano())
+	scope := DefaultScope
+	if input.Scope != "" {
+		scope = core.Scope(input.Scope)
+		if !scope.Valid() {
+			return nil, fmt.Errorf("invalid memory scope: %s", input.Scope)
+		}
 	}
 
-	doc := &memory.Document{
-		ID:       key,
+	memCtx := s.memoryContext(input.SubjectID)
+	memCtx.Scope = scope
+
+	mem, err := s.client.Add(ctx, &core.AddRequest{
+		Context:  memCtx,
+		Type:     memType,
 		Content:  input.Content,
 		Metadata: input.Metadata,
-	}
-
-	if err := s.manager.Store(ctx, collection, key, doc); err != nil {
+	})
+	if err != nil {
 		return nil, fmt.Errorf("store memory: %w", err)
 	}
 
 	return map[string]any{
-		"success":    true,
-		"key":        key,
-		"collection": collection,
+		"success": true,
+		"id":      mem.ID,
+		"type":    string(mem.Type),
+		"scope":   string(mem.Scope),
 	}, nil
 }
 
 type searchInput struct {
-	Query      string `json:"query"`
-	Collection string `json:"collection"`
-	Limit      int    `json:"limit"`
+	Query  string   `json:"query"`
+	Types  []string `json:"types"`
+	Scopes []string `json:"scopes"`
+	Limit  int      `json:"limit"`
 }
 
 func (s *Skill) handleSearch(ctx context.Context, params map[string]any) (any, error) {
@@ -233,43 +305,109 @@ func (s *Skill) handleSearch(ctx context.Context, params map[string]any) (any, e
 		return nil, err
 	}
 
-	collection := input.Collection
-	if collection == "" {
-		collection = DefaultCollection
-	}
-
 	limit := input.Limit
 	if limit <= 0 {
 		limit = 5
 	}
 
-	results, err := s.manager.Search(ctx, collection, input.Query, memory.SearchOptions{
-		TopK:            limit,
-		IncludeMetadata: true,
+	var types []core.MemoryType
+	for _, t := range input.Types {
+		types = append(types, core.MemoryType(t))
+	}
+
+	var scopes []core.Scope
+	for _, s := range input.Scopes {
+		scopes = append(scopes, core.Scope(s))
+	}
+
+	resp, err := s.client.Search(ctx, &core.SearchRequest{
+		Context: s.memoryContext(""),
+		Query:   input.Query,
+		Types:   types,
+		Scopes:  scopes,
+		Limit:   limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("search memory: %w", err)
 	}
 
-	output := make([]map[string]any, len(results))
-	for i, r := range results {
+	output := make([]map[string]any, len(resp.Results))
+	for i, r := range resp.Results {
 		output[i] = map[string]any{
-			"key":      r.Document.ID,
-			"content":  r.Document.Content,
+			"id":       r.Memory.ID,
+			"content":  r.Memory.Content,
+			"type":     string(r.Memory.Type),
+			"scope":    string(r.Memory.Scope),
 			"score":    r.Score,
-			"metadata": r.Document.Metadata,
+			"metadata": r.Memory.Metadata,
 		}
 	}
 
 	return map[string]any{
 		"results": output,
-		"count":   len(results),
+		"count":   len(resp.Results),
 	}, nil
 }
 
+type recallInput struct {
+	Query      string   `json:"query"`
+	MaxResults int      `json:"max_results"`
+	Types      []string `json:"types"`
+}
+
+func (s *Skill) handleRecall(ctx context.Context, params map[string]any) (any, error) {
+	data, _ := json.Marshal(params)
+	var input recallInput
+	if err := json.Unmarshal(data, &input); err != nil {
+		return nil, err
+	}
+
+	maxResults := input.MaxResults
+	if maxResults <= 0 {
+		maxResults = 5
+	}
+
+	var types []core.MemoryType
+	for _, t := range input.Types {
+		types = append(types, core.MemoryType(t))
+	}
+
+	resp, err := s.client.Recall(ctx, &core.RecallRequest{
+		Context:      s.memoryContext(""),
+		Query:        input.Query,
+		MaxResults:   maxResults,
+		IncludeTypes: types,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("recall memories: %w", err)
+	}
+
+	output := make([]map[string]any, len(resp.Memories))
+	for i, m := range resp.Memories {
+		output[i] = map[string]any{
+			"id":       m.ID,
+			"content":  m.Content,
+			"type":     string(m.Type),
+			"scope":    string(m.Scope),
+			"metadata": m.Metadata,
+		}
+	}
+
+	result := map[string]any{
+		"memories": output,
+		"count":    len(resp.Memories),
+	}
+	if resp.Summary != "" {
+		result["summary"] = resp.Summary
+	}
+
+	return result, nil
+}
+
 type listInput struct {
-	Collection string `json:"collection"`
-	Limit      int    `json:"limit"`
+	Types  []string `json:"types"`
+	Scopes []string `json:"scopes"`
+	Limit  int      `json:"limit"`
 }
 
 func (s *Skill) handleList(ctx context.Context, params map[string]any) (any, error) {
@@ -279,39 +417,52 @@ func (s *Skill) handleList(ctx context.Context, params map[string]any) (any, err
 		return nil, err
 	}
 
-	collection := input.Collection
-	if collection == "" {
-		collection = DefaultCollection
-	}
-
 	limit := input.Limit
 	if limit <= 0 {
 		limit = 20
 	}
 
-	docs, err := s.manager.List(ctx, collection, limit, 0)
+	var types []core.MemoryType
+	for _, t := range input.Types {
+		types = append(types, core.MemoryType(t))
+	}
+
+	var scopes []core.Scope
+	for _, s := range input.Scopes {
+		scopes = append(scopes, core.Scope(s))
+	}
+
+	resp, err := s.client.List(ctx, &core.ListRequest{
+		Context: s.memoryContext(""),
+		Types:   types,
+		Scopes:  scopes,
+		Limit:   limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list memories: %w", err)
 	}
 
-	output := make([]map[string]any, len(docs))
-	for i, d := range docs {
+	output := make([]map[string]any, len(resp.Memories))
+	for i, m := range resp.Memories {
 		output[i] = map[string]any{
-			"key":        d.ID,
-			"content":    truncate(d.Content, 100),
-			"created_at": d.CreatedAt,
+			"id":         m.ID,
+			"content":    truncate(m.Content, 100),
+			"type":       string(m.Type),
+			"scope":      string(m.Scope),
+			"created_at": m.CreatedAt.Format(time.RFC3339),
 		}
 	}
 
 	return map[string]any{
-		"memories": output,
-		"count":    len(docs),
+		"memories":    output,
+		"count":       len(resp.Memories),
+		"total_count": resp.TotalCount,
+		"has_more":    resp.HasMore,
 	}, nil
 }
 
 type deleteInput struct {
-	Key        string `json:"key"`
-	Collection string `json:"collection"`
+	ID string `json:"id"`
 }
 
 func (s *Skill) handleDelete(ctx context.Context, params map[string]any) (any, error) {
@@ -321,26 +472,16 @@ func (s *Skill) handleDelete(ctx context.Context, params map[string]any) (any, e
 		return nil, err
 	}
 
-	collection := input.Collection
-	if collection == "" {
-		collection = DefaultCollection
-	}
-
-	if err := s.manager.Delete(ctx, collection, input.Key); err != nil {
+	if err := s.client.Delete(ctx, &core.DeleteRequest{
+		Context: s.memoryContext(""),
+		ID:      input.ID,
+	}); err != nil {
 		return nil, fmt.Errorf("delete memory: %w", err)
 	}
 
 	return map[string]any{
 		"success": true,
-		"key":     input.Key,
-	}, nil
-}
-
-func (s *Skill) handleListCollections(_ context.Context, _ map[string]any) (any, error) {
-	collections := s.manager.ListCollections()
-	return map[string]any{
-		"collections": collections,
-		"count":       len(collections),
+		"id":      input.ID,
 	}, nil
 }
 
