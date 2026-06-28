@@ -49,6 +49,14 @@ type Config struct {
 	// Auth holds OAuth authentication configuration for the web UI.
 	Auth *auth.Config
 
+	// AAuth holds AAuth token validation configuration.
+	// Deprecated: Use AgentAuth for unified ID-JAG and AAuth support.
+	AAuth *auth.AAuthConfig
+
+	// AgentAuth holds agent authentication configuration for both ID-JAG and AAuth.
+	// This enables policy-based routing: ID-JAG for automatic auth, AAuth for sensitive actions.
+	AgentAuth *auth.AgentAuthConfig
+
 	// BaseURL is the public URL of the server (required for OAuth callbacks).
 	BaseURL string
 
@@ -98,6 +106,23 @@ func WithPhoneNumber(phone string) Option {
 func WithAuth(cfg *auth.Config) Option {
 	return func(c *Config) {
 		c.Auth = cfg
+	}
+}
+
+// WithAAuth sets the AAuth token validation configuration.
+// Deprecated: Use WithAgentAuth for unified ID-JAG and AAuth support.
+func WithAAuth(cfg *auth.AAuthConfig) Option {
+	return func(c *Config) {
+		c.AAuth = cfg
+	}
+}
+
+// WithAgentAuth sets the agent authentication configuration.
+// This enables both ID-JAG (automatic) and AAuth (human consent) token validation
+// with policy-based routing based on action sensitivity.
+func WithAgentAuth(cfg *auth.AgentAuthConfig) Option {
+	return func(c *Config) {
+		c.AgentAuth = cfg
 	}
 }
 
@@ -196,6 +221,24 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	secHandler := &securityHandler{
 		apiKeys: cfg.APIKeys,
 	}
+
+	// Initialize AgentAuth verifier (unified ID-JAG + AAuth) if configured
+	if cfg.AgentAuth != nil && cfg.AgentAuth.Enabled {
+		secHandler.agentAuthVerifier = auth.NewAgentAuthVerifier(cfg.AgentAuth)
+		logger.Info("Agent authentication enabled",
+			"idjag", cfg.AgentAuth.IDJAGEnabled,
+			"aauth", cfg.AgentAuth.AAuthEnabled,
+			"sensitive_actions", cfg.AgentAuth.SensitiveActions)
+	}
+
+	// Initialize legacy AAuth verifier if configured (deprecated, prefer AgentAuth)
+	if cfg.AAuth != nil && cfg.AAuth.Enabled {
+		secHandler.aauthVerifier = auth.NewAAuthVerifier(*cfg.AAuth)
+		logger.Info("AAuth token validation enabled (deprecated, use AgentAuth)",
+			"issuer", cfg.AAuth.IssuerURL,
+			"audience", cfg.AAuth.Audience)
+	}
+
 	ogenSrv, err := ogen.NewServer(ogenHandler, secHandler)
 	if err != nil {
 		return nil, err
@@ -340,13 +383,56 @@ func (s *Server) GetMergedSpec() (any, error) {
 
 // securityHandler implements ogen.SecurityHandler.
 type securityHandler struct {
-	apiKeys []string
+	apiKeys            []string
+	aauthVerifier      *auth.AAuthVerifier      // Deprecated: kept for backward compatibility
+	agentAuthVerifier  *auth.AgentAuthVerifier  // New unified verifier
+}
+
+// aauthClaimsKey is the context key for AAuth claims (legacy).
+type aauthClaimsKey struct{}
+
+// agentAuthClaimsKey is the context key for AgentAuth claims.
+type agentAuthClaimsKey struct{}
+
+// GetAAuthClaims retrieves AAuth claims from the context.
+// Deprecated: Use GetAgentAuthClaims for unified claim access.
+func GetAAuthClaims(ctx context.Context) *auth.AAuthClaims {
+	claims, _ := ctx.Value(aauthClaimsKey{}).(*auth.AAuthClaims)
+	return claims
+}
+
+// GetAgentAuthClaims retrieves agent authentication claims from the context.
+// Works for both ID-JAG and AAuth tokens.
+func GetAgentAuthClaims(ctx context.Context) *auth.AgentAuthClaims {
+	claims, _ := ctx.Value(agentAuthClaimsKey{}).(*auth.AgentAuthClaims)
+	return claims
 }
 
 // HandleBearerAuth validates the bearer token.
+// It supports API keys, ID-JAG tokens, and AAuth JWT tokens.
 func (h *securityHandler) HandleBearerAuth(ctx context.Context, _ ogen.OperationName, t ogen.BearerAuth) (context.Context, error) {
-	// If no API keys are configured, allow all requests
-	if len(h.apiKeys) == 0 {
+	// Try AgentAuth (unified ID-JAG + AAuth) verification first if configured
+	if h.agentAuthVerifier != nil && h.agentAuthVerifier.IsAgentToken(t.Token) {
+		claims, err := h.agentAuthVerifier.Verify(ctx, t.Token)
+		if err == nil {
+			// Store claims in context for downstream handlers
+			return context.WithValue(ctx, agentAuthClaimsKey{}, claims), nil
+		}
+		// If AgentAuth verification fails, fall through to legacy check
+	}
+
+	// Try legacy AAuth token validation if configured (deprecated)
+	if h.aauthVerifier != nil && h.aauthVerifier.IsAAuthToken(t.Token) {
+		claims, err := h.aauthVerifier.Verify(ctx, t.Token)
+		if err == nil {
+			// Store claims in context for downstream handlers
+			return context.WithValue(ctx, aauthClaimsKey{}, claims), nil
+		}
+		// If AAuth verification fails, fall through to API key check
+	}
+
+	// If no API keys are configured and no verifiers, allow all requests
+	if len(h.apiKeys) == 0 && h.aauthVerifier == nil && h.agentAuthVerifier == nil {
 		return ctx, nil
 	}
 
