@@ -7,6 +7,56 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.11.0",
+      "date": "2026-06-28",
+      "highlights": [
+        { "description": "OmniMemory integration for multi-backend semantic memory (PostgreSQL, KVS, Mem0, Twilio)" },
+        { "description": "Automatic memory recall injected into system prompt before LLM calls" },
+        { "description": "OAuth 2.0 SSO for web UI with GitHub and Google providers" },
+        { "description": "AgentAuth token validation for enterprise authentication" }
+      ],
+      "added": [
+        { "description": "OmniMemory client integration with automatic memory recall in ProcessWithSession", "commit": "3c87da0" },
+        { "description": "`WithMemory()` and `WithMemoryConfig()` agent options for semantic memory", "commit": "3c87da0" },
+        { "description": "`memory_recall` tool for contextual memory retrieval with summary", "commit": "ebc62a0" },
+        { "description": "Memory types: observation, fact, preference, summary, trait, relationship", "commit": "ebc62a0" },
+        { "description": "Memory scopes: user, agent, tenant, team, session, domain", "commit": "ebc62a0" },
+        { "description": "`MemoryConfig` and `EmbedderConfig` for memory configuration", "commit": "56c3fd3" },
+        { "description": "OAuth 2.0 SSO login for web UI with GitHub and Google providers", "commit": "4825e3c" },
+        { "description": "Email and domain-based access control (ACL) for OAuth", "commit": "4825e3c" },
+        { "description": "User profile section with avatar and logout in web UI sidebar", "commit": "386cb6e" },
+        { "description": "AAuth token verifier with JWKS support", "commit": "67b8fb8" },
+        { "description": "AgentAuth bearer token validation for OpenAI-compatible API", "commit": "68aafd6" },
+        { "description": "`WithAgentAuth()` and `WithAAuth()` server options", "commit": "68aafd6" },
+        { "description": "AAuth configuration via environment variables", "commit": "b335d90" }
+      ],
+      "changed": [
+        { "description": "Memory skill rewritten to use omnimemory client instead of omniretrieve manager", "commit": "ebc62a0" },
+        { "description": "Migrated to plexusone/agentauth from agent-protocols/agentauth", "commit": "a9a20af" },
+        { "description": "Extracted agent registration helper to eliminate command duplication", "commit": "09b875a" }
+      ],
+      "fixed": [
+        { "description": "HTTP server timeouts to prevent resource exhaustion (G114)", "commit": "9c2ad56" }
+      ],
+      "documentation": [
+        { "description": "Web UI authentication guide with OAuth setup instructions", "commit": "7d97dc4" },
+        { "description": "Deployment guide with containerization and AWS LightSail", "commit": "a570ffd" },
+        { "description": "Step-by-step deployment checklist", "commit": "99b7fee" },
+        { "description": "Observability integration guide for building hooks", "commit": "2cdbcc5" },
+        { "description": "v0.11.0 OmniMemory integration roadmap in ROADMAP.md", "commit": "c1d80bf" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omnimemory` v0.1.0 (new, replaces omniretrieve)" },
+        { "description": "`github.com/plexusone/omniretrieve` removed" },
+        { "description": "`github.com/plexusone/agentauth` v0.2.0 (new)" },
+        { "description": "`github.com/anthropics/anthropic-sdk-go` v1.51.0 → v1.52.0" },
+        { "description": "`google.golang.org/api` v0.285.0 → v0.286.0" },
+        { "description": "`google.golang.org/genai` v1.61.0 → v1.62.0" },
+        { "description": "`github.com/gorilla/sessions` v1.4.0 (new, for OAuth)" },
+        { "description": "`golang.org/x/oauth2` v0.36.0 (new)" }
+      ]
+    },
+    {
       "version": "v0.10.0",
       "date": "2026-06-15",
       "highlights": [
