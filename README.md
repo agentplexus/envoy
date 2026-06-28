@@ -41,7 +41,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - ⚡ **Native Voice-to-Voice** - Ultra-low latency (~100ms) via OpenAI Realtime or Gemini Live APIs
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
-- 🧠 **Semantic Memory** - Long-term memory with vector retrieval via omniretrieve
+- 🧠 **Semantic Memory** - Multi-backend memory with automatic recall via omnimemory
 - ⏰ **Scheduled Jobs** - Cron expressions, intervals, and one-time job scheduling
 - 🔒 **Secure Sandboxing** - WASM and Docker isolation with GPU passthrough
 - 🌐 **Browser Automation** - Built-in browser control with dialog handling via Rod
