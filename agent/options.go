@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/fs"
 
+	"github.com/plexusone/omnimemory/core"
 	"github.com/plexusone/omnistorage-core/kvs"
 
 	"github.com/plexusone/omniagent/agent/profiles"
@@ -99,6 +100,49 @@ func WithSessionsFromStorage(backend kvs.Store) Option {
 			Backend: backend,
 			TTL:     sessions.DefaultSessionTTL,
 		})
+		return nil
+	}
+}
+
+// WithMemory sets the omnimemory client for semantic memory operations.
+// This enables memory_store, memory_search, memory_recall, and other tools.
+//
+// Example:
+//
+//	client, _ := core.NewClient(core.ClientConfig{
+//	    Providers: []core.ProviderConfig{
+//	        {Name: core.ProviderNameMemory},
+//	    },
+//	})
+//	agent, err := agent.New(config,
+//	    agent.WithMemory(client),
+//	)
+func WithMemory(client *core.Client) Option {
+	return func(a *Agent) error {
+		a.memory = client
+		return nil
+	}
+}
+
+// WithMemoryConfig creates an omnimemory client with the given configuration.
+// This is a convenience option that creates the client from configuration.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithMemoryConfig(core.ClientConfig{
+//	        Providers: []core.ProviderConfig{
+//	            {Name: core.ProviderNamePostgres, DSN: os.Getenv("DATABASE_URL")},
+//	        },
+//	    }),
+//	)
+func WithMemoryConfig(cfg core.ClientConfig) Option {
+	return func(a *Agent) error {
+		client, err := core.NewClient(cfg)
+		if err != nil {
+			return err
+		}
+		a.memory = client
 		return nil
 	}
 }

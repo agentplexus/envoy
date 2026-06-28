@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/plexusone/omnillm"
 	"github.com/plexusone/omnillm/provider"
+	"github.com/plexusone/omnimemory/core"
 	"github.com/plexusone/omnistorage-core/kvs"
 
 	"github.com/plexusone/omniagent/agent/profiles"
@@ -34,6 +36,7 @@ type Agent struct {
 	compiledSkills []compiled.Skill // Compiled Go skills
 	storage        kvs.Store        // Key-value storage backend
 	sessions       *sessions.Store  // Persistent session storage
+	memory         *core.Client     // OmniMemory client for semantic memory
 	contextEngine  *agentctx.Engine // Context management engine
 	hooks          *hooks.Registry  // Event hook registry
 	dispatcher     *hooks.Dispatcher
@@ -59,6 +62,10 @@ type Config struct {
 	SystemPrompt      string
 	Logger            *slog.Logger
 	ObservabilityHook omnillm.ObservabilityHook
+
+	// Memory configuration
+	TenantID string // Tenant ID for multi-tenancy (memory scope)
+	AgentID  string // Agent ID for memory attribution
 }
 
 // New creates a new agent with optional configuration.
@@ -229,13 +236,38 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 		Content: content,
 	})
 
+	// Recall relevant memories if configured
+	var memories []*core.Memory
+	if a.memory != nil {
+		sessionID := ""
+		if session != nil {
+			sessionID = session.ID
+		}
+		resp, err := a.memory.Recall(ctx, &core.RecallRequest{
+			Context: core.Context{
+				TenantID:  a.config.TenantID,
+				SubjectID: sessionID,
+				AgentID:   a.config.AgentID,
+				SessionID: sessionID,
+			},
+			Query:      content,
+			MaxResults: 5,
+		})
+		if err != nil {
+			a.logger.Warn("failed to recall memories", "error", err)
+		} else if len(resp.Memories) > 0 {
+			memories = resp.Memories
+			a.logger.Info("recalled memories", "count", len(memories))
+		}
+	}
+
 	// Build messages array
 	var messages []provider.Message
 
-	// Add system prompt with injected skills
-	systemPrompt := a.buildSystemPrompt()
+	// Add system prompt with injected skills and memories
+	systemPrompt := a.buildSystemPromptWithMemories(memories)
 	if systemPrompt != "" {
-		a.logger.Info("using system prompt", "length", len(systemPrompt), "skills", len(a.skills))
+		a.logger.Info("using system prompt", "length", len(systemPrompt), "skills", len(a.skills), "memories", len(memories))
 		messages = append(messages, provider.Message{
 			Role:    provider.RoleSystem,
 			Content: systemPrompt,
@@ -426,6 +458,16 @@ func (a *Agent) SessionStore() *sessions.Store {
 	return a.sessions
 }
 
+// Memory returns the omnimemory client, or nil if not configured.
+func (a *Agent) Memory() *core.Client {
+	return a.memory
+}
+
+// SetMemory sets the omnimemory client.
+func (a *Agent) SetMemory(client *core.Client) {
+	a.memory = client
+}
+
 // ContextEngine returns the context engine, or nil if not configured.
 func (a *Agent) ContextEngine() *agentctx.Engine {
 	return a.contextEngine
@@ -457,6 +499,13 @@ func (a *Agent) Close() error {
 	if a.hooks != nil {
 		if err := a.hooks.Close(); err != nil {
 			a.logger.Error("failed to close hooks", "error", err)
+		}
+	}
+
+	// Close memory client
+	if a.memory != nil {
+		if err := a.memory.Close(); err != nil {
+			a.logger.Error("failed to close memory client", "error", err)
 		}
 	}
 
@@ -526,8 +575,8 @@ func (a *Agent) SkillManager() *skills.Manager {
 	return a.skillManager
 }
 
-// buildSystemPrompt builds the system prompt with injected skills.
-func (a *Agent) buildSystemPrompt() string {
+// buildSystemPromptWithMemories builds the system prompt with skills and recalled memories.
+func (a *Agent) buildSystemPromptWithMemories(memories []*core.Memory) string {
 	basePrompt := a.config.SystemPrompt
 
 	// Apply profile modifications if active
@@ -535,11 +584,34 @@ func (a *Agent) buildSystemPrompt() string {
 		basePrompt = a.profile.BuildSystemPrompt(basePrompt)
 	}
 
+	// Inject memories if available
+	if len(memories) > 0 {
+		basePrompt = a.injectMemoriesIntoPrompt(basePrompt, memories)
+	}
+
 	if len(a.skills) == 0 {
 		return basePrompt
 	}
 
 	return skills.InjectIntoPrompt(basePrompt, a.skills, skills.DefaultInjectConfig())
+}
+
+// injectMemoriesIntoPrompt adds recalled memories to the system prompt.
+func (a *Agent) injectMemoriesIntoPrompt(prompt string, memories []*core.Memory) string {
+	if len(memories) == 0 {
+		return prompt
+	}
+
+	var sb strings.Builder
+	sb.WriteString(prompt)
+	sb.WriteString("\n\n## Relevant Memories\n\n")
+	sb.WriteString("The following memories have been recalled based on the current context:\n\n")
+
+	for i, m := range memories {
+		sb.WriteString(fmt.Sprintf("%d. [%s] %s\n", i+1, m.Type, m.Content))
+	}
+
+	return sb.String()
 }
 
 // Profile returns the active bootstrap profile, or nil if not set.
