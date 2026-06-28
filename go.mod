@@ -1,6 +1,6 @@
 module github.com/plexusone/omniagent
 
-go 1.26.0
+go 1.26.4
 
 require (
 	github.com/bdpiprava/scalar-go v0.13.0
@@ -25,8 +25,8 @@ require (
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omnillm v0.16.1
 	github.com/plexusone/omnillm-core v0.17.0
+	github.com/plexusone/omnimemory v0.1.0
 	github.com/plexusone/omniobserve v0.11.0
-	github.com/plexusone/omniretrieve v0.3.0
 	github.com/plexusone/omniserp v0.9.0
 	github.com/plexusone/omniskill v0.9.0
 	github.com/plexusone/omnistorage-core v0.5.0
@@ -54,7 +54,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/1password/onepassword-sdk-go v0.4.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/OpenRouterTeam/go-sdk v0.5.8 // indirect
+	github.com/OpenRouterTeam/go-sdk v0.5.9 // indirect
 	github.com/aistandardsio/agent-protocols v0.6.1 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.52.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.0 // indirect
@@ -98,7 +98,7 @@ require (
 	github.com/go-faster/yaml v0.4.6 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-openapi/jsonpointer v0.23.1 // indirect
+	github.com/go-openapi/jsonpointer v0.23.2 // indirect
 	github.com/go-openapi/swag/jsonname v0.26.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
@@ -137,7 +137,7 @@ require (
 	github.com/plexusone/elevenlabs-go v0.13.0 // indirect
 	github.com/plexusone/ogen-tools v0.3.0 // indirect
 	github.com/plexusone/omni-anthropic v0.2.2 // indirect
-	github.com/plexusone/omni-aws v0.8.2 // indirect
+	github.com/plexusone/omni-aws v0.9.0 // indirect
 	github.com/plexusone/omni-bitwarden v0.1.0 // indirect
 	github.com/plexusone/omni-deepgram v0.6.1 // indirect
 	github.com/plexusone/omni-google v0.6.1 // indirect
@@ -145,7 +145,7 @@ require (
 	github.com/plexusone/omni-openai v0.4.1 // indirect
 	github.com/plexusone/omni-openrouter v0.1.1 // indirect
 	github.com/plexusone/omni-telnyx v0.4.0 // indirect
-	github.com/plexusone/omni-twilio v0.8.0 // indirect
+	github.com/plexusone/omni-twilio v0.9.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
