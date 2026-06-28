@@ -92,6 +92,22 @@ func LoadFromEnv() *Config {
 	return cfg
 }
 
+// LoadAAuthFromEnv loads AAuth configuration from environment variables.
+//
+// Environment variables:
+//   - AUTH_AAUTH_ENABLED: Enable AAuth token validation (default: false)
+//   - AUTH_AAUTH_ISSUER: AAuth issuer URL (PeopleServer URL)
+//   - AUTH_AAUTH_AUDIENCE: Expected audience claim (this service's URL)
+//   - AUTH_AAUTH_JWKS_URL: Optional custom JWKS URL (defaults to {issuer}/.well-known/jwks.json)
+func LoadAAuthFromEnv() *AAuthConfig {
+	return &AAuthConfig{
+		Enabled:   envBool("AUTH_AAUTH_ENABLED"),
+		IssuerURL: os.Getenv("AUTH_AAUTH_ISSUER"),
+		Audience:  os.Getenv("AUTH_AAUTH_AUDIENCE"),
+		JWKSURL:   os.Getenv("AUTH_AAUTH_JWKS_URL"),
+	}
+}
+
 // Validate checks the configuration for errors.
 func (c *Config) Validate() error {
 	if !c.Enabled {
