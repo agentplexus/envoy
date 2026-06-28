@@ -290,6 +290,15 @@ func runOpenAIServer(cmd *cobra.Command, args []string) error {
 			"google", authConfig.HasGoogle())
 	}
 
+	// Load and configure AAuth token validation
+	aauthConfig := auth.LoadAAuthFromEnv()
+	if aauthConfig.Enabled {
+		serverOpts = append(serverOpts, openai.WithAAuth(aauthConfig))
+		logger.Info("AAuth token validation enabled",
+			"issuer", aauthConfig.IssuerURL,
+			"audience", aauthConfig.Audience)
+	}
+
 	srv, err := openai.New(adapter, serverOpts...)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
