@@ -235,11 +235,11 @@ Most providers should be added to `omnillm` library rather than OmniAgent direct
 
 ### Agent Communication
 
-| Feature | OpenClaw Location | Priority | Description |
-|---------|-------------------|----------|-------------|
-| ACP | `src/acp/` | Medium | Agent Communication Protocol |
-| Auto-Reply | `src/auto-reply/` | Low | Automatic response handling |
-| Commitments | `src/commitments/` | Low | Task/promise tracking |
+| Feature | OpenClaw Location | Priority | Description | Status |
+|---------|-------------------|----------|-------------|--------|
+| ACP | `src/acp/` | Medium | Agent Communication Protocol | |
+| Auto-Reply | `src/auto-reply/` | Low | Automatic response handling | ✓ Implemented (`autoreply/`) |
+| Commitments | `src/commitments/` | Low | Task/promise tracking | |
 
 ### Context & Memory
 
@@ -251,11 +251,11 @@ Most providers should be added to `omnillm` library rather than OmniAgent direct
 
 ### Safety & Analysis
 
-| Feature | OpenClaw Location | Priority | Description |
-|---------|-------------------|----------|-------------|
-| Crestodian | `src/crestodian/` | Low | Conversation safety |
-| Trajectory | `src/trajectory/` | Low | Interaction tracking |
-| Link Understanding | `src/link-understanding/` | Medium | URL preview/analysis |
+| Feature | OpenClaw Location | Priority | Description | Status |
+|---------|-------------------|----------|-------------|--------|
+| Crestodian | `src/crestodian/` | Low | Conversation safety | |
+| Trajectory | `src/trajectory/` | Low | Interaction tracking | |
+| Link Understanding | `src/link-understanding/` | Medium | URL preview/analysis | ✓ Implemented (`skills/web/`) |
 
 ### Gateway Features
 

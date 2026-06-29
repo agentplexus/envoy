@@ -75,6 +75,8 @@ nav:
     - Access Policies: guides/policies.md
     - Browser Automation: guides/browser.md
     - Vault Credentials: guides/vault-credentials.md
+    - Web Content Skill: guides/web.md
+    - Auto-Reply: guides/autoreply.md
   - Architecture:
     - Overview: architecture/overview.md
     - Skills System: architecture/skills.md
