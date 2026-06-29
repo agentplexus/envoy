@@ -142,16 +142,82 @@
       font-size: 0.75rem;
       color: #3b82f6;
       font-weight: 500;
+      cursor: pointer;
+      user-select: none;
     }
-    .tool-call-result {
+    .tool-call-header:hover {
+      background: rgba(59, 130, 246, 0.25);
+    }
+    .tool-call-header .tool-status {
+      margin-left: auto;
+      font-size: 0.65rem;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      background: rgba(59, 130, 246, 0.2);
+    }
+    .tool-call-header .tool-status.running {
+      background: rgba(234, 179, 8, 0.3);
+      color: #ca8a04;
+    }
+    .tool-call-header .tool-status.complete {
+      background: rgba(34, 197, 94, 0.3);
+      color: #16a34a;
+    }
+    .tool-call-header .tool-status.error {
+      background: rgba(239, 68, 68, 0.3);
+      color: #dc2626;
+    }
+    .tool-call-chevron {
+      transition: transform 0.2s ease;
+      margin-left: 0.25rem;
+    }
+    .tool-call-chevron.expanded {
+      transform: rotate(90deg);
+    }
+    .tool-call-content {
+      display: none;
       padding: 0.5rem 0.75rem;
       font-size: 0.8rem;
-      color: #6b7280;
+      border-top: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    .tool-call-content.expanded {
+      display: block;
+    }
+    .tool-call-args {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      font-family: ui-monospace, monospace;
+      font-size: 0.7rem;
+      white-space: pre-wrap;
+      word-break: break-word;
       max-height: 150px;
       overflow-y: auto;
     }
+    .dark .tool-call-args {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .tool-call-result {
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: rgba(34, 197, 94, 0.1);
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      max-height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
     .dark .tool-call-result {
       color: #9ca3af;
+    }
+    .tool-call-label {
+      font-size: 0.65rem;
+      color: #9ca3af;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
     /* Activity Log */
     .activity-log-panel {
@@ -497,6 +563,13 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
               <span id="model-info">omniagent</span>
+            </div>
+            <!-- Gateway Version -->
+            <div class="flex items-center gap-1.5" title="Gateway version">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+              </svg>
+              <span id="gateway-version">--</span>
             </div>
           </div>
           <div class="flex items-center gap-4">
@@ -1534,6 +1607,7 @@
       loadModels();
       loadPhoneNumber();
       loadUserInfo();
+      loadGatewayVersion();
       initSpeechRecognition();
       startHealthCheck();
       setupModelSelectListener();
@@ -1628,6 +1702,19 @@
       }
 
       logActivity('system', 'Authenticated', `User: ${user.email}`);
+    }
+
+    // Load gateway version from server-injected data
+    function loadGatewayVersion() {
+      const versionInfo = window.OMNIAGENT_VERSION;
+      const versionEl = document.getElementById('gateway-version');
+      if (versionEl && versionInfo && versionInfo.version) {
+        versionEl.textContent = `v${versionInfo.version}`;
+        // Add commit tooltip if available
+        if (versionInfo.commit && versionInfo.commit !== 'unknown') {
+          versionEl.title = `Commit: ${versionInfo.commit.substring(0, 7)}`;
+        }
+      }
     }
 
     // Status bar functions
@@ -3138,6 +3225,78 @@
       }
     }
 
+    // Toggle tool call block visibility
+    function toggleToolCall(id) {
+      const content = document.getElementById('tool-content-' + id);
+      const chevron = document.getElementById('tool-chevron-' + id);
+      if (content && chevron) {
+        content.classList.toggle('expanded');
+        chevron.classList.toggle('expanded');
+      }
+    }
+
+    // Create a tool call block element
+    function createToolCallBlock(toolCall) {
+      const id = toolCall.id || 'tool-' + Math.random().toString(36).substr(2, 9);
+      const name = toolCall.function?.name || 'unknown';
+      const args = toolCall.function?.arguments || '{}';
+
+      const block = document.createElement('div');
+      block.className = 'tool-call-block';
+      block.id = 'tool-block-' + id;
+      block.innerHTML = `
+        <div class="tool-call-header" onclick="toggleToolCall('${id}')">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          <span>${escapeHtml(name)}</span>
+          <span class="tool-status running" id="tool-status-${id}">Running</span>
+          <svg class="tool-call-chevron w-3 h-3" id="tool-chevron-${id}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </div>
+        <div class="tool-call-content" id="tool-content-${id}">
+          <div class="tool-call-label">Arguments</div>
+          <div class="tool-call-args" id="tool-args-${id}">${formatToolArgs(args)}</div>
+          <div class="tool-call-label" style="margin-top: 0.5rem; display: none;" id="tool-result-label-${id}">Result</div>
+          <div class="tool-call-result" id="tool-result-${id}" style="display: none;"></div>
+        </div>
+      `;
+      return block;
+    }
+
+    // Format tool arguments as pretty JSON
+    function formatToolArgs(args) {
+      try {
+        const parsed = typeof args === 'string' ? JSON.parse(args) : args;
+        return escapeHtml(JSON.stringify(parsed, null, 2));
+      } catch {
+        return escapeHtml(args);
+      }
+    }
+
+    // Update tool call status and result
+    function updateToolCallResult(id, result, isError = false) {
+      const statusEl = document.getElementById('tool-status-' + id);
+      const resultLabelEl = document.getElementById('tool-result-label-' + id);
+      const resultEl = document.getElementById('tool-result-' + id);
+
+      if (statusEl) {
+        statusEl.textContent = isError ? 'Error' : 'Complete';
+        statusEl.className = 'tool-status ' + (isError ? 'error' : 'complete');
+      }
+
+      if (resultLabelEl && resultEl && result) {
+        resultLabelEl.style.display = 'block';
+        resultEl.style.display = 'block';
+        resultEl.textContent = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+        if (isError) {
+          resultEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        }
+      }
+    }
+
     // Escape HTML for safe display
     function escapeHtml(text) {
       const div = document.createElement('div');
@@ -3347,6 +3506,9 @@
         let thinkingContentEl = null;
         let regularTextEl = null;
 
+        // Streaming state for tool calls
+        const activeToolCalls = new Map();  // id -> {element, arguments}
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -3362,9 +3524,42 @@
 
               try {
                 const json = JSON.parse(data);
-                const delta = json.choices?.[0]?.delta?.content;
-                if (delta) {
-                  assistantContent += delta;
+                const choice = json.choices?.[0];
+                const delta = choice?.delta;
+
+                // Handle tool calls
+                if (delta?.tool_calls) {
+                  for (const tc of delta.tool_calls) {
+                    const tcId = tc.id || `tool-${tc.index}`;
+
+                    if (!activeToolCalls.has(tcId) && tc.function?.name) {
+                      // New tool call - create block
+                      const block = createToolCallBlock({
+                        id: tcId,
+                        function: { name: tc.function.name, arguments: tc.function.arguments || '' }
+                      });
+                      contentDiv.appendChild(block);
+                      activeToolCalls.set(tcId, {
+                        element: block,
+                        arguments: tc.function.arguments || ''
+                      });
+                      logActivity('tool', `Tool called: ${tc.function.name}`, tc.function.arguments?.slice(0, 100) || '');
+                    } else if (activeToolCalls.has(tcId) && tc.function?.arguments) {
+                      // Streaming arguments - append
+                      const toolState = activeToolCalls.get(tcId);
+                      toolState.arguments += tc.function.arguments;
+                      const argsEl = document.getElementById('tool-args-' + tcId);
+                      if (argsEl) {
+                        argsEl.textContent = formatToolArgs(toolState.arguments);
+                      }
+                    }
+                  }
+                }
+
+                // Handle content delta
+                const contentDelta = delta?.content;
+                if (contentDelta) {
+                  assistantContent += contentDelta;
 
                   // Check for thinking tag transitions
                   const openTag = /<(thinking|think)>/i;
@@ -3548,13 +3743,30 @@
       }
     }
 
+    // Tool usage stats cache
+    let toolUsageStats = {};
+
     // Load tools from API
     async function loadTools() {
       try {
-        const res = await fetch('/v1/tools', {
-          headers: { 'Authorization': 'Bearer ' + (settings.apiKey || 'test') }
-        });
-        const data = await res.json();
+        // Fetch tools and usage stats in parallel
+        const [toolsRes, usageRes] = await Promise.all([
+          fetch('/v1/tools', {
+            headers: { 'Authorization': 'Bearer ' + (settings.apiKey || 'test') }
+          }),
+          fetch('/api/v1/tools/usage', {
+            headers: { 'Authorization': 'Bearer ' + (settings.apiKey || 'test') }
+          }).catch(() => null)  // Don't fail if usage stats unavailable
+        ]);
+
+        const data = await toolsRes.json();
+
+        // Parse usage stats if available
+        if (usageRes && usageRes.ok) {
+          const usageData = await usageRes.json();
+          toolUsageStats = usageData.by_tool || {};
+        }
+
         if (data.data) {
           cachedTools = data.data;
           toolsLoaded = true;
@@ -3573,6 +3785,23 @@
           </div>
         `;
       }
+    }
+
+    // Format relative time for last used
+    function formatLastUsed(timestamp) {
+      if (!timestamp || timestamp === '0001-01-01T00:00:00Z') return null;
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return date.toLocaleDateString();
     }
 
     // Render tools list
@@ -3622,12 +3851,20 @@
             <span class="ml-auto text-gray-400">${catTools.length}</span>
           </div>
           <div class="space-y-2">
-            ${catTools.map(tool => `
+            ${catTools.map(tool => {
+              const stats = toolUsageStats[tool.name];
+              const callCount = stats?.call_count || 0;
+              const lastUsed = formatLastUsed(stats?.last_used);
+              return `
               <div class="tool-card p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer" onclick="showToolDetails('${tool.name}')">
-                <div class="font-medium text-sm text-gray-900 dark:text-white">${tool.name}</div>
+                <div class="flex items-center justify-between">
+                  <div class="font-medium text-sm text-gray-900 dark:text-white">${tool.name}</div>
+                  ${callCount > 0 ? `<span class="text-xs text-gray-400 dark:text-gray-500">${callCount} calls</span>` : ''}
+                </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">${tool.description ? tool.description.slice(0, 100) + (tool.description.length > 100 ? '...' : '') : 'No description'}</div>
-              </div>
-            `).join('')}
+                ${lastUsed ? `<div class="text-xs text-gray-400 dark:text-gray-500 mt-1">Last used: ${lastUsed}</div>` : ''}
+              </div>`
+            }).join('')}
           </div>
         </div>
       `).join('');
