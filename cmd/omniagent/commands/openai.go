@@ -299,6 +299,24 @@ func runOpenAIServer(cmd *cobra.Command, args []string) error {
 			"audience", aauthConfig.Audience)
 	}
 
+	// Load and configure image generation
+	imageConfig := openai.LoadImageConfigFromEnv()
+	// Also check config file for image settings
+	if cfg.Image.Enabled {
+		imageConfig = &cfg.Image
+	}
+	if imageConfig.Enabled {
+		imgHandler, err := openai.NewOmniImageHandler(*imageConfig, logger)
+		if err != nil {
+			return fmt.Errorf("create image handler: %w", err)
+		}
+		defer imgHandler.Close()
+		serverOpts = append(serverOpts, openai.WithImageHandler(imgHandler))
+		logger.Info("image generation enabled",
+			"provider", imageConfig.Provider,
+			"model", imageConfig.Model)
+	}
+
 	srv, err := openai.New(adapter, serverOpts...)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
@@ -497,4 +515,17 @@ func (h *specMockHandler) DeleteMemory(_ context.Context, _, _ string) error {
 
 func (h *specMockHandler) ListCollections(_ context.Context) ([]openai.MemoryCollection, error) {
 	return []openai.MemoryCollection{}, nil
+}
+
+// ImageHandler interface implementation
+func (h *specMockHandler) CreateImage(_ context.Context, _ *openai.CreateImageRequest) (*openai.ImageResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (h *specMockHandler) CreateImageEdit(_ context.Context, _ *openai.CreateImageEditRequest) (*openai.ImageResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (h *specMockHandler) CreateImageVariation(_ context.Context, _ *openai.CreateImageVariationRequest) (*openai.ImageResponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }

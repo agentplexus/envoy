@@ -13,6 +13,7 @@ type Config struct {
 	Skills        SkillsConfig        `json:"skills" yaml:"skills"`
 	Memory        MemoryConfig        `json:"memory" yaml:"memory"`
 	Voice         VoiceConfig         `json:"voice" yaml:"voice"`
+	Image         ImageConfig         `json:"image" yaml:"image"`
 	Observability ObservabilityConfig `json:"observability" yaml:"observability"`
 	Tokens        TokenConfig         `json:"tokens" yaml:"tokens"`
 }
@@ -170,4 +171,13 @@ type ObservabilityConfig struct {
 	Provider string `json:"provider" yaml:"provider"`
 	Endpoint string `json:"endpoint" yaml:"endpoint"`
 	APIKey   string `json:"api_key" yaml:"api_key"` //nolint:gosec // G117: APIKey loaded from config file
+}
+
+// ImageConfig configures image generation via OmniImage.
+type ImageConfig struct {
+	Enabled  bool   `json:"enabled" yaml:"enabled"`
+	Provider string `json:"provider" yaml:"provider"` // openai, fal
+	Model    string `json:"model" yaml:"model"`       // Default model (e.g., gpt-image-2, fal-ai/flux-pro)
+	APIKey   string `json:"api_key" yaml:"api_key"`   //nolint:gosec // G117: APIKey loaded from config file
+	BaseURL  string `json:"base_url" yaml:"base_url"` // Optional custom base URL
 }

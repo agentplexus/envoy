@@ -3,6 +3,7 @@ package openai
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -62,6 +63,9 @@ type Config struct {
 
 	// Logger is the logger for the server.
 	Logger *slog.Logger
+
+	// ImageHandler is an optional handler for image generation operations.
+	ImageHandler ImageHandler
 }
 
 // Option configures the server.
@@ -137,6 +141,13 @@ func WithBaseURL(url string) Option {
 func WithLogger(logger *slog.Logger) Option {
 	return func(c *Config) {
 		c.Logger = logger
+	}
+}
+
+// WithImageHandler sets the image generation handler.
+func WithImageHandler(handler ImageHandler) Option {
+	return func(c *Config) {
+		c.ImageHandler = handler
 	}
 }
 
@@ -286,6 +297,13 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	// Register usage operations with the usage store
 	opsUsage := &operationsUsageAdapter{store: s.usageStore}
 	operations.RegisterUsageOperations(api, opsUsage)
+
+	// Register image operations if handler provided
+	if cfg.ImageHandler != nil {
+		opsImage := &operationsImageAdapter{handler: cfg.ImageHandler}
+		operations.RegisterImageOperations(api, opsImage, cfg.OpenAIPrefix)
+		logger.Info("image generation endpoints registered")
+	}
 
 	// 7. Serve OpenAPI spec under /api/
 	r.Get(cfg.APIPrefix+"/openapi.json", s.handleOpenAPIJSON)
@@ -890,4 +908,85 @@ func (a *operationsUsageAdapter) GetRecords(limit int) []operations.UsageRecord 
 		}
 	}
 	return result
+}
+
+// operationsImageAdapter adapts ImageHandler to operations.ImageHandler
+type operationsImageAdapter struct {
+	handler ImageHandler
+}
+
+func (a *operationsImageAdapter) CreateImage(ctx context.Context, req *operations.CreateImageRequest) (*operations.ImageResponse, error) {
+	resp, err := a.handler.CreateImage(ctx, &CreateImageRequest{
+		Model:          req.Model,
+		Prompt:         req.Prompt,
+		N:              req.N,
+		Size:           req.Size,
+		Quality:        req.Quality,
+		Style:          req.Style,
+		ResponseFormat: req.ResponseFormat,
+		User:           req.User,
+	})
+	if err != nil {
+		return nil, convertImageErrorToOperations(err)
+	}
+	return convertImageResponse(resp), nil
+}
+
+func (a *operationsImageAdapter) CreateImageEdit(ctx context.Context, req *operations.CreateImageEditRequest) (*operations.ImageResponse, error) {
+	resp, err := a.handler.CreateImageEdit(ctx, &CreateImageEditRequest{
+		Model:          req.Model,
+		Image:          req.Image,
+		Mask:           req.Mask,
+		Prompt:         req.Prompt,
+		N:              req.N,
+		Size:           req.Size,
+		ResponseFormat: req.ResponseFormat,
+		User:           req.User,
+	})
+	if err != nil {
+		return nil, convertImageErrorToOperations(err)
+	}
+	return convertImageResponse(resp), nil
+}
+
+func (a *operationsImageAdapter) CreateImageVariation(ctx context.Context, req *operations.CreateImageVariationRequest) (*operations.ImageResponse, error) {
+	resp, err := a.handler.CreateImageVariation(ctx, &CreateImageVariationRequest{
+		Model:          req.Model,
+		Image:          req.Image,
+		N:              req.N,
+		Size:           req.Size,
+		ResponseFormat: req.ResponseFormat,
+		User:           req.User,
+	})
+	if err != nil {
+		return nil, convertImageErrorToOperations(err)
+	}
+	return convertImageResponse(resp), nil
+}
+
+func convertImageResponse(resp *ImageResponse) *operations.ImageResponse {
+	data := make([]operations.ImageObject, len(resp.Data))
+	for i, img := range resp.Data {
+		data[i] = operations.ImageObject{
+			URL:           img.URL,
+			B64JSON:       img.B64JSON,
+			RevisedPrompt: img.RevisedPrompt,
+		}
+	}
+	return &operations.ImageResponse{
+		Created: resp.Created,
+		Data:    data,
+	}
+}
+
+func convertImageErrorToOperations(err error) error {
+	var imgErr *ImageError
+	if errors.As(err, &imgErr) {
+		return &operations.ImageError{
+			StatusCode: imgErr.StatusCode,
+			Code:       imgErr.Code,
+			Message:    imgErr.Message,
+		}
+	}
+	return err
 }
