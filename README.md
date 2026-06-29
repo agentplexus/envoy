@@ -51,6 +51,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
 - 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, Keeper
 - 🔗 **OpenAI-Compatible API** - Drop-in replacement for OpenAI client libraries with SSE streaming
+- 🖼️ **Image Generation** - AI image generation via OpenAI (DALL-E) or Fal AI (FLUX)
 - 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
 
 ## Installation
@@ -169,6 +170,9 @@ curl http://localhost:18789/openai/v1/chat/completions \
 |----------|-------------|
 | `POST /openai/v1/chat/completions` | Chat completions with SSE streaming |
 | `GET /openai/v1/models` | List available models |
+| `POST /openai/v1/images/generations` | Generate images from prompt |
+| `POST /openai/v1/images/edits` | Edit images with mask |
+| `POST /openai/v1/images/variations` | Create image variations |
 | `GET /api/v1/tools` | List registered tools |
 | `GET /api/v1/agents` | List configured agents |
 | `POST /api/v1/agents` | Create a new agent |
@@ -549,6 +553,10 @@ See [Access Policies Guide](docs/guides/policies.md) for details.
 | `OMNIAGENT_VOICE_REALTIME_PROVIDER` | Native voice-to-voice: `openai`, `gemini` |
 | `ELEVENLABS_API_KEY` | ElevenLabs API key for voice TTS (traditional) |
 | `GOOGLE_API_KEY` | Google API key for Gemini Live (native voice-to-voice) |
+| `IMAGE_ENABLED` | Set to `true` to enable image generation |
+| `IMAGE_PROVIDER` | Image provider: `openai`, `fal` (default: `openai`) |
+| `IMAGE_MODEL` | Default image model (e.g., `gpt-image-2`, `fal-ai/flux-pro`) |
+| `FAL_KEY` | Fal AI API key for image generation |
 
 ## Vault-Backed Credentials
 
@@ -795,18 +803,18 @@ OmniAgent is built on a modular ecosystem of `omni*` libraries:
 ```
                               OmniAgent
                           (Agent Runtime)
-    ┌────────┬────────┬────────┬────────┬────────┬────────┐
-    ▼        ▼        ▼        ▼        ▼        ▼        ▼
-omnichat  omnillm  omnivoice omniobserve omniserp omnistorage ...
-    │         │         │                           │
-    │    ┌────┴────┐ ┌──┴──┐              ┌─────────┴────────┐
-    │    │         │ │     │              │                  │
-    ▼    ▼         ▼ ▼     ▼              ▼                  ▼
-      omnillm-core   omnivoice-core    omnistorage-core
-                                       ├── /object (files)
-                                       └── /kvs (sessions)
-    │         │         │                           │
-    └─────────┴─────────┴───────────────────────────┘
+    ┌────────┬────────┬────────┬────────┬────────┬────────┬────────┐
+    ▼        ▼        ▼        ▼        ▼        ▼        ▼        ▼
+omnichat omnillm omnivoice omniimage omniobserve omniserp omnistorage ...
+    │        │        │         │                          │
+    │   ┌────┴────┐ ┌─┴──┐      │             ┌────────────┴────────┐
+    │   │         │ │    │      │             │                     │
+    ▼   ▼         ▼ ▼    ▼      ▼             ▼                     ▼
+     omnillm-core  omnivoice-core          omnistorage-core
+                                           ├── /object (files)
+                                           └── /kvs (sessions)
+    │        │        │         │                          │
+    └────────┴────────┴─────────┴──────────────────────────┘
                         │
               Provider Modules
     ┌───────────────────┼───────────────────┐
@@ -831,6 +839,7 @@ See [Architecture Overview](docs/architecture/overview.md) for detailed document
 | [omni-twilio](https://github.com/plexusone/omni-twilio) | Full-duplex voice gateway via Twilio |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omniserp](https://github.com/plexusone/omniserp) | Web search via Serper/SerpAPI |
+| [omniimage](https://github.com/plexusone/omniimage) | Image generation (OpenAI, Fal AI) |
 | [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Object and key-value storage |
 | [omnivault](https://github.com/plexusone/omnivault) | Secure credential storage |
 | [omnitoken](https://github.com/plexusone/omnitoken) | OAuth token management |
@@ -849,6 +858,7 @@ See [Architecture Overview](docs/architecture/overview.md) for detailed document
 - [omnichat](https://github.com/plexusone/omnichat) - Unified messaging provider interface
 - [omnillm](https://github.com/plexusone/omnillm) - Multi-provider LLM abstraction
 - [omnivoice](https://github.com/plexusone/omnivoice) - Voice interactions
+- [omniimage](https://github.com/plexusone/omniimage) - Image generation (OpenAI, Fal AI)
 - [OpenClaw](https://github.com/openclaw/openclaw) - Compatible skill format
 
 ## License

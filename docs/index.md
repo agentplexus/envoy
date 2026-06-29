@@ -21,6 +21,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🎭 **Agent Profiles** - Bootstrap profiles, lean mode, and auto-reply with commentary
 - 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
 - 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, Keeper
+- 🖼️ **Image Generation** - AI image generation via OpenAI (DALL-E) or Fal AI (FLUX)
 
 ## Quick Start
 
@@ -85,6 +86,7 @@ A QR code will appear in your terminal. Scan it with WhatsApp to connect.
 | [omniretrieve](https://github.com/plexusone/omniretrieve) | Vector search, BM25, semantic memory |
 | [omniworkboard](https://github.com/plexusone/omniworkboard) | Project management workboard |
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
+| [omniimage](https://github.com/plexusone/omniimage) | Image generation (OpenAI, Fal AI) |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Key-value and object storage |
 | [omnivault](https://github.com/plexusone/omnivault) | Secure credential storage |

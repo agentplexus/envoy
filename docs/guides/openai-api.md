@@ -265,6 +265,49 @@ Delete a job.
 
 Trigger immediate execution.
 
+### Images
+
+Image generation endpoints are available when configured. See [Image Generation Guide](images.md) for setup.
+
+#### POST /openai/v1/images/generations
+
+Generate images from a text prompt.
+
+**Request:**
+
+```json
+{
+  "model": "gpt-image-2",
+  "prompt": "A serene mountain landscape at sunset",
+  "n": 1,
+  "size": "1024x1024",
+  "quality": "standard",
+  "response_format": "url"
+}
+```
+
+**Response:**
+
+```json
+{
+  "created": 1719360000,
+  "data": [
+    {
+      "url": "https://...",
+      "revised_prompt": "A serene mountain landscape..."
+    }
+  ]
+}
+```
+
+#### POST /openai/v1/images/edits
+
+Edit an existing image with a mask.
+
+#### POST /openai/v1/images/variations
+
+Create variations of an existing image.
+
 ### Usage
 
 #### GET /api/v1/usage
@@ -470,6 +513,7 @@ The API is built on a hybrid architecture:
 Chi Router (base)
 ├── /openai/v1/chat/completions  → ogen (SSE streaming)
 ├── /openai/v1/models            → ogen
+├── /openai/v1/images/*          → Huma (image generation)
 ├── /api/v1/tools                → Huma
 ├── /api/v1/agents/*             → Huma
 ├── /api/v1/cron/jobs/*          → Huma

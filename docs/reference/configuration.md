@@ -276,6 +276,33 @@ tokens:
 | `scopes` | []string | OAuth scopes to request |
 | `auto_refresh` | bool | Auto-refresh tokens (default: true) |
 
+## Image Generation
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `image.enabled` | bool | `false` | Enable image generation |
+| `image.provider` | string | `openai` | Provider: `openai`, `fal` |
+| `image.model` | string | - | Default model |
+| `image.api_key` | string | - | API key (overrides provider-specific) |
+| `image.base_url` | string | - | Custom API base URL |
+
+```yaml
+image:
+  enabled: true
+  provider: openai
+  model: gpt-image-2
+  api_key: ${OPENAI_API_KEY}
+```
+
+### Image Providers
+
+| Provider | Models |
+|----------|--------|
+| `openai` | `dall-e-3`, `dall-e-2`, `gpt-image-2` |
+| `fal` | `fal-ai/flux-pro`, `fal-ai/flux-dev`, `fal-ai/flux-schnell` |
+
+See [Image Generation Guide](../guides/images.md) for detailed usage.
+
 ## Observability
 
 | Field | Type | Default | Description |

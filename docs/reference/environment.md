@@ -63,6 +63,19 @@ Complete reference for OmniAgent environment variables.
 | `OMNIAGENT_VOICE_ENABLED` | Enable voice processing | `false` |
 | `OMNIAGENT_VOICE_RESPONSE_MODE` | Response mode: `auto`, `always`, `never` | `auto` |
 
+## Image Generation
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `IMAGE_ENABLED` | Enable image generation | `false` |
+| `IMAGE_PROVIDER` | Provider: `openai`, `fal` | `openai` |
+| `IMAGE_MODEL` | Default model (e.g., `gpt-image-2`, `fal-ai/flux-pro`) | - |
+| `IMAGE_API_KEY` | API key (overrides provider-specific keys) | - |
+| `IMAGE_BASE_URL` | Custom API base URL | - |
+| `FAL_KEY` | Fal AI API key (used if `IMAGE_PROVIDER=fal`) | - |
+
+When `IMAGE_PROVIDER=openai`, the `OPENAI_API_KEY` is used as fallback if `IMAGE_API_KEY` is not set.
+
 ## Voice Gateway
 
 ### Twilio
