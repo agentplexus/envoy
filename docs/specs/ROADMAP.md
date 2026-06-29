@@ -14,6 +14,18 @@ Feature roadmap for the OmniAgent web-based Control UI, inspired by OpenClaw's d
 - [x] Phone number display for voice calls
 - [x] Model selection dropdown
 
+## v0.12.0 Additions
+
+The following features were added in v0.12.0:
+
+- [x] **Image Generation** - OpenAI-compatible image endpoints via omniimage (DALL-E, FLUX)
+- [x] **GitHub Skill** - Search issues, PRs, and code across repositories
+- [x] **Web Content Skill** - Extract and process content from URLs
+- [x] **Auto-Reply System** - Automatic message responses with configurable triggers
+- [x] **Setup Wizard** - Interactive CLI setup with `omniagent setup`
+- [x] **Doctor Command** - Diagnose configuration and connectivity with `omniagent doctor`
+- [x] **Sessions Command** - Manage conversation sessions via CLI
+
 ## Phase 1: Tools & Skills Panel
 
 **Status:** Implemented (Core Features)
@@ -27,7 +39,7 @@ Display registered agent tools and their capabilities.
 - [x] Tool descriptions and parameter schemas
 - [x] Tool detail modal with parameter info
 - [x] Tools grouped by category
-- [ ] Tool usage statistics (call count, last used)
+- [x] Tool usage statistics (call count, last used)
 - [ ] Tool invocation history in chat
 
 ### API Endpoints
@@ -61,8 +73,8 @@ Show the agent's thinking process and tool calls during responses.
 - [x] Real-time thinking block display during streaming
 - [x] Animated "Thinking..." indicator while processing
 - [x] Parse `<thinking>` and `<think>` tags
-- [ ] Tool call visualization with expand/collapse
-- [ ] Tool arguments display (formatted JSON)
+- [x] Tool call visualization with expand/collapse
+- [x] Tool arguments display (formatted JSON)
 - [ ] Tool result preview
 - [ ] Execution timeline
 
@@ -71,8 +83,8 @@ Show the agent's thinking process and tool calls during responses.
 - [x] Parse `<thinking>` tags from responses (both streaming and completed)
 - [x] Render thinking blocks with collapsible UI
 - [x] Purple accent color for thinking blocks
-- [ ] Detect tool_calls in streaming responses
-- [ ] Render tool calls as expandable cards
+- [x] Detect tool_calls in streaming responses
+- [x] Render tool calls as expandable cards
 - [ ] Show tool results inline or in modal
 
 ### UI Features
@@ -96,12 +108,12 @@ Real-time system status and health monitoring.
 - [x] Token usage counter (current session)
 - [x] Response time metrics
 - [x] Health check polling (every 30s)
-- [ ] Gateway version display
+- [x] Gateway version display
 
 ### API Endpoints
 
 - [x] `GET /health` - Health check (already exists)
-- [ ] `GET /api/v1/status` - Detailed status including model, tokens
+- [x] `GET /api/v1/status` - Detailed status including version
 
 ### UI Components
 
@@ -333,7 +345,7 @@ Agents can be configured via YAML:
 # Single agent (backward compatible)
 agent:
   provider: anthropic
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-4
   api_key: ${ANTHROPIC_API_KEY}
 
 # Multiple agents
@@ -341,13 +353,13 @@ agents:
   - id: default
     name: General Assistant
     provider: anthropic
-    model: claude-sonnet-4-20250514
+    model: claude-sonnet-4
     system_prompt: "You are a helpful assistant."
 
   - id: coder
     name: Code Expert
     provider: anthropic
-    model: claude-sonnet-4-20250514
+    model: claude-sonnet-4
     system_prompt: "You are an expert programmer..."
     allowed_tools: [read, write, edit, glob, grep]
 ```
@@ -416,11 +428,11 @@ Default pricing for cost estimation:
 
 | Model | Input $/1M tokens | Output $/1M tokens |
 |-------|-------------------|-------------------|
-| claude-3-5-sonnet* | 3.00 | 15.00 |
-| claude-3-opus* | 15.00 | 75.00 |
-| claude-3-haiku* | 0.25 | 1.25 |
-| gpt-4* | 30.00 | 60.00 |
-| gpt-3.5-turbo* | 0.50 | 1.50 |
+| claude-sonnet-4* | 3.00 | 15.00 |
+| claude-opus-4* | 15.00 | 75.00 |
+| claude-haiku-4* | 0.25 | 1.25 |
+| gpt-4o* | 2.50 | 10.00 |
+| gpt-4o-mini* | 0.15 | 0.60 |
 | default | 1.00 | 2.00 |
 
 ### UI Components
@@ -488,8 +500,10 @@ Semantic memory for storing and retrieving information across conversations.
 
 ### Integration
 
-The memory panel connects to the existing `skills/memory` package which provides:
+The memory panel connects to the omnimemory library which provides:
 
+- Short-term memory (conversation context)
+- Long-term memory (persistent knowledge)
 - Vector embeddings for semantic search
 - Collection-based organization
 - Metadata support
@@ -500,7 +514,7 @@ The memory panel connects to the existing `skills/memory` package which provides
 - `api/openai/handler.go` - MemoryHandler interface and types
 - `api/openai/server.go` - Memory API endpoints
 - `api/openai/web/index.html` - Memory panel UI
-- `skills/memory/memory.go` - Memory skill (existing)
+- `skills/compiled/memory/memory.go` - Memory skill (omnimemory integration)
 
 ## Technical Architecture
 
@@ -513,6 +527,7 @@ Chi Router (base)
 ├── /openai/v1/chat/completions  → StreamingHandler → ogen (SSE streaming)
 ├── /openai/v1/models            → ogen handler
 ├── /openai/v1/models/{model}    → ogen handler
+├── /openai/v1/images/*          → Huma (image generation via omniimage)
 ├── /api/v1/tools                → Huma (auto-generated OpenAPI)
 ├── /api/v1/agents/*             → Huma
 ├── /api/v1/cron/jobs/*          → Huma
@@ -546,7 +561,8 @@ This provides a complete, accurate API reference for all endpoints.
 #### Implementation Files
 
 - `api/openai/server.go` - Chi router setup, Huma integration, route mounting
-- `api/openai/operations/*.go` - Huma operation definitions (types, tools, agents, cron, usage, memory, health)
+- `api/openai/operations/*.go` - Huma operation definitions (types, tools, agents, cron, usage, memory, health, images)
+- `api/openai/image_handler.go` - ImageHandler interface and omniimage integration
 - `api/openai/openapi_merge.go` - OpenAPI spec merging logic
 - `api/openai/docs.go` - Scalar documentation handler
 - `api/openai/streaming.go` - SSE streaming handler for chat completions
