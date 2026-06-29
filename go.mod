@@ -11,6 +11,7 @@ require (
 	github.com/go-faster/jx v1.2.0
 	github.com/go-rod/rod v0.116.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/google/go-github/v88 v88.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.3
@@ -104,6 +105,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.17 // indirect
