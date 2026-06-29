@@ -576,6 +576,8 @@ github.com/plexusone/omni-twilio v0.9.0 h1:Bumm1HVnN7EYpPgRTKz9h16SUjAZam59XIHD+
 github.com/plexusone/omni-twilio v0.9.0/go.mod h1:CI1n6fwjgaBl3i1Dcx4x9lTgIxdEBVwwb18kC4weo3k=
 github.com/plexusone/omnichat v0.8.0 h1:PZofl+lWVMtOUurzULxwcHrl6fjvEMwvsvd5a+tCQMM=
 github.com/plexusone/omnichat v0.8.0/go.mod h1:bHZN8Yqbb7wTbnHNe/0zVmvlxLEw1tGUsjlbRWzAHyo=
+github.com/plexusone/omniimage v0.1.0 h1:d0+GBVbE6EtuL/uhIVsPe49hAH8tkmL1vHNYt+KIGv8=
+github.com/plexusone/omniimage v0.1.0/go.mod h1:YhZ5r+K0QM41iUtHUoZKdO1XjSLOdJqjLNBR+JB14cI=
 github.com/plexusone/omnillm v0.16.1 h1:0dKXUV1uk8EiXV19boAx+yH7Ewp04dnthkjfJ/iEHHM=
 github.com/plexusone/omnillm v0.16.1/go.mod h1:aJhV9wmwP3aezYNgOdBTTQjorOm7cncfuoJUhgGzyB8=
 github.com/plexusone/omnillm-core v0.17.0 h1:mzM1yVt7sSFxHqNmyhoV6GxYsqfFOD/m1tWyv2qFpec=

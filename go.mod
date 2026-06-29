@@ -24,6 +24,7 @@ require (
 	github.com/ogen-go/ogen v1.22.0
 	github.com/plexusone/agentauth v0.2.0
 	github.com/plexusone/omnichat v0.8.0
+	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.16.1
 	github.com/plexusone/omnillm-core v0.17.0
 	github.com/plexusone/omnimemory v0.1.0
@@ -43,6 +44,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	golang.ngrok.com/ngrok v1.13.0
+	golang.org/x/net v0.56.0
 	golang.org/x/oauth2 v0.36.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -183,7 +185,6 @@ require (
 	golang.ngrok.com/muxado/v2 v2.0.1 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
-	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
