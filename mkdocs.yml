@@ -65,6 +65,7 @@ nav:
     - LLM Providers: guides/providers.md
     - Skills Development: guides/skills.md
     - Memory Skill: guides/memory.md
+    - GitHub Skill: guides/github.md
     - Sessions & Storage: guides/sessions.md
     - Scheduled Jobs: guides/cron.md
     - Context Management: guides/context.md

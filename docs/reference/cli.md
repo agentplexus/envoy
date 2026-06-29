@@ -359,6 +359,214 @@ omniagent version --json
 }
 ```
 
+## Setup
+
+### setup
+
+Interactive setup wizard for first-time configuration.
+
+```bash
+omniagent setup [flags]
+```
+
+**Flags:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--output`, `-o` | Output config file path | `omniagent.yaml` |
+| `--force` | Overwrite existing config | `false` |
+
+The wizard guides you through:
+
+1. **LLM Provider** - Choose Anthropic (Claude) or OpenAI (GPT)
+2. **API Key** - Enter your provider API key
+3. **System Prompt** - Optional custom system prompt
+4. **Channels** - Configure Telegram, Discord, etc.
+5. **Observability** - Optional OpenTelemetry setup
+
+**Example:**
+
+```bash
+# Run interactive setup
+omniagent setup
+
+# Output to custom path
+omniagent setup --output ~/.config/omniagent/config.yaml
+
+# Overwrite existing config
+omniagent setup --force
+```
+
+## Doctor
+
+### doctor
+
+Run diagnostic checks on your OmniAgent installation.
+
+```bash
+omniagent doctor [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--verbose`, `-v` | Show detailed output |
+
+**Checks performed:**
+
+- Configuration file validity
+- API key presence
+- Network connectivity to API endpoints
+- Optional dependencies (git, docker, chrome, ffmpeg)
+- Environment variables for channels
+
+**Example:**
+
+```bash
+omniagent doctor
+```
+
+**Output:**
+
+```
+OmniAgent Doctor
+================
+
+Version: 0.11.0
+Go:      go1.26.4
+OS/Arch: darwin/arm64
+
+Checks
+------
+[✓] Config file: Found at omniagent.yaml
+[✓] API key: API key configured
+[✓] HOME: /Users/john
+[✓] Data directory: /Users/john/.local/share/omniagent
+[✓] Anthropic API: Reachable
+[✓] OpenAI API: Reachable
+[✓] Git: Found (skill installation from git repositories)
+[!] Docker: Not found (sandbox execution)
+[✓] Chrome/Chromium: Found as chromium (browser automation)
+
+Summary: 8 passed, 1 warnings, 0 errors
+```
+
+## Sessions
+
+### sessions list
+
+List all stored conversation sessions.
+
+```bash
+omniagent sessions list [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--db` | Database path (default: `~/.local/share/omniagent/data.db`) |
+
+**Example:**
+
+```bash
+omniagent sessions list
+```
+
+**Output:**
+
+```
+SESSION ID                            MESSAGES  CREATED           UPDATED
+telegram:123456789                    42        2026-06-28 10:30  2026-06-28 14:22
+discord:987654321                     15        2026-06-27 09:15  2026-06-28 11:45
+whatsapp:1234567890@s.whatsapp.net    8         2026-06-28 08:00  2026-06-28 08:30
+
+Total: 3 sessions
+```
+
+### sessions show
+
+Display details of a specific session.
+
+```bash
+omniagent sessions show <session-id> [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+| `--db` | Database path |
+
+**Example:**
+
+```bash
+omniagent sessions show telegram:123456789
+```
+
+**Output:**
+
+```
+Session: telegram:123456789
+Created: 2026-06-28T10:30:00Z
+Updated: 2026-06-28T14:22:00Z
+Messages: 42
+
+Conversation:
+-------------
+[1] user: Hello!
+[2] assistant: Hello! How can I help you today?
+[3] user: What's the weather like?
+...
+```
+
+### sessions delete
+
+Remove a session and its conversation history.
+
+```bash
+omniagent sessions delete <session-id> [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--db` | Database path |
+
+**Example:**
+
+```bash
+omniagent sessions delete telegram:123456789
+```
+
+### sessions clear
+
+Remove all sessions.
+
+```bash
+omniagent sessions clear [flags]
+```
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--force` | Skip confirmation prompt |
+| `--db` | Database path |
+
+**Example:**
+
+```bash
+# With confirmation prompt
+omniagent sessions clear
+
+# Skip confirmation
+omniagent sessions clear --force
+```
+
 ## Exit Codes
 
 | Code | Description |
