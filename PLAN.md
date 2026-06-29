@@ -11,13 +11,14 @@ This project tracks functionality from [OpenClaw](https://github.com/openclaw/op
 
 | Date | OpenClaw Commit | Commits | Notes |
 |------|-----------------|---------|-------|
+| 2026-06-28 | `2001b15f5b92d653464cbd847c28c136bdb465a7` | 4,111 | Security hardening, UTF-16 safety, provider updates |
 | 2026-06-10 | `bd96e4d22dafe64f558fb7f3ba5977aa3a93aee6` | 7,162+ | Feature parity implementation complete |
 | 2026-05-21 | `03125c8e132db59152c1b7b512e2a98f001aa26b` | 17,951 | v0.9.0 sync analysis |
 | 2026-04-22 | `d4eb23652362a1b7d3fbcebd633a1c6f2a43c16f` | - | Initial gap analysis |
 
-### Latest Parity Implementation (2026-06-10)
+### Latest Parity Implementation (2026-06-28)
 
-See [`docs/specs/parity-2026-06-10/PLAN.md`](docs/specs/parity-2026-06-10/PLAN.md) for the detailed implementation plan.
+See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.md) for the detailed implementation plan.
 
 **Modules Updated:**
 
