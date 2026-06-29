@@ -20,7 +20,28 @@ This project tracks functionality from [OpenClaw](https://github.com/openclaw/op
 
 See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.md) for the detailed implementation plan.
 
-**Modules Updated:**
+**Completed:**
+
+| Module | Changes |
+|--------|---------|
+| `internal/httputil` | New - Bounded HTTP response reads (OOM prevention) |
+| `internal/strutil` | New - UTF-16 safe string truncation |
+| `sandbox` | Process tree cleanup on exec timeout |
+| `api/openai/auth` | Bounded reads in OAuth providers |
+| `hooks/webhook` | Bounded response draining |
+| `skills/remote/openapi` | Bounded API response reads |
+
+**Pending (see plan for details):**
+
+| Priority | Items |
+|----------|-------|
+| P1 | Compaction summaries, memory search modes |
+| P2 | Channel UTF-16 truncation integration |
+| P3 | Plugin auto-approval modes |
+| P4 | Cohere provider, GLM-5.2, Bedrock fixes |
+| P5 | CLI features (--message-file, sessions compact) |
+
+### Previous Implementation (2026-06-10)
 
 | Module | Changes |
 |--------|---------|
