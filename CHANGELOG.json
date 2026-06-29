@@ -14,7 +14,8 @@
         { "description": "GitHub skill for searching issues, PRs, and code across repositories" },
         { "description": "Web content skill for URL extraction and processing" },
         { "description": "Auto-reply system for automatic message responses" },
-        { "description": "Interactive setup wizard and doctor command for CLI diagnostics" }
+        { "description": "Interactive setup wizard and doctor command for CLI diagnostics" },
+        { "description": "Tool call visualization and usage statistics in web UI" }
       ],
       "added": [
         { "description": "Image generation endpoints: `/openai/v1/images/generations`, `/edits`, `/variations`", "commit": "827dde6" },
@@ -27,7 +28,16 @@
         { "description": "`omniagent setup` interactive setup wizard", "commit": "eebd8b5" },
         { "description": "`omniagent doctor` command for configuration diagnostics", "commit": "95c1716" },
         { "description": "`omniagent sessions` command for session management", "commit": "95c1716" },
-        { "description": "UTF-16 safe string truncation utility", "commit": "9f0a4bb" }
+        { "description": "UTF-16 safe string truncation utility", "commit": "9f0a4bb" },
+        { "description": "`GET /api/v1/status` endpoint with gateway version and build info", "commit": "34f2e46" },
+        { "description": "`ToolUsageStore` for tracking tool call statistics", "commit": "34f2e46" },
+        { "description": "`GET /api/v1/tools/usage` endpoint for tool usage summary", "commit": "34f2e46" },
+        { "description": "`GET /api/v1/tools/{name}/stats` endpoint for per-tool statistics", "commit": "34f2e46" },
+        { "description": "Tool call visualization in web UI with expand/collapse blocks", "commit": "1e65a77" },
+        { "description": "Tool arguments display as formatted JSON in streaming responses", "commit": "1e65a77" },
+        { "description": "Tool status indicators (Running/Complete/Error) during execution", "commit": "1e65a77" },
+        { "description": "Gateway version display in web UI status bar", "commit": "1e65a77" },
+        { "description": "Tool call count and last used timestamp in tools panel", "commit": "1e65a77" }
       ],
       "fixed": [
         { "description": "Process tree termination on exec timeout to prevent orphaned processes", "commit": "6247119" },
@@ -40,7 +50,8 @@
         { "description": "GitHub skill documentation", "commit": "96e4972" },
         { "description": "CLI commands documentation (setup, doctor, sessions)", "commit": "96e4972" },
         { "description": "Memory guide updated for short-term and long-term memory", "commit": "f3a0863" },
-        { "description": "OpenClaw feature parity roadmap", "commit": "5bae55c" }
+        { "description": "OpenClaw feature parity roadmap", "commit": "5bae55c" },
+        { "description": "Control UI roadmap updated with implemented features", "commit": "1234ad8" }
       ],
       "dependencies": [
         { "description": "`github.com/plexusone/omniimage` v0.1.0 (new)" }

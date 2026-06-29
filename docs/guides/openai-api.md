@@ -187,6 +187,70 @@ List all registered tools.
 }
 ```
 
+#### GET /api/v1/tools/usage
+
+Get tool usage statistics summary.
+
+**Query Parameters:**
+
+- `since` - Start time (RFC3339 or relative: `1h`, `24h`, `7d`, `30d`)
+- `until` - End time (RFC3339, defaults to now)
+
+**Response:**
+
+```json
+{
+  "total_calls": 42,
+  "by_tool": {
+    "web_search": {
+      "tool_name": "web_search",
+      "call_count": 15,
+      "last_used": "2026-06-29T10:30:00Z",
+      "avg_latency_ms": 250.5,
+      "success_rate": 0.95
+    }
+  },
+  "top_tools": [...]
+}
+```
+
+#### GET /api/v1/tools/{name}/stats
+
+Get usage statistics for a specific tool.
+
+**Response:**
+
+```json
+{
+  "tool_name": "web_search",
+  "call_count": 15,
+  "last_used": "2026-06-29T10:30:00Z",
+  "avg_latency_ms": 250.5,
+  "success_rate": 0.95
+}
+```
+
+### Status
+
+#### GET /api/v1/status
+
+Get gateway status and version information.
+
+**Response:**
+
+```json
+{
+  "status": "ok",
+  "version": {
+    "version": "0.12.0",
+    "commit": "abc1234",
+    "build_date": "2026-06-29",
+    "go_version": "go1.26.4",
+    "platform": "darwin/arm64"
+  }
+}
+```
+
 ### Agents
 
 #### GET /api/v1/agents
@@ -514,7 +578,9 @@ Chi Router (base)
 ├── /openai/v1/chat/completions  → ogen (SSE streaming)
 ├── /openai/v1/models            → ogen
 ├── /openai/v1/images/*          → Huma (image generation)
+├── /api/v1/status               → Huma (gateway status)
 ├── /api/v1/tools                → Huma
+├── /api/v1/tools/usage          → Huma (tool statistics)
 ├── /api/v1/agents/*             → Huma
 ├── /api/v1/cron/jobs/*          → Huma
 ├── /api/v1/usage/*              → Huma
