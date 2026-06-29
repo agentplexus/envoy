@@ -7,6 +7,46 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.12.0",
+      "date": "2026-06-29",
+      "highlights": [
+        { "description": "AI image generation via OmniImage with OpenAI-compatible API endpoints" },
+        { "description": "GitHub skill for searching issues, PRs, and code across repositories" },
+        { "description": "Web content skill for URL extraction and processing" },
+        { "description": "Auto-reply system for automatic message responses" },
+        { "description": "Interactive setup wizard and doctor command for CLI diagnostics" }
+      ],
+      "added": [
+        { "description": "Image generation endpoints: `/openai/v1/images/generations`, `/edits`, `/variations`", "commit": "827dde6" },
+        { "description": "`ImageHandler` interface and `OmniImageHandler` implementation", "commit": "827dde6" },
+        { "description": "`ImageConfig` for image generation configuration", "commit": "827dde6" },
+        { "description": "`WithImageHandler()` server option for image operations", "commit": "827dde6" },
+        { "description": "GitHub skill with `github_search_issues`, `github_search_prs`, `github_search_code` tools", "commit": "a1a5023" },
+        { "description": "Web content skill with `web_fetch` tool for URL extraction", "commit": "2a9cbc2" },
+        { "description": "Auto-reply system with configurable triggers and responses", "commit": "ec831bf" },
+        { "description": "`omniagent setup` interactive setup wizard", "commit": "eebd8b5" },
+        { "description": "`omniagent doctor` command for configuration diagnostics", "commit": "95c1716" },
+        { "description": "`omniagent sessions` command for session management", "commit": "95c1716" },
+        { "description": "UTF-16 safe string truncation utility", "commit": "9f0a4bb" }
+      ],
+      "fixed": [
+        { "description": "Process tree termination on exec timeout to prevent orphaned processes", "commit": "6247119" },
+        { "description": "Bounded HTTP response reads to prevent OOM from malicious responses", "commit": "e871655" }
+      ],
+      "documentation": [
+        { "description": "Image generation guide with provider setup and API examples", "commit": "4b43a96" },
+        { "description": "Web content skill guide", "commit": "9fa6014" },
+        { "description": "Auto-reply configuration guide", "commit": "9fa6014" },
+        { "description": "GitHub skill documentation", "commit": "96e4972" },
+        { "description": "CLI commands documentation (setup, doctor, sessions)", "commit": "96e4972" },
+        { "description": "Memory guide updated for short-term and long-term memory", "commit": "f3a0863" },
+        { "description": "OpenClaw feature parity roadmap", "commit": "5bae55c" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omniimage` v0.1.0 (new)" }
+      ]
+    },
+    {
       "version": "v0.11.0",
       "date": "2026-06-28",
       "highlights": [
