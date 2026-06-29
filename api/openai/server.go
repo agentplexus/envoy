@@ -18,16 +18,18 @@ import (
 	"github.com/plexusone/omniagent/api/openai/internal/ogen"
 	"github.com/plexusone/omniagent/api/openai/operations"
 	"github.com/plexusone/omniagent/api/openai/web"
+	"github.com/plexusone/omniagent/internal/version"
 )
 
 // Server wraps the ogen-generated server with Chi router and Huma API.
 type Server struct {
-	handler    AgentHandler
-	ogenSrv    *ogen.Server
-	router     chi.Router
-	humaAPI    huma.API
-	config     Config
-	usageStore *UsageStore
+	handler        AgentHandler
+	ogenSrv        *ogen.Server
+	router         chi.Router
+	humaAPI        huma.API
+	config         Config
+	usageStore     *UsageStore
+	toolUsageStore *ToolUsageStore
 }
 
 // Config configures the server.
@@ -168,9 +170,10 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	}
 
 	s := &Server{
-		handler:    handler,
-		config:     cfg,
-		usageStore: NewUsageStore(10000),
+		handler:        handler,
+		config:         cfg,
+		usageStore:     NewUsageStore(10000),
+		toolUsageStore: NewToolUsageStore(10000),
 	}
 
 	// 1. Create Chi router with middleware
@@ -279,6 +282,7 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	// Create adapter to wrap AgentHandler for operations
 	opsHandler := &operationsHandlerAdapter{agent: handler}
 	operations.RegisterHealthOperation(api)
+	operations.RegisterStatusOperation(api, cfg.APIPrefix)
 	operations.RegisterToolOperations(api, opsHandler)
 	operations.RegisterCronOperations(api, opsHandler)
 
@@ -297,6 +301,10 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	// Register usage operations with the usage store
 	opsUsage := &operationsUsageAdapter{store: s.usageStore}
 	operations.RegisterUsageOperations(api, opsUsage)
+
+	// Register tool usage operations
+	opsToolUsage := &operationsToolUsageAdapter{store: s.toolUsageStore}
+	operations.RegisterToolUsageOperations(api, opsToolUsage, cfg.APIPrefix)
 
 	// Register image operations if handler provided
 	if cfg.ImageHandler != nil {
@@ -340,6 +348,12 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 					content = bytes.Replace(content, []byte("</head>"), append([]byte(userJSON), []byte("</head>")...), 1)
 				}
 			}
+
+			// Inject gateway version
+			versionInfo := version.Get()
+			versionScript := fmt.Sprintf(`<script>window.OMNIAGENT_VERSION={"version":%q,"commit":%q,"build_date":%q};</script>`,
+				versionInfo.Version, versionInfo.Commit, versionInfo.BuildDate)
+			content = bytes.Replace(content, []byte("</head>"), append([]byte(versionScript), []byte("</head>")...), 1)
 
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			//nolint:gosec // G705: user data from trusted OAuth provider, %q format escapes strings
@@ -390,6 +404,11 @@ func (s *Server) ListenAndServe(addr string) error {
 // UsageStore returns the server's usage store for external recording.
 func (s *Server) UsageStore() *UsageStore {
 	return s.usageStore
+}
+
+// ToolUsageStore returns the server's tool usage store for external recording.
+func (s *Server) ToolUsageStore() *ToolUsageStore {
+	return s.toolUsageStore
 }
 
 // GetMergedSpec returns the merged OpenAPI specification.
@@ -989,4 +1008,56 @@ func convertImageErrorToOperations(err error) error {
 		}
 	}
 	return err
+}
+
+// operationsToolUsageAdapter adapts ToolUsageStore to operations.ToolUsageHandler
+type operationsToolUsageAdapter struct {
+	store *ToolUsageStore
+}
+
+func (a *operationsToolUsageAdapter) GetToolUsageSummary(_ context.Context, since, until time.Time) (*operations.ToolUsageSummary, error) {
+	summary := a.store.GetSummary(since, until)
+	return convertToolUsageSummary(summary), nil
+}
+
+func (a *operationsToolUsageAdapter) GetToolStats(_ context.Context, toolName string, since, until time.Time) (*operations.ToolUsageStats, error) {
+	stats := a.store.GetToolStats(toolName, since, until)
+	return convertToolUsageStats(stats), nil
+}
+
+func (a *operationsToolUsageAdapter) RecordToolUsage(_ context.Context, record *operations.ToolUsageRecord) error {
+	a.store.Record(ToolUsageRecord{
+		ToolName:  record.ToolName,
+		Timestamp: record.Timestamp,
+		SessionID: record.SessionID,
+		Latency:   record.Latency,
+		Success:   record.Success,
+	})
+	return nil
+}
+
+func convertToolUsageSummary(s *ToolUsageSummary) *operations.ToolUsageSummary {
+	byTool := make(map[string]*operations.ToolUsageStats, len(s.ByTool))
+	for k, v := range s.ByTool {
+		byTool[k] = convertToolUsageStats(v)
+	}
+	topTools := make([]*operations.ToolUsageStats, len(s.TopTools))
+	for i, t := range s.TopTools {
+		topTools[i] = convertToolUsageStats(t)
+	}
+	return &operations.ToolUsageSummary{
+		TotalCalls: s.TotalCalls,
+		ByTool:     byTool,
+		TopTools:   topTools,
+	}
+}
+
+func convertToolUsageStats(s *ToolUsageStats) *operations.ToolUsageStats {
+	return &operations.ToolUsageStats{
+		ToolName:    s.ToolName,
+		CallCount:   s.CallCount,
+		LastUsed:    s.LastUsed,
+		AvgLatency:  s.AvgLatency,
+		SuccessRate: s.SuccessRate,
+	}
 }
