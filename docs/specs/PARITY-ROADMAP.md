@@ -243,11 +243,11 @@ Most providers should be added to `omnillm` library rather than OmniAgent direct
 
 ### Context & Memory
 
-| Feature | OpenClaw Location | Priority | Description |
-|---------|-------------------|----------|-------------|
-| Active Memory | `extensions/active-memory` | Medium | Working memory |
-| Memory Wiki | `extensions/memory-wiki` | Low | Knowledge base |
-| LanceDB | `extensions/memory-lancedb` | Medium | Vector DB backend |
+| Feature | OpenClaw Location | Priority | Description | Status |
+|---------|-------------------|----------|-------------|--------|
+| Active Memory | `extensions/active-memory` | Medium | Working memory | ✓ Via omnimemory (in-memory backend) |
+| Memory Wiki | `extensions/memory-wiki` | Low | Knowledge base | |
+| LanceDB | `extensions/memory-lancedb` | Medium | Vector DB backend | |
 
 ### Safety & Analysis
 
