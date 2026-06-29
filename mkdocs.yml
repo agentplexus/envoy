@@ -77,6 +77,9 @@ nav:
   - Architecture:
     - Overview: architecture/overview.md
     - Skills System: architecture/skills.md
+  - Roadmap:
+    - Feature Parity: specs/PARITY-ROADMAP.md
+    - Control UI: specs/ROADMAP.md
   - Reference:
     - Configuration: reference/configuration.md
     - CLI Commands: reference/cli.md
