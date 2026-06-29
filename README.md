@@ -53,6 +53,8 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🔗 **OpenAI-Compatible API** - Drop-in replacement for OpenAI client libraries with SSE streaming
 - 🖼️ **Image Generation** - AI image generation via OpenAI (DALL-E) or Fal AI (FLUX)
 - 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
+- 📈 **Usage Analytics** - Token usage tracking, tool call statistics, and cost estimation
+- 🔧 **Tool Visualization** - Real-time tool call display with arguments and results in web UI
 
 ## Installation
 
