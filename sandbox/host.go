@@ -130,6 +130,9 @@ func (h *HostFunctions) ExecRun(ctx context.Context, command string, args []stri
 	// Create command with timeout
 	cmd := exec.CommandContext(ctx, command, args...)
 
+	// Set process group so we can kill all child processes on timeout
+	setProcessGroup(cmd)
+
 	// Set working directory if configured
 	if h.config.WorkingDir != "" {
 		cmd.Dir = h.config.WorkingDir
@@ -148,6 +151,8 @@ func (h *HostFunctions) ExecRun(ctx context.Context, command string, args []stri
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			exitCode = exitErr.ExitCode()
 		} else if ctx.Err() == context.DeadlineExceeded {
+			// Kill entire process tree on timeout
+			killProcessGroup(cmd)
 			return stdout.Bytes(), stderr.Bytes(), -1, NewTimeoutError(h.config.Timeout)
 		} else {
 			return stdout.Bytes(), stderr.Bytes(), -1, fmt.Errorf("exec: %w", err)
