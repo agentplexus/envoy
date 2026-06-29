@@ -1,15 +1,113 @@
 # Memory Skill
 
-OmniAgent includes a semantic memory skill for storing and retrieving information using vector search. The memory skill enables agents to remember context across conversations and retrieve relevant information based on semantic similarity.
+OmniAgent includes a semantic memory skill powered by [omnimemory](https://github.com/plexusone/omnimemory) for storing and retrieving information. The memory skill enables agents to remember context across conversations and retrieve relevant information based on semantic similarity.
 
 ## Overview
 
 The memory skill provides:
 
 - **Semantic Search** - Find relevant memories based on meaning, not exact matches
-- **Collections** - Organize memories into named collections
-- **Persistence** - Store memories across sessions using kvs.Store
+- **Memory Types** - Observations, facts, preferences, summaries, traits, relationships
+- **Memory Scopes** - User, agent, tenant, team, session, domain
+- **Persistence** - Configurable backends for short-term and long-term storage
 - **Metadata** - Attach key-value metadata to memories
+
+## Short-Term vs Long-Term Memory
+
+OmniAgent supports both short-term (active/working) memory and long-term (persistent) memory by configuring omnimemory with different backends:
+
+| Memory Type | Backend | Scope | Persistence | Use Case |
+|-------------|---------|-------|-------------|----------|
+| **Short-term** | In-memory | Session | None (cleared on restart) | Working memory, scratchpad, current task context |
+| **Long-term** | File/Database | User/Tenant | Persisted | User preferences, facts, relationships |
+
+### Default Configuration
+
+By default, the memory skill uses an **in-memory backend** suitable for short-term/active memory:
+
+```go
+memorySkill := memory.NewSkill(memory.Config{})
+// Uses in-memory provider by default
+```
+
+### Dual Memory Setup
+
+For both short-term and long-term memory, instantiate omnimemory twice with different backends:
+
+```go
+import (
+    "github.com/plexusone/omnimemory/core"
+    "github.com/plexusone/omniagent/skills/memory"
+)
+
+// Short-term memory (in-memory, session-scoped)
+shortTermClient, _ := core.NewClient(core.ClientConfig{
+    Providers: []core.ProviderConfig{
+        {Name: core.ProviderNameMemory}, // In-memory provider
+    },
+})
+
+shortTermMemory := memory.NewSkill(memory.Config{
+    Client:   shortTermClient,
+    TenantID: "session-123",
+    AgentID:  "agent-1",
+})
+
+// Long-term memory (persistent)
+longTermClient, _ := core.NewClient(core.ClientConfig{
+    Providers: []core.ProviderConfig{
+        {
+            Name: core.ProviderNameFile,
+            Config: map[string]any{
+                "path": "/data/memories",
+            },
+        },
+    },
+})
+
+longTermMemory := memory.NewSkill(memory.Config{
+    Client:   longTermClient,
+    TenantID: "user-456",
+    AgentID:  "agent-1",
+})
+
+// Register both skills with different names
+a, err := agent.New(config,
+    agent.WithCompiledSkill(shortTermMemory), // memory_* tools
+    // Optionally rename long-term tools to avoid conflicts
+)
+```
+
+### Memory Scopes for Differentiation
+
+Alternatively, use memory scopes to differentiate within a single omnimemory instance:
+
+```go
+// Store short-term note (session scope)
+{
+    "content": "User is asking about API pricing",
+    "scope": "session",
+    "type": "observation"
+}
+
+// Store long-term preference (user scope)
+{
+    "content": "User prefers dark mode",
+    "scope": "user",
+    "type": "preference"
+}
+```
+
+Scope hierarchy:
+
+| Scope | Lifetime | Visibility |
+|-------|----------|------------|
+| `session` | Current session only | Single conversation |
+| `user` | Persistent | All user sessions |
+| `agent` | Persistent | All sessions for this agent |
+| `tenant` | Persistent | All users in tenant |
+| `team` | Persistent | Team members |
+| `domain` | Persistent | Domain-wide |
 
 ## Quick Start
 
@@ -21,10 +119,8 @@ import (
     "github.com/plexusone/omniagent/skills/memory"
 )
 
-memorySkill := memory.NewSkill(memory.Config{
-    // Optional: provide a custom embedder
-    // Embedder: myEmbedder,
-})
+// Default: in-memory backend (short-term/active memory)
+memorySkill := memory.NewSkill(memory.Config{})
 
 a, err := agent.New(config,
     agent.WithCompiledSkill(memorySkill),
@@ -45,7 +141,7 @@ Agent: [calls memory_search] Your favorite color is blue and you prefer dark mod
 
 ## Memory Tools
 
-The memory skill provides five tools:
+The memory skill provides five tools powered by omnimemory:
 
 ### memory_store
 
@@ -54,16 +150,27 @@ Store information in semantic memory.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `content` | string | Yes | The content to store |
-| `key` | string | No | Unique key (auto-generated if omitted) |
-| `collection` | string | No | Collection name (default: "default") |
+| `type` | string | No | Memory type (default: "observation") |
+| `scope` | string | No | Memory scope (default: "session") |
+| `subject_id` | string | No | Who this memory is about |
 | `metadata` | object | No | Key-value metadata pairs |
+
+**Memory Types:**
+
+- `observation` - Something noticed or observed
+- `fact` - A verified piece of information
+- `preference` - User preference or setting
+- `summary` - A summary of content or conversation
+- `trait` - A personality or behavioral trait
+- `relationship` - A relationship between entities
 
 **Example:**
 
 ```json
 {
   "content": "User prefers dark mode and compact layouts",
-  "collection": "preferences",
+  "type": "preference",
+  "scope": "user",
   "metadata": {
     "category": "ui",
     "priority": "high"
@@ -78,7 +185,8 @@ Search memories using semantic similarity.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `query` | string | Yes | Search query |
-| `collection` | string | No | Collection to search (default: "default") |
+| `types` | array | No | Filter by memory types |
+| `scopes` | array | No | Filter by memory scopes |
 | `limit` | integer | No | Max results (default: 5) |
 
 **Response:**
@@ -87,8 +195,10 @@ Search memories using semantic similarity.
 {
   "results": [
     {
-      "key": "mem_1234567890",
+      "id": "mem_1234567890",
       "content": "User prefers dark mode",
+      "type": "preference",
+      "scope": "user",
       "score": 0.92,
       "metadata": {"category": "ui"}
     }
@@ -97,126 +207,128 @@ Search memories using semantic similarity.
 }
 ```
 
-### memory_list
+### memory_recall
 
-List all memories in a collection.
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `collection` | string | No | Collection name (default: "default") |
-| `limit` | integer | No | Max results (default: 20) |
-
-### memory_delete
-
-Delete a memory by key.
+Recall relevant memories for the current context.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `key` | string | Yes | Key of memory to delete |
-| `collection` | string | No | Collection name (default: "default") |
-
-### memory_collections
-
-List all memory collections.
-
-No parameters required.
+| `query` | string | Yes | Query or context to recall memories for |
+| `max_results` | integer | No | Maximum memories to recall (default: 5) |
+| `types` | array | No | Filter by memory types |
 
 **Response:**
 
 ```json
 {
-  "collections": ["default", "preferences", "history"],
-  "count": 3
+  "memories": [...],
+  "count": 3,
+  "summary": "User prefers dark mode, works on API projects..."
 }
 ```
 
-## Collections
+### memory_list
 
-Collections organize memories into logical groups:
+List memories with optional filters.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `types` | array | No | Filter by memory types |
+| `scopes` | array | No | Filter by memory scopes |
+| `limit` | integer | No | Max results (default: 20) |
+
+### memory_delete
+
+Delete a memory by ID.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | ID of memory to delete |
+
+## Memory Types and Scopes
+
+Memory types and scopes help organize and filter memories:
 
 ```
-User: Store in the "projects" collection: The API refactor is due next Friday.
-Agent: [calls memory_store with collection="projects"]
-       Stored in the projects collection.
+User: Remember that the API refactor is due next Friday.
+Agent: [calls memory_store with type="fact", scope="session"]
+       Stored that the API refactor is due next Friday.
 
-User: What's in my projects collection?
-Agent: [calls memory_list with collection="projects"]
-       The API refactor is due next Friday.
+User: What do you remember about my preferences?
+Agent: [calls memory_search with types=["preference"]]
+       You prefer dark mode and compact layouts.
 ```
 
-### Collection Use Cases
+### Type Use Cases
 
-| Collection | Purpose |
-|------------|---------|
-| `default` | General memories |
-| `preferences` | User preferences and settings |
-| `projects` | Project-related information |
-| `contacts` | Contact details and relationships |
-| `history` | Conversation summaries |
+| Type | Use Case |
+|------|----------|
+| `observation` | Something noticed during conversation |
+| `fact` | Verified information (dates, names, etc.) |
+| `preference` | User preferences and settings |
+| `summary` | Conversation or content summaries |
+| `trait` | Personality or behavioral patterns |
+| `relationship` | Connections between people/entities |
 
-## Embeddings
+### Scope Use Cases
 
-The memory skill uses vector embeddings for semantic search. By default, it uses a hash-based embedder suitable for testing. For production, provide a real embedding model:
-
-### Using omnillm Embeddings
-
-```go
-import (
-    "github.com/plexusone/omnillm"
-    "github.com/plexusone/omniagent/skills/memory"
-)
-
-// Create embedder using omnillm
-client := omnillm.NewClient()
-embedder := omnillm.NewEmbedder(client, "text-embedding-3-small")
-
-memorySkill := memory.NewSkill(memory.Config{
-    Embedder: embedder,
-})
-```
-
-### Custom Embedder
-
-Implement the `vector.Embedder` interface:
-
-```go
-type Embedder interface {
-    Embed(ctx context.Context, texts []string) ([][]float64, error)
-    Dimensions() int
-}
-```
-
-## Persistence
-
-Memory persists across sessions when storage is configured:
-
-```go
-import (
-    "github.com/plexusone/omnistorage-core/kvs"
-    "github.com/plexusone/omnistorage-core/sqlite"
-)
-
-// Create storage backend
-backend, _ := sqlite.Open("omniagent.db")
-store := kvs.New(backend)
-
-a, err := agent.New(config,
-    agent.WithStorage(store),
-    agent.WithCompiledSkill(memorySkill), // Receives storage automatically
-)
-```
-
-The memory skill implements `compiled.StorageAware`, so storage is injected automatically.
+| Scope | Use Case |
+|-------|----------|
+| `session` | Current conversation only (short-term) |
+| `user` | Persists across all user sessions |
+| `agent` | Shared across all sessions for this agent |
+| `tenant` | Organization-wide knowledge |
 
 ## Configuration
 
 ```go
 type Config struct {
-    // Embedder computes vector embeddings for semantic search.
-    // If nil, uses a hash-based embedder (not for production).
-    Embedder vector.Embedder
+    // Client is an existing omnimemory client.
+    // If nil, a new in-memory client will be created (default).
+    Client *core.Client
+
+    // TenantID is the default tenant for memory operations.
+    TenantID string
+
+    // AgentID is the agent identifier for memory attribution.
+    AgentID string
 }
 ```
+
+### Persistent Backend
+
+For long-term memory with persistence:
+
+```go
+import "github.com/plexusone/omnimemory/core"
+
+// Create client with file backend
+client, _ := core.NewClient(core.ClientConfig{
+    Providers: []core.ProviderConfig{
+        {
+            Name: core.ProviderNameFile,
+            Config: map[string]any{
+                "path": "/data/memories",
+            },
+        },
+    },
+})
+
+memorySkill := memory.NewSkill(memory.Config{
+    Client:   client,
+    TenantID: "my-tenant",
+    AgentID:  "agent-1",
+})
+```
+
+### Available Backends
+
+| Backend | Provider Name | Use Case |
+|---------|---------------|----------|
+| In-Memory | `memory` | Short-term, testing, development |
+| File | `file` | Simple persistence, single instance |
+| SQLite | `sqlite` | Local persistence, embedded |
+| PostgreSQL | `postgres` | Production, multi-instance |
 
 ## Best Practices
 
@@ -225,6 +337,8 @@ type Config struct {
 Good:
 ```
 Store: "User's birthday is March 15, 1990"
+Type: fact
+Scope: user
 ```
 
 Bad:
@@ -232,13 +346,17 @@ Bad:
 Store: "their bday is next month lol"
 ```
 
-### Use Descriptive Keys
+### Use Appropriate Types and Scopes
 
 ```json
 {
   "content": "API rate limit is 1000 requests per hour",
-  "key": "api_rate_limits",
-  "collection": "technical"
+  "type": "fact",
+  "scope": "tenant",
+  "metadata": {
+    "category": "technical",
+    "source": "documentation"
+  }
 }
 ```
 
@@ -247,17 +365,18 @@ Store: "their bday is next month lol"
 ```json
 {
   "content": "Meeting with client at 3pm",
+  "type": "observation",
+  "scope": "session",
   "metadata": {
-    "type": "meeting",
     "date": "2026-06-15",
     "participants": "client"
   }
 }
 ```
 
-### Clean Up Old Memories
+### Clean Up Session Memories
 
-Periodically delete outdated memories:
+Session-scoped memories are cleared automatically. For persistent memories:
 
 ```
 User: Delete the memory about last week's meeting
@@ -265,24 +384,27 @@ Agent: [calls memory_search, then memory_delete]
        Deleted the memory about last week's meeting.
 ```
 
-## Integration with omniretrieve
+## Integration with omnimemory
 
-The memory skill is built on top of [`omniretrieve/memory`](https://github.com/plexusone/omniretrieve), which provides:
+The memory skill is built on top of [omnimemory](https://github.com/plexusone/omnimemory), which provides:
 
-- **Memory Manager** - Collection-based document storage
-- **Vector Index** - Semantic similarity search
-- **BM25 Index** - Keyword-based search (hybrid mode)
+- **Multi-backend support** - In-memory, file, SQLite, PostgreSQL
+- **Semantic search** - Vector-based similarity search
+- **Memory types** - Structured categorization
+- **Scopes** - Hierarchical visibility control
 
-For advanced use cases, access the underlying manager:
+For advanced use cases, access the underlying client:
 
 ```go
 memorySkill := memory.NewSkill(config)
-manager := memorySkill.Manager()
+client := memorySkill.Client()
 
-// Direct access to memory manager
-docs, _ := manager.Search(ctx, "default", "preferences", memory.SearchOptions{
-    TopK:            10,
-    IncludeMetadata: true,
+// Direct access to omnimemory client
+resp, _ := client.Search(ctx, &core.SearchRequest{
+    Context: core.Context{TenantID: "my-tenant"},
+    Query:   "user preferences",
+    Types:   []core.MemoryType{core.MemoryTypePreference},
+    Limit:   10,
 })
 ```
 
@@ -290,23 +412,17 @@ docs, _ := manager.Search(ctx, "default", "preferences", memory.SearchOptions{
 
 ### Low-Quality Search Results
 
-- Ensure you're using a production embedder, not the hash embedder
 - Check that the query is semantically related to stored content
 - Try increasing the `limit` parameter
+- Use `memory_recall` for context-aware retrieval
 
 ### Memories Not Persisting
 
-- Verify storage is configured with `WithStorage` or `WithSessionsFromStorage`
-- Check that the storage backend is writable
+- Verify you're using a persistent backend (file, SQLite, PostgreSQL)
+- Check that the backend path/connection is writable
 - Ensure `Init()` was called on the skill
+- Session-scoped memories are intentionally not persisted
 
-### Collection Not Found
+### Short-Term Memory Clearing
 
-Collections are created on first use. If a collection appears empty:
-
-```
-Agent: [calls memory_list with collection="preferences"]
-       No memories found in the preferences collection.
-```
-
-This is normal for new or empty collections.
+In-memory backend (default) clears on restart. This is intentional for short-term/active memory. For persistence, configure a file or database backend.
