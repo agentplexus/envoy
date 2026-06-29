@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/plexusone/omniagent/internal/httputil"
 )
 
 // WebhookHook sends events to an HTTP endpoint.
@@ -126,8 +128,8 @@ func (w *WebhookHook) sendRequest(ctx context.Context, body []byte) error {
 	}
 	defer resp.Body.Close()
 
-	// Drain body to allow connection reuse
-	_, _ = io.Copy(io.Discard, resp.Body)
+	// Drain body to allow connection reuse (bounded to prevent OOM)
+	_, _ = io.Copy(io.Discard, httputil.LimitReader(resp.Body, httputil.MaxJSONBodySize))
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("webhook returned status %d", resp.StatusCode)

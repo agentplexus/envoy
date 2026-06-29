@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 	"golang.org/x/oauth2/google"
+
+	"github.com/plexusone/omniagent/internal/httputil"
 )
 
 // Provider represents an OAuth provider.
@@ -121,7 +122,7 @@ func (p *Providers) fetchGitHubUser(ctx context.Context, token *oauth2.Token) (*
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := httputil.ReadErrorBody(resp.Body)
 		return nil, fmt.Errorf("github user API error: %s", body)
 	}
 
@@ -166,7 +167,7 @@ func (p *Providers) fetchGitHubEmail(_ context.Context, client *http.Client) (st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := httputil.ReadErrorBody(resp.Body)
 		return "", fmt.Errorf("github emails API error: %s", body)
 	}
 
@@ -207,7 +208,7 @@ func (p *Providers) fetchGoogleUser(ctx context.Context, token *oauth2.Token) (*
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := httputil.ReadErrorBody(resp.Body)
 		return nil, fmt.Errorf("google userinfo API error: %s", body)
 	}
 

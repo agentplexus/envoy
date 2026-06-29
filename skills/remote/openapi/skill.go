@@ -40,6 +40,7 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/plexusone/omniagent/internal/httputil"
 	"github.com/plexusone/omniagent/skills/compiled"
 	"github.com/plexusone/omniskill/skill"
 )
@@ -534,8 +535,8 @@ func (s *Skill) makeToolHandler(opInfo operationInfo, pathItem *openapi3.PathIte
 		}
 		defer resp.Body.Close()
 
-		// Read response
-		respBody, err := io.ReadAll(resp.Body)
+		// Read response with bounded limit to prevent OOM
+		respBody, err := httputil.ReadJSONBody(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("openapi: failed to read response: %w", err)
 		}
