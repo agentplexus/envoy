@@ -30,6 +30,10 @@ See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.m
 | `api/openai/auth` | Bounded reads in OAuth providers |
 | `hooks/webhook` | Bounded response draining |
 | `skills/remote/openapi` | Bounded API response reads |
+| `skills/github` | New - GitHub skill (issues, PRs, code search) |
+| `cmd/omniagent/commands/doctor` | New - Diagnostic check command |
+| `cmd/omniagent/commands/sessions` | New - Session management CLI |
+| `cmd/omniagent/commands/setup` | New - Interactive setup wizard |
 
 **Pending (see plan for details):**
 
@@ -39,7 +43,7 @@ See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.m
 | P2 | Channel UTF-16 truncation integration |
 | P3 | Plugin auto-approval modes |
 | P4 | Cohere provider, GLM-5.2, Bedrock fixes |
-| P5 | CLI features (--message-file, sessions compact) |
+| P5 | CLI features (--message-file) |
 
 ### Previous Implementation (2026-06-10)
 
@@ -60,13 +64,13 @@ See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.m
 | **Channels** | 24+ | 4 | 20+ missing | Slack, Telegram, WhatsApp improvements |
 | **LLM Providers** | 50+ | 4+ (omnillm) | Most covered | - |
 | **Tools** | 10+ categories | 4 | 6+ categories | Browser, tool policies |
-| **Skills** | 55+ bundled | SKILL.md + compiled | Feature parity | Git/local installs |
+| **Skills** | 55+ bundled | SKILL.md + compiled | Feature parity | Git/local installs, GitHub skill |
 | **Scheduling** | Cron, webhooks | Cron, interval | Feature parity | - |
 | **Voice** | Wake word, calls | Deepgram (omnivoice) | Wake word, calls | Telnyx, Discord voice |
 | **Sandbox** | Docker, SSH | WASM, Docker | SSH backend | GPU passthrough |
 | **Plugins** | 117+ (JS) | N/A (Go) | Different arch | Embedding provider |
 | **Apps** | macOS, iOS, Android | None | All 3 | Out of scope |
-| **CLI Commands** | 50+ | ~10 | 40+ missing | - |
+| **CLI Commands** | 50+ | ~14 | 36+ missing | doctor, setup, sessions |
 | **Memory/RAG** | LanceDB, Wiki | omniretrieve | Feature parity | - |
 | **Visual** | Canvas/A2UI | None | Canvas system | Out of scope |
 

@@ -10,10 +10,10 @@ Feature roadmap tracking OpenClaw capabilities not yet implemented in OmniAgent.
 |----------|----------|-----------|-----|
 | Channels | 19+ | 4 | 15+ |
 | LLM Providers | 35+ | 2 direct | Via omnillm |
-| Skills | 53+ | 2 | 51+ |
+| Skills | 53+ | 3 | 50+ |
 | Media Generation | Full | None | All |
 | Native Apps | 6 | 0 | 6 |
-| CLI Commands | 50+ | ~10 | 40+ |
+| CLI Commands | 50+ | ~14 | 36+ |
 
 ---
 
@@ -104,13 +104,13 @@ Most providers should be added to `omnillm` library rather than OmniAgent direct
 
 #### Development Tools
 
-| Skill | OpenClaw Location | Priority |
-|-------|-------------------|----------|
-| GitHub Issues | `skills/github-issues` | High |
-| GitHub PRs | `skills/github-prs` | High |
-| Coding Agent | `skills/coding-agent` | High |
-| Python Debugger | `skills/python-debugpy` | Medium |
-| Node Connect | `skills/node-connect` | Medium |
+| Skill | OpenClaw Location | Priority | Status |
+|-------|-------------------|----------|--------|
+| GitHub Issues | `skills/github-issues` | High | ✓ Implemented (`skills/github`) |
+| GitHub PRs | `skills/github-prs` | High | ✓ Implemented (`skills/github`) |
+| Coding Agent | `skills/coding-agent` | High | |
+| Python Debugger | `skills/python-debugpy` | Medium | |
+| Node Connect | `skills/node-connect` | Medium | |
 
 #### Productivity
 
@@ -199,22 +199,22 @@ Most providers should be added to `omnillm` library rather than OmniAgent direct
 
 ### Missing Commands
 
-| Command | OpenClaw Location | Priority | Description |
-|---------|-------------------|----------|-------------|
-| `setup` | `src/cli/command-bootstrap.ts` | High | Interactive setup wizard |
-| `doctor` | `src/cli/doctor.ts` | High | Diagnose configuration |
-| `sessions` | `src/cli/sessions.ts` | Medium | Session management |
-| `sessions compact` | `src/cli/sessions.ts` | Medium | Compact session history |
-| `plugins` | `src/cli/plugin-cli.ts` | Medium | Plugin management |
-| `plugins install` | `src/cli/plugin-cli.ts` | Medium | Install plugins |
-| `plugins list` | `src/cli/plugin-cli.ts` | Medium | List plugins |
-| `models` | `src/cli/models.ts` | Medium | Model management |
-| `models aliases` | `src/cli/models.ts` | Low | Model alias management |
-| `config resolve` | `src/cli/command-config-resolution.ts` | Low | Debug config resolution |
-| `agent` | `src/cli/agents.commands.ts` | Medium | Run agent with message |
-| `agent --message-file` | `src/cli/agents.commands.ts` | Medium | Message from file |
-| `interactive` | `src/interactive/` | Low | Interactive shell mode |
-| `tui` | `src/tui/` | Low | Terminal UI |
+| Command | OpenClaw Location | Priority | Description | Status |
+|---------|-------------------|----------|-------------|--------|
+| `setup` | `src/cli/command-bootstrap.ts` | High | Interactive setup wizard | ✓ Implemented |
+| `doctor` | `src/cli/doctor.ts` | High | Diagnose configuration | ✓ Implemented |
+| `sessions` | `src/cli/sessions.ts` | Medium | Session management | ✓ Implemented |
+| `sessions compact` | `src/cli/sessions.ts` | Medium | Compact session history | |
+| `plugins` | `src/cli/plugin-cli.ts` | Medium | Plugin management | |
+| `plugins install` | `src/cli/plugin-cli.ts` | Medium | Install plugins | |
+| `plugins list` | `src/cli/plugin-cli.ts` | Medium | List plugins | |
+| `models` | `src/cli/models.ts` | Medium | Model management | |
+| `models aliases` | `src/cli/models.ts` | Low | Model alias management | |
+| `config resolve` | `src/cli/command-config-resolution.ts` | Low | Debug config resolution | |
+| `agent` | `src/cli/agents.commands.ts` | Medium | Run agent with message | |
+| `agent --message-file` | `src/cli/agents.commands.ts` | Medium | Message from file | |
+| `interactive` | `src/interactive/` | Low | Interactive shell mode | |
+| `tui` | `src/tui/` | Low | Terminal UI | |
 
 ### Implementation Plan
 
