@@ -333,11 +333,11 @@ Roles are high-level agent personas that combine skills, workflows, and system p
 import (
     "github.com/plexusone/omniagent/agent"
     "github.com/plexusone/omniagent/agent/roles"
-    meetingpm "github.com/plexusone/omniagent-role-meeting-pm"
+    facilitator "github.com/plexusone/omnirole-facilitator"
 )
 
 // Create a role with configuration
-pmRole := meetingpm.New(meetingpm.Config{
+pmRole := facilitator.New(facilitator.Config{
     DefaultConfluenceSpace: "TEAM",
     EnableActionTracking:   true,
 })
@@ -369,7 +369,7 @@ mgr.RecordMetric(ctx, "meetings-facilitated", 1)
 
 | Role | Package | Description |
 |------|---------|-------------|
-| Meeting PM | `github.com/plexusone/omniagent-role-meeting-pm` | Meeting facilitation, notes, action tracking |
+| Meeting PM | `github.com/plexusone/omnirole-facilitator` | Meeting facilitation, notes, action tracking |
 
 ### Role Features
 

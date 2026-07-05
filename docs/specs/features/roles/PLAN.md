@@ -56,7 +56,7 @@ This document outlines the file-by-file implementation plan for the enhanced rol
 
 ### meeting-pm Role
 
-**Location**: `/Users/johnwang/go/src/github.com/plexusone/omniagent-role-meeting-pm/`
+**Location**: `/Users/johnwang/go/src/github.com/plexusone/omnirole-facilitator/`
 
 | File | Changes |
 |------|---------|
@@ -105,8 +105,8 @@ cd ~/go/src/github.com/plexusone/omniskill && go test -v ./role/... && golangci-
 # omniagent
 cd ~/go/src/github.com/plexusone/omniagent && go test -v ./agent/roles/... && golangci-lint run ./agent/roles/...
 
-# omniagent-role-meeting-pm
-cd ~/go/src/github.com/plexusone/omniagent-role-meeting-pm && go test -v ./... && golangci-lint run
+# omnirole-facilitator
+cd ~/go/src/github.com/plexusone/omnirole-facilitator && go test -v ./... && golangci-lint run
 ```
 
 ## Critical Dependencies

@@ -106,7 +106,7 @@ Features:
 
 - omniskill/role (types)
 - omniagent/agent/roles (runtime)
-- omniagent-role-meeting-pm (reference implementation)
+- omnirole-facilitator (reference implementation)
 
 ## Success Criteria
 
