@@ -5,9 +5,11 @@ import (
 	"io/fs"
 
 	"github.com/plexusone/omnimemory/core"
+	"github.com/plexusone/omniskill/role"
 	"github.com/plexusone/omnistorage-core/kvs"
 
 	"github.com/plexusone/omniagent/agent/profiles"
+	"github.com/plexusone/omniagent/agent/roles"
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/cron"
 	"github.com/plexusone/omniagent/hooks"
@@ -526,6 +528,63 @@ func WithProgressReporter(reporter *profiles.ProgressReporter) Option {
 func WithProgressMode(mode profiles.ProgressDetailMode, output io.Writer) Option {
 	return func(a *Agent) error {
 		a.progressReporter = profiles.NewProgressReporter(mode, output)
+		return nil
+	}
+}
+
+// WithRole registers a role with the agent.
+// A role is a high-level agent persona that combines skills, workflows,
+// and system prompts into a cohesive behavior.
+//
+// The role's required skills must be provided as compiled skills.
+// The role's system prompt will be prepended to the agent's system prompt.
+//
+// Example:
+//
+//	pmRole := meetingpm.New(meetingpm.Config{
+//	    DefaultConfluenceSpace: "TEAM",
+//	})
+//	meetingSkill := meeting.NewSkill(...)
+//	googleSkill := google.NewSkill(...)
+//
+//	agent, err := agent.New(config,
+//	    agent.WithRole(pmRole, meetingSkill, googleSkill),
+//	)
+func WithRole(r role.Role, skills ...compiled.Skill) Option {
+	return func(a *Agent) error {
+		// Create role manager with skills
+		mgr, err := roles.NewManager(r, skills...)
+		if err != nil {
+			return err
+		}
+
+		a.roleManager = mgr
+
+		// Also register the skills as compiled skills
+		for _, s := range skills {
+			if err := a.RegisterCompiledSkill(s); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+// WithRoleManager sets a pre-configured role manager.
+// Use this for advanced role configuration scenarios.
+//
+// Example:
+//
+//	mgr, _ := roles.NewManager(pmRole, meetingSkill, googleSkill)
+//	mgr.Init(ctx)
+//
+//	agent, err := agent.New(config,
+//	    agent.WithRoleManager(mgr),
+//	)
+func WithRoleManager(mgr *roles.Manager) Option {
+	return func(a *Agent) error {
+		a.roleManager = mgr
 		return nil
 	}
 }

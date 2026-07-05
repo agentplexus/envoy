@@ -16,6 +16,7 @@ import (
 	"github.com/plexusone/omnistorage-core/kvs"
 
 	"github.com/plexusone/omniagent/agent/profiles"
+	"github.com/plexusone/omniagent/agent/roles"
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/hooks"
 	"github.com/plexusone/omniagent/sessions"
@@ -49,6 +50,9 @@ type Agent struct {
 	profileRegistry  *profiles.ProfileRegistry  // Profile registry for dynamic selection
 	leanMode         *profiles.LeanMode         // Lean mode configuration
 	progressReporter *profiles.ProgressReporter // Tool progress reporter
+
+	// Role-related fields
+	roleManager *roles.Manager // Role manager for persona-based behavior
 }
 
 // Config configures the agent.
@@ -490,7 +494,14 @@ func (a *Agent) Tools() *ToolRegistry {
 
 // Close closes the agent and releases resources.
 func (a *Agent) Close() error {
-	// Close compiled skills first
+	// Close role manager first
+	if a.roleManager != nil {
+		if err := a.roleManager.Close(); err != nil {
+			a.logger.Error("failed to close role manager", "error", err)
+		}
+	}
+
+	// Close compiled skills
 	if err := a.CloseCompiledSkills(); err != nil {
 		a.logger.Error("failed to close compiled skills", "error", err)
 	}
@@ -578,6 +589,18 @@ func (a *Agent) SkillManager() *skills.Manager {
 // buildSystemPromptWithMemories builds the system prompt with skills and recalled memories.
 func (a *Agent) buildSystemPromptWithMemories(memories []*core.Memory) string {
 	basePrompt := a.config.SystemPrompt
+
+	// Prepend role system prompt if configured
+	if a.roleManager != nil {
+		rolePrompt, err := a.roleManager.SystemPrompt(context.Background())
+		if err == nil && rolePrompt != "" {
+			if basePrompt != "" {
+				basePrompt = rolePrompt + "\n\n" + basePrompt
+			} else {
+				basePrompt = rolePrompt
+			}
+		}
+	}
 
 	// Apply profile modifications if active
 	if a.profile != nil {
@@ -670,4 +693,23 @@ func (a *Agent) ProgressReporter() *profiles.ProgressReporter {
 // SetProgressReporter sets the progress reporter.
 func (a *Agent) SetProgressReporter(reporter *profiles.ProgressReporter) {
 	a.progressReporter = reporter
+}
+
+// RoleManager returns the role manager, or nil if not configured.
+func (a *Agent) RoleManager() *roles.Manager {
+	return a.roleManager
+}
+
+// SetRoleManager sets the role manager.
+func (a *Agent) SetRoleManager(mgr *roles.Manager) {
+	a.roleManager = mgr
+}
+
+// InitRole initializes the role with its skills.
+// This should be called after agent creation if using WithRole.
+func (a *Agent) InitRole(ctx context.Context) error {
+	if a.roleManager == nil {
+		return nil
+	}
+	return a.roleManager.Init(ctx)
 }
