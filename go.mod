@@ -27,6 +27,7 @@ require (
 	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.16.1
 	github.com/plexusone/omnillm-core v0.17.0
+	github.com/plexusone/omnimeet-core v0.1.0
 	github.com/plexusone/omnimemory v0.1.0
 	github.com/plexusone/omniobserve v0.11.0
 	github.com/plexusone/omniserp v0.9.0
@@ -212,3 +213,9 @@ replace github.com/ysmood/fetchup => github.com/ysmood/fetchup v0.2.3
 
 // Force log15/v3 to version compatible with ngrok v1.13.0 (has ext.RandId)
 replace github.com/inconshreveable/log15/v3 => github.com/inconshreveable/log15/v3 v3.0.0-testing.5
+
+// Local development dependency for omnimeet-core smoke tests
+replace github.com/plexusone/omnimeet-core => ../omnimeet-core
+
+// Local development dependency for omniskill role support
+replace github.com/plexusone/omniskill => ../omniskill
