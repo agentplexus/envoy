@@ -785,6 +785,38 @@ omniagent voice serve \
   --ngrok-domain myapp.ngrok.io
 ```
 
+### LiveKit Voice Agents
+
+Run OmniAgent as a voice participant in LiveKit meetings:
+
+```bash
+# Set credentials
+export LIVEKIT_URL="wss://your-project.livekit.cloud"
+export LIVEKIT_API_KEY="your-api-key"
+export LIVEKIT_API_SECRET="your-api-secret"
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export STT_PROVIDER="deepgram"
+export STT_API_KEY="your-deepgram-key"
+export TTS_PROVIDER="openai"
+export TTS_API_KEY="your-openai-key"
+
+# Optional: Enable avatar (displays image in video tile)
+export AGENT_AVATAR="true"
+
+# Run the generic voice agent
+go run ./cmd/livekit-agent
+
+# Or run the meeting facilitator (with Meeting PM role)
+go run ./cmd/livekit-agent-facilitator
+```
+
+| Command | Description |
+|---------|-------------|
+| `cmd/livekit-agent` | Generic voice agent with web search |
+| `cmd/livekit-agent-facilitator` | Meeting facilitator with Meeting PM role |
+
+These agents use [omni-livekit](https://github.com/plexusone/omni-livekit) for LiveKit transport. The avatar is displayed at 640x360 (16:9) for optimal display in LiveKit video slots.
+
 ## Architecture
 
 ```
