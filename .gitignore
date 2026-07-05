@@ -2,6 +2,7 @@
 .env
 .envrc
 .config.json
+IDEATION_CHAT*.md
 _*
 *.tar
 *.db
