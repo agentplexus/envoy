@@ -3,7 +3,6 @@
 [![Go CI][go-ci-svg]][go-ci-url]
 [![Go Lint][go-lint-svg]][go-lint-url]
 [![Go SAST][go-sast-svg]][go-sast-url]
-[![Go Report Card][goreport-svg]][goreport-url]
 [![Docs][docs-godoc-svg]][docs-godoc-url]
 [![Docs][docs-mkdoc-svg]][docs-mkdoc-url]
 [![Visualization][viz-svg]][viz-url]
@@ -15,8 +14,6 @@
  [go-lint-url]: https://github.com/plexusone/omniagent/actions/workflows/go-lint.yaml
  [go-sast-svg]: https://github.com/plexusone/omniagent/actions/workflows/go-sast-codeql.yaml/badge.svg?branch=main
  [go-sast-url]: https://github.com/plexusone/omniagent/actions/workflows/go-sast-codeql.yaml
- [goreport-svg]: https://goreportcard.com/badge/github.com/plexusone/omniagent
- [goreport-url]: https://goreportcard.com/report/github.com/plexusone/omniagent
  [docs-godoc-svg]: https://pkg.go.dev/badge/github.com/plexusone/omniagent
  [docs-godoc-url]: https://pkg.go.dev/github.com/plexusone/omniagent
  [docs-mkdoc-svg]: https://img.shields.io/badge/Go-dev%20guide-blue.svg
@@ -327,6 +324,64 @@ agent, err := agent.New(config,
 ```
 
 See the [Skills Guide](docs/guides/skills.md#remote-skills) for configuration options.
+
+## Roles
+
+Roles are high-level agent personas that combine skills, workflows, and system prompts into cohesive behaviors. They separate organizational responsibilities from runtime implementations.
+
+```go
+import (
+    "github.com/plexusone/omniagent/agent"
+    "github.com/plexusone/omniagent/agent/roles"
+    meetingpm "github.com/plexusone/omniagent-role-meeting-pm"
+)
+
+// Create a role with configuration
+pmRole := meetingpm.New(meetingpm.Config{
+    DefaultConfluenceSpace: "TEAM",
+    EnableActionTracking:   true,
+})
+
+// Create role manager with skills
+mgr, _ := roles.NewManager(pmRole, meetingSkill, googleSkill, confluenceSkill)
+mgr.Init(ctx)
+defer mgr.Close()
+
+// Access role capabilities
+prompt, _ := mgr.SystemPrompt(ctx)
+workflows := mgr.Workflows()
+spec := mgr.Spec()
+
+// Use policy enforcement
+if err := mgr.CheckToolAccess(ctx, "confluence_publish"); err != nil {
+    // Tool access denied by policy
+}
+
+// Context-aware behaviors
+mgr.SetBehaviorContext(role.BehaviorContextMeeting)
+behaviors := mgr.GetActiveBehaviors(ctx)
+
+// Track metrics
+mgr.RecordMetric(ctx, "meetings-facilitated", 1)
+```
+
+### Available Roles
+
+| Role | Package | Description |
+|------|---------|-------------|
+| Meeting PM | `github.com/plexusone/omniagent-role-meeting-pm` | Meeting facilitation, notes, action tracking |
+
+### Role Features
+
+| Feature | Description |
+|---------|-------------|
+| **Behaviors** | Context-aware actions (meeting, chat, autonomous) |
+| **Policies** | Tool access control, data access, rate limits |
+| **Metrics** | KPIs and success measurements |
+| **Delegation** | Sub-agent orchestration |
+| **Workflows** | Structured multi-step operations |
+
+See the [Roles Guide](docs/guides/roles.md) for complete documentation.
 
 ## Sessions
 
