@@ -26,7 +26,7 @@ require (
 	github.com/plexusone/omni-livekit v0.0.0-00010101000000-000000000000
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omniimage v0.1.0
-	github.com/plexusone/omnillm v0.16.1
+	github.com/plexusone/omnillm v0.17.0
 	github.com/plexusone/omnillm-core v0.18.0
 	github.com/plexusone/omnimeet-core v0.1.0
 	github.com/plexusone/omnimemory v0.1.0
@@ -188,14 +188,14 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/plexusone/elevenlabs-go v0.13.0 // indirect
 	github.com/plexusone/ogen-tools v0.3.0 // indirect
-	github.com/plexusone/omni-anthropic v0.2.2 // indirect
+	github.com/plexusone/omni-anthropic v0.3.0 // indirect
 	github.com/plexusone/omni-aws v0.9.0 // indirect
 	github.com/plexusone/omni-bitwarden v0.1.0 // indirect
 	github.com/plexusone/omni-deepgram v0.6.1 // indirect
 	github.com/plexusone/omni-google v0.7.0 // indirect
 	github.com/plexusone/omni-onepassword v0.4.0 // indirect
 	github.com/plexusone/omni-openai v0.5.0 // indirect
-	github.com/plexusone/omni-openrouter v0.1.1 // indirect
+	github.com/plexusone/omni-openrouter v0.2.0 // indirect
 	github.com/plexusone/omni-telnyx v0.4.0 // indirect
 	github.com/plexusone/omni-twilio v0.9.0 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
