@@ -27,7 +27,7 @@ require (
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.16.1
-	github.com/plexusone/omnillm-core v0.17.0
+	github.com/plexusone/omnillm-core v0.18.0
 	github.com/plexusone/omnimeet-core v0.1.0
 	github.com/plexusone/omnimemory v0.1.0
 	github.com/plexusone/omniobserve v0.11.0
@@ -38,7 +38,7 @@ require (
 	github.com/plexusone/omnitoken v0.1.0
 	github.com/plexusone/omnivault v0.5.0
 	github.com/plexusone/omnivault-desktop v0.1.0
-	github.com/plexusone/omnivoice v0.12.0
+	github.com/plexusone/omnivoice v0.12.1
 	github.com/plexusone/omnivoice-core v0.15.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
@@ -192,9 +192,9 @@ require (
 	github.com/plexusone/omni-aws v0.9.0 // indirect
 	github.com/plexusone/omni-bitwarden v0.1.0 // indirect
 	github.com/plexusone/omni-deepgram v0.6.1 // indirect
-	github.com/plexusone/omni-google v0.6.1 // indirect
+	github.com/plexusone/omni-google v0.7.0 // indirect
 	github.com/plexusone/omni-onepassword v0.4.0 // indirect
-	github.com/plexusone/omni-openai v0.4.1 // indirect
+	github.com/plexusone/omni-openai v0.5.0 // indirect
 	github.com/plexusone/omni-openrouter v0.1.1 // indirect
 	github.com/plexusone/omni-telnyx v0.4.0 // indirect
 	github.com/plexusone/omni-twilio v0.9.0 // indirect
