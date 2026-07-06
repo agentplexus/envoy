@@ -37,7 +37,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, etc.)
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
 - 📞 **Full-Duplex Phone Calls** - Real-time phone conversations via Twilio Media Streams
-- ⚡ **Native Voice-to-Voice** - Ultra-low latency (~100ms) via OpenAI Realtime or Gemini Live APIs
+- ⚡ **Native Voice-to-Voice** - Ultra-low latency (~100-300ms) via OpenAI Realtime, Gemini Live, or Deepgram Agent APIs
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 💾 **Persistent Sessions** - Conversation history with SQLite storage via omnistorage-core
 - 🧠 **Semantic Memory** - Multi-backend memory with automatic recall via omnimemory
@@ -139,10 +139,10 @@ voice:
   enabled: true
   response_mode: auto        # auto, always, never
 
-  # Option 1: Native voice-to-voice (lowest latency, ~100ms)
+  # Option 1: Native voice-to-voice (lowest latency, ~100-300ms)
   realtime:
-    provider: openai         # or: gemini
-    voice: alloy             # OpenAI: alloy, nova, etc. Gemini: Puck, Charon, etc.
+    provider: openai         # or: gemini, deepgram
+    voice: alloy             # OpenAI: alloy, nova, etc. Gemini: Puck, Charon, etc. Deepgram: aura-2-thalia-en, etc.
 
   # Option 2: Traditional pipeline (custom STT/TTS providers)
   # stt:
@@ -635,6 +635,11 @@ See [Access Policies Guide](docs/guides/policies.md) for details.
 | `IMAGE_PROVIDER` | Image provider: `openai`, `fal` (default: `openai`) |
 | `IMAGE_MODEL` | Default image model (e.g., `gpt-image-2`, `fal-ai/flux-pro`) |
 | `FAL_KEY` | Fal AI API key for image generation |
+| `LIVEKIT_URL` | LiveKit server URL (e.g., `wss://your-project.livekit.cloud`) |
+| `LIVEKIT_API_KEY` | LiveKit API key |
+| `LIVEKIT_API_SECRET` | LiveKit API secret |
+| `REALTIME_PROVIDER` | Realtime voice provider: `openai`, `gemini`, `deepgram` |
+| `REALTIME_VOICE` | Voice for realtime API (provider-specific) |
 
 ## Vault-Backed Credentials
 
@@ -727,6 +732,10 @@ The token manager handles:
 # Gateway
 omniagent gateway run      # Start the gateway server
 
+# Setup & Diagnostics
+omniagent setup            # Interactive setup wizard
+omniagent doctor           # Diagnose configuration and connectivity
+
 # Voice (Full-Duplex Phone Calls)
 omniagent voice serve      # Start the voice gateway server
 omniagent voice status     # Show voice configuration status
@@ -736,6 +745,11 @@ omniagent voice call NUM   # Make an outbound call to NUM
 omniagent skills list      # List all discovered skills
 omniagent skills info NAME # Show skill details
 omniagent skills check     # Validate skill requirements
+
+# Sessions
+omniagent sessions list    # List conversation sessions
+omniagent sessions show ID # Show session details
+omniagent sessions delete ID # Delete a session
 
 # Channels
 omniagent channels list    # List registered channels
@@ -952,7 +966,10 @@ See [Architecture Overview](docs/architecture/overview.md) for detailed document
 | [omnichat](https://github.com/plexusone/omnichat) | Unified messaging (WhatsApp, Telegram, Discord) |
 | [omnillm](https://github.com/plexusone/omnillm) | Multi-provider LLM abstraction |
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
+| [omni-livekit](https://github.com/plexusone/omni-livekit) | LiveKit WebRTC voice transport |
 | [omni-twilio](https://github.com/plexusone/omni-twilio) | Full-duplex voice gateway via Twilio |
+| [omni-deepgram](https://github.com/plexusone/omni-deepgram) | Deepgram STT/TTS and realtime voice |
+| [omnimemory](https://github.com/plexusone/omnimemory) | Semantic memory with vector retrieval |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omniserp](https://github.com/plexusone/omniserp) | Web search via Serper/SerpAPI |
 | [omniimage](https://github.com/plexusone/omniimage) | Image generation (OpenAI, Fal AI) |
@@ -973,8 +990,11 @@ See [Architecture Overview](docs/architecture/overview.md) for detailed document
 
 - [omnichat](https://github.com/plexusone/omnichat) - Unified messaging provider interface
 - [omnillm](https://github.com/plexusone/omnillm) - Multi-provider LLM abstraction
-- [omnivoice](https://github.com/plexusone/omnivoice) - Voice interactions
+- [omnivoice](https://github.com/plexusone/omnivoice) - Voice interactions (STT/TTS)
+- [omni-livekit](https://github.com/plexusone/omni-livekit) - LiveKit WebRTC voice transport
+- [omnimemory](https://github.com/plexusone/omnimemory) - Semantic memory with vector retrieval
 - [omniimage](https://github.com/plexusone/omniimage) - Image generation (OpenAI, Fal AI)
+- [omnirole-facilitator](https://github.com/plexusone/omnirole-facilitator) - Meeting PM role
 - [OpenClaw](https://github.com/openclaw/openclaw) - Compatible skill format
 
 ## License
