@@ -20,6 +20,10 @@
 //	export AGENT_AVATAR="true"            # Use default OmniAgent icon
 //	export AGENT_AVATAR="/path/to/avatar.h264"  # Use custom pre-encoded avatar
 //
+//	# Optional: Realtime mode (native voice-to-voice, ~100-300ms latency)
+//	export VOICE_MODE="realtime"          # "pipeline" (default) or "realtime"
+//	export REALTIME_PROVIDER="openai"     # "openai", "gemini", or "deepgram"
+//
 //	go run -tags opus ./cmd/livekit-agent-facilitator
 package main
 
@@ -43,13 +47,11 @@ import (
 	omniagent "github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omnimeet-core/participant"
 	"github.com/plexusone/omnimeet-core/track"
-	"github.com/plexusone/omnirole-facilitator"
+	facilitator "github.com/plexusone/omnirole-facilitator"
 	"github.com/plexusone/omnivoice"
 	"github.com/plexusone/omnivoice-core/stt"
 	"github.com/plexusone/omnivoice-core/tts"
-
-	// Import all omnivoice providers
-	_ "github.com/plexusone/omnivoice/providers/all"
+	_ "github.com/plexusone/omnivoice/providers/all" // Import all omnivoice providers
 )
 
 func main() {
@@ -61,6 +63,10 @@ func main() {
 	if serverURL == "" || apiKey == "" || apiSecret == "" {
 		log.Fatal("Required: LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET")
 	}
+
+	// Get voice mode configuration
+	voiceMode := getEnvOrDefault("VOICE_MODE", "pipeline") // "pipeline" or "realtime"
+	realtimeProvider := getEnvOrDefault("REALTIME_PROVIDER", "openai")
 
 	// Get provider configuration
 	sttProviderName := getEnvOrDefault("STT_PROVIDER", "deepgram")
@@ -104,18 +110,32 @@ func main() {
 		cancel()
 	}()
 
-	// Create STT provider via omnivoice registry
-	fmt.Printf("Initializing STT provider: %s\n", sttProviderName)
-	sttProv, err := omnivoice.GetSTTProvider(sttProviderName, omnivoice.WithAPIKey(sttAPIKey))
-	if err != nil {
-		log.Fatalf("Failed to create STT provider: %v", err)
-	}
+	// Create providers based on voice mode
+	var sttProv stt.Provider
+	var ttsProv tts.Provider
+	var realtimeVA *RealtimeVoiceAgent
 
-	// Create TTS provider via omnivoice registry
-	fmt.Printf("Initializing TTS provider: %s\n", ttsProviderName)
-	ttsProv, err := omnivoice.GetTTSProvider(ttsProviderName, omnivoice.WithAPIKey(ttsAPIKey))
-	if err != nil {
-		log.Fatalf("Failed to create TTS provider: %v", err)
+	if voiceMode == "realtime" {
+		// Realtime mode: use native voice-to-voice provider
+		realtimeAPIKey := resolveAPIKey(realtimeProvider)
+		if realtimeAPIKey == "" {
+			log.Fatalf("No API key for realtime provider '%s'. Set %s_API_KEY", realtimeProvider, strings.ToUpper(realtimeProvider))
+		}
+		fmt.Printf("Initializing realtime provider: %s\n", realtimeProvider)
+	} else {
+		// Pipeline mode: use STT + LLM + TTS
+		fmt.Printf("Initializing STT provider: %s\n", sttProviderName)
+		var err error
+		sttProv, err = omnivoice.GetSTTProvider(sttProviderName, omnivoice.WithAPIKey(sttAPIKey))
+		if err != nil {
+			log.Fatalf("Failed to create STT provider: %v", err)
+		}
+
+		fmt.Printf("Initializing TTS provider: %s\n", ttsProviderName)
+		ttsProv, err = omnivoice.GetTTSProvider(ttsProviderName, omnivoice.WithAPIKey(ttsAPIKey))
+		if err != nil {
+			log.Fatalf("Failed to create TTS provider: %v", err)
+		}
 	}
 
 	// Create Meeting PM role
@@ -208,9 +228,14 @@ You are participating in a voice meeting via LiveKit. Keep these guidelines in m
 	fmt.Println("===========================================")
 	fmt.Println()
 	fmt.Printf("Meeting:  %s\n", roomName)
-	fmt.Printf("STT:      %s\n", sttProviderName)
-	fmt.Printf("TTS:      %s\n", ttsProviderName)
-	fmt.Printf("LLM:      %s/%s\n", llmProvider, llmModel)
+	fmt.Printf("Mode:     %s\n", voiceMode)
+	if voiceMode == "realtime" {
+		fmt.Printf("Provider: %s (native voice-to-voice)\n", realtimeProvider)
+	} else {
+		fmt.Printf("STT:      %s\n", sttProviderName)
+		fmt.Printf("TTS:      %s\n", ttsProviderName)
+		fmt.Printf("LLM:      %s/%s\n", llmProvider, llmModel)
+	}
 	fmt.Printf("Role:     %s\n", pmRole.Name())
 	fmt.Println()
 	fmt.Println("Join the meeting to interact with the Meeting PM:")
@@ -224,30 +249,63 @@ You are participating in a voice meeting via LiveKit. Keep these guidelines in m
 	fmt.Println()
 	fmt.Println("Starting agent...")
 
-	// Select TTS voice based on provider
+	// Select voice based on provider
+	var va *VoiceAgent
 	ttsVoice := getEnvOrDefault("TTS_VOICE", "")
-	if ttsVoice == "" {
-		switch ttsProviderName {
-		case "openai":
-			ttsVoice = "alloy"
-		case "deepgram":
-			ttsVoice = "aura-asteria-en"
-		case "elevenlabs":
-			ttsVoice = "Rachel"
-		default:
-			ttsVoice = "default"
-		}
-	}
-	fmt.Printf("TTS Voice: %s\n", ttsVoice)
 
-	// Create voice agent wrapper
-	va := &VoiceAgent{
-		sttProvider: sttProv,
-		ttsProvider: ttsProv,
-		ttsVoice:    ttsVoice,
-		omniAgent:   agent,
-		sessionID:   meetingID,
-		sampleRate:  48000,
+	if voiceMode == "realtime" {
+		// Realtime mode: create RealtimeVoiceAgent
+		if ttsVoice == "" {
+			switch realtimeProvider {
+			case "openai":
+				ttsVoice = "alloy"
+			case "deepgram":
+				ttsVoice = "aura-2-thalia-en"
+			case "gemini":
+				ttsVoice = "Puck"
+			default:
+				ttsVoice = "default"
+			}
+		}
+		fmt.Printf("Voice:    %s\n", ttsVoice)
+
+		realtimeAPIKey := resolveAPIKey(realtimeProvider)
+		var err error
+		realtimeVA, err = NewRealtimeVoiceAgent(RealtimeConfig{
+			ProviderName: realtimeProvider,
+			APIKey:       realtimeAPIKey,
+			Voice:        ttsVoice,
+			Instructions: voicePrompt,
+			SampleRate:   48000,
+		})
+		if err != nil {
+			log.Fatalf("Failed to create realtime voice agent: %v", err)
+		}
+		defer realtimeVA.Close()
+	} else {
+		// Pipeline mode: create VoiceAgent with STT + LLM + TTS
+		if ttsVoice == "" {
+			switch ttsProviderName {
+			case "openai":
+				ttsVoice = "alloy"
+			case "deepgram":
+				ttsVoice = "aura-asteria-en"
+			case "elevenlabs":
+				ttsVoice = "Rachel"
+			default:
+				ttsVoice = "default"
+			}
+		}
+		fmt.Printf("TTS Voice: %s\n", ttsVoice)
+
+		va = &VoiceAgent{
+			sttProvider: sttProv,
+			ttsProvider: ttsProv,
+			ttsVoice:    ttsVoice,
+			omniAgent:   agent,
+			sessionID:   meetingID,
+			sampleRate:  48000,
+		}
 	}
 
 	// Build agent options
@@ -291,18 +349,20 @@ You are participating in a voice meeting via LiveKit. Keep these guidelines in m
 	lkAgent.OnParticipantJoined(func(p participant.Participant) {
 		fmt.Printf("[+] %s joined (ID: %s)\n", p.Name, p.ID)
 
-		// Simple test: speak 3 seconds after join
-		go func(name string) {
-			<-audioReady // Wait for audio to be ready
-			fmt.Println("[TEST] Waiting 3 seconds before test speech...")
-			time.Sleep(3 * time.Second)
-			fmt.Println("[TEST] Speaking test message...")
-			if err := va.speak(ctx, lkAgent, "Testing one two three. Can you hear me?"); err != nil {
-				log.Printf("[TEST] Error speaking: %v", err)
-			} else {
-				fmt.Println("[TEST] Test speech completed")
-			}
-		}(p.Name)
+		// Simple test: speak 3 seconds after join (pipeline mode only)
+		if voiceMode != "realtime" {
+			go func() {
+				<-audioReady // Wait for audio to be ready
+				fmt.Println("[TEST] Waiting 3 seconds before test speech...")
+				time.Sleep(3 * time.Second)
+				fmt.Println("[TEST] Speaking test message...")
+				if err := va.speak(ctx, lkAgent, "Testing one two three. Can you hear me?"); err != nil {
+					log.Printf("[TEST] Error speaking: %v", err)
+				} else {
+					fmt.Println("[TEST] Test speech completed")
+				}
+			}()
+		}
 	})
 
 	// Subscribe to audio when tracks are published (not when participant joins)
@@ -324,20 +384,30 @@ You are participating in a voice meeting via LiveKit. Keep these guidelines in m
 				return
 			}
 			fmt.Printf("[+] Subscribed to %s audio\n", p.Name)
-			go va.processAudio(ctx, lkAgent, audioCh)
 
-			// Greet the participant (only once)
-			greetedMu.Lock()
-			alreadyGreeted := greetedParticipants[p.ID]
-			if !alreadyGreeted {
-				greetedParticipants[p.ID] = true
-			}
-			greetedMu.Unlock()
+			if voiceMode == "realtime" {
+				// Realtime mode: start the realtime voice agent
+				if err := realtimeVA.Start(ctx, lkAgent, audioCh); err != nil {
+					log.Printf("Error starting realtime voice agent: %v", err)
+				}
+				// Greeting is handled by the realtime provider configuration
+			} else {
+				// Pipeline mode: use traditional STT + LLM + TTS
+				go va.processAudio(ctx, lkAgent, audioCh)
 
-			if !alreadyGreeted {
-				greeting := fmt.Sprintf("Hello %s! I'm the Meeting Program Manager. I'll be tracking action items, decisions, and key discussion points during our meeting. Feel free to ask me to note anything important.", p.Name)
-				if err := va.speak(ctx, lkAgent, greeting); err != nil {
-					log.Printf("Error greeting: %v", err)
+				// Greet the participant (only once)
+				greetedMu.Lock()
+				alreadyGreeted := greetedParticipants[p.ID]
+				if !alreadyGreeted {
+					greetedParticipants[p.ID] = true
+				}
+				greetedMu.Unlock()
+
+				if !alreadyGreeted {
+					greeting := fmt.Sprintf("Hello %s! I'm the Meeting Program Manager. I'll be tracking action items, decisions, and key discussion points during our meeting. Feel free to ask me to note anything important.", p.Name)
+					if err := va.speak(ctx, lkAgent, greeting); err != nil {
+						log.Printf("Error greeting: %v", err)
+					}
 				}
 			}
 		}()
@@ -358,7 +428,11 @@ You are participating in a voice meeting via LiveKit. Keep these guidelines in m
 	if err != nil {
 		log.Fatalf("Failed to start audio: %v", err)
 	}
-	va.audioWriter = audioWriter
+	if voiceMode == "realtime" {
+		realtimeVA.SetAudioWriter(audioWriter)
+	} else {
+		va.audioWriter = audioWriter
+	}
 	fmt.Println("Audio output ready")
 	close(audioReady) // Signal that audio is ready
 
@@ -576,7 +650,7 @@ func (va *VoiceAgent) transcribe(ctx context.Context, audio []byte) (string, err
 }
 
 // speak converts text to speech and sends to LiveKit
-func (va *VoiceAgent) speak(ctx context.Context, ag *livekitagent.Agent, text string) error {
+func (va *VoiceAgent) speak(ctx context.Context, _ *livekitagent.Agent, text string) error {
 	// Serialize speak calls to prevent interleaved audio
 	va.speakLock.Lock()
 	defer va.speakLock.Unlock()
