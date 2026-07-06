@@ -609,7 +609,7 @@ See [Access Policies Guide](docs/guides/policies.md) for details.
 | `DEEPGRAM_API_KEY` | Deepgram API key for voice STT/TTS (traditional) |
 | `OMNIAGENT_VOICE_ENABLED` | Set to `true` to enable voice processing |
 | `OMNIAGENT_VOICE_RESPONSE_MODE` | Voice response mode: `auto`, `always`, `never` |
-| `OMNIAGENT_VOICE_REALTIME_PROVIDER` | Native voice-to-voice: `openai`, `gemini` |
+| `OMNIAGENT_VOICE_REALTIME_PROVIDER` | Native voice-to-voice: `openai`, `gemini`, `deepgram` |
 | `ELEVENLABS_API_KEY` | ElevenLabs API key for voice TTS (traditional) |
 | `GOOGLE_API_KEY` | Google API key for Gemini Live (native voice-to-voice) |
 | `IMAGE_ENABLED` | Set to `true` to enable image generation |
@@ -796,11 +796,17 @@ Run OmniAgent as a voice participant in LiveKit meetings:
 export LIVEKIT_URL="wss://your-project.livekit.cloud"
 export LIVEKIT_API_KEY="your-api-key"
 export LIVEKIT_API_SECRET="your-api-secret"
-export ANTHROPIC_API_KEY="your-anthropic-key"
-export STT_PROVIDER="deepgram"
-export STT_API_KEY="your-deepgram-key"
-export TTS_PROVIDER="openai"
-export TTS_API_KEY="your-openai-key"
+
+# Option 1: Realtime mode (lowest latency, ~100-300ms)
+export REALTIME_PROVIDER="deepgram"  # or: openai, gemini
+export DEEPGRAM_API_KEY="your-deepgram-key"
+
+# Option 2: Traditional pipeline (STT→LLM→TTS)
+# export ANTHROPIC_API_KEY="your-anthropic-key"
+# export STT_PROVIDER="deepgram"
+# export STT_API_KEY="your-deepgram-key"
+# export TTS_PROVIDER="openai"
+# export TTS_API_KEY="your-openai-key"
 
 # Optional: Enable avatar (displays image in video tile)
 export AGENT_AVATAR="true"
@@ -815,7 +821,7 @@ go run ./cmd/livekit-agent-facilitator
 | Command | Description |
 |---------|-------------|
 | `cmd/livekit-agent` | Generic voice agent with web search |
-| `cmd/livekit-agent-facilitator` | Meeting facilitator with Meeting PM role |
+| `cmd/livekit-agent-facilitator` | Meeting facilitator with Meeting PM role, supports realtime mode |
 
 These agents use [omni-livekit](https://github.com/plexusone/omni-livekit) for LiveKit transport. The avatar is displayed at 640x360 (16:9) for optimal display in LiveKit video slots.
 
@@ -882,7 +888,7 @@ These agents use [omni-livekit](https://github.com/plexusone/omni-livekit) for L
 |-------|------|---------|-------------|
 | `voice.enabled` | bool | `false` | Enable voice processing |
 | `voice.response_mode` | string | `auto` | `auto`, `always`, `never` |
-| `voice.realtime.provider` | string | - | Native voice-to-voice: `openai`, `gemini` |
+| `voice.realtime.provider` | string | - | Native voice-to-voice: `openai`, `gemini`, `deepgram` |
 | `voice.realtime.voice` | string | - | Voice for realtime API |
 | `voice.stt.provider` | string | - | STT provider (traditional): `deepgram`, `whisper` |
 | `voice.tts.provider` | string | - | TTS provider (traditional): `elevenlabs`, `deepgram` |
