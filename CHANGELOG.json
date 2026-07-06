@@ -7,6 +7,46 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.13.0",
+      "date": "2026-07-05",
+      "highlights": [
+        { "description": "Realtime voice mode for LiveKit agents with ~100-300ms latency" },
+        { "description": "Deepgram Agent API as native voice-to-voice provider" },
+        { "description": "LiveKit voice agent commands (livekit-agent, livekit-agent-facilitator)" },
+        { "description": "Role manager integration for agent personas with policy enforcement" }
+      ],
+      "added": [
+        { "description": "Realtime voice mode for `livekit-agent-facilitator` with Deepgram/OpenAI/Gemini support", "commit": "973ad49" },
+        { "description": "LiveKit voice agent commands: `cmd/livekit-agent` and `cmd/livekit-agent-facilitator`", "commit": "d4e8acd" },
+        { "description": "`agent/roles` package with `Manager` for role-based agent personas", "commit": "14219db" },
+        { "description": "Role manager integration in agent runtime", "commit": "09dbead" },
+        { "description": "WhatsApp integration screenshots for documentation", "commit": "ab69c02" }
+      ],
+      "fixed": [
+        { "description": "G115 gosec warnings in PCM audio processing code with nolint annotations", "commit": "248c52d" }
+      ],
+      "documentation": [
+        { "description": "Deepgram realtime provider in voice integration guide", "commit": "328a60b" },
+        { "description": "LiveKit voice agents section in README with realtime mode examples", "commit": "60a0fa2" },
+        { "description": "v0.13.0 release notes", "commit": "b820630" },
+        { "description": "Roles guide and migration documentation", "commit": "74914e8" },
+        { "description": "Role system specifications (PRD, TRD, PLAN)", "commit": "3d54a62" },
+        { "description": "Roles section in README", "commit": "a628467" },
+        { "description": "LiveKit voice agents section in README", "commit": "641dbe2" },
+        { "description": "OmniAgent mascot and hero images", "commit": "3f4010e" }
+      ],
+      "test": [
+        { "description": "OmniMeet smoke test", "commit": "e0998f6" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omni-livekit` v0.1.0 (new)" },
+        { "description": "`github.com/plexusone/omnimeet-core` v0.1.0 (new)" },
+        { "description": "`github.com/plexusone/omnivoice` v0.12.0 → v0.13.0" },
+        { "description": "`github.com/plexusone/omnillm` v0.16.1 → v0.17.0" },
+        { "description": "`github.com/plexusone/omnillm-core` v0.18.0" }
+      ]
+    },
+    {
       "version": "v0.12.0",
       "date": "2026-06-29",
       "highlights": [
