@@ -688,6 +688,8 @@ github.com/plexusone/omnillm v0.16.1 h1:0dKXUV1uk8EiXV19boAx+yH7Ewp04dnthkjfJ/iE
 github.com/plexusone/omnillm v0.16.1/go.mod h1:aJhV9wmwP3aezYNgOdBTTQjorOm7cncfuoJUhgGzyB8=
 github.com/plexusone/omnillm-core v0.17.0 h1:mzM1yVt7sSFxHqNmyhoV6GxYsqfFOD/m1tWyv2qFpec=
 github.com/plexusone/omnillm-core v0.17.0/go.mod h1:180U/oa67fly3+T3h1sL/pBMvcjIKR+bvSEkAGnalMY=
+github.com/plexusone/omnillm-core v0.18.0 h1:JnONiIe08W+83hsyxyFHSouk0jkBY2o7/SzvJxF3mYI=
+github.com/plexusone/omnillm-core v0.18.0/go.mod h1:180U/oa67fly3+T3h1sL/pBMvcjIKR+bvSEkAGnalMY=
 github.com/plexusone/omnimemory v0.1.0 h1:Wv9i66aaVaKOXTUGmdcU++mLf1j98wKLpZcGrgAwXow=
 github.com/plexusone/omnimemory v0.1.0/go.mod h1:rKP37hULOs5WYe8V3MmLURYd5nJoZLkUEd8I0vExvdI=
 github.com/plexusone/omniobserve v0.11.0 h1:oFApQ2ULGVtmuhAiN0bsPpineL2G+Ncgg2FcoArMIgg=

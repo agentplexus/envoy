@@ -27,7 +27,7 @@ require (
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.16.1
-	github.com/plexusone/omnillm-core v0.17.0
+	github.com/plexusone/omnillm-core v0.18.0
 	github.com/plexusone/omnimeet-core v0.1.0
 	github.com/plexusone/omnimemory v0.1.0
 	github.com/plexusone/omniobserve v0.11.0
