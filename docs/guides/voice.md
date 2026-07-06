@@ -24,7 +24,7 @@ Phone → Twilio → [Deepgram STT] → Text → [Claude/GPT] → Text → [Elev
 ### Native Voice-to-Voice (Recommended)
 
 ```
-Phone → Twilio → [OpenAI Realtime / Gemini Live] → Audio → Twilio → Phone
+Phone → Twilio → [OpenAI Realtime / Gemini Live / Deepgram Agent] → Audio → Twilio → Phone
 ```
 
 - **Latency**: 100-200ms (model handles audio directly)
@@ -49,6 +49,7 @@ Phone → Twilio → [OpenAI Realtime / Gemini Live] → Audio → Twilio → Ph
 |----------|---------|---------|--------|
 | **OpenAI Realtime** | `omni-openai/omnivoice/realtime` | ~100ms | 11 voices |
 | **Gemini Live** | `omni-google/omnivoice` | ~200ms | 5 voices |
+| **Deepgram Agent** | `omni-deepgram/omnivoice/realtime` | ~200ms | 10+ voices |
 
 ### When to Use Each
 
@@ -259,7 +260,7 @@ omniagent voice call NUM   # Make an outbound call
 | `--llm` | LLM provider | `anthropic` |
 | `--model` | LLM model | `claude-sonnet-4-20250514` |
 | `--system-prompt` | Custom system prompt | - |
-| `--realtime` | Native voice-to-voice provider (`openai`, `gemini`) | - |
+| `--realtime` | Native voice-to-voice provider (`openai`, `gemini`, `deepgram`) | - |
 | `--realtime-voice` | Voice for realtime API | `alloy` (OpenAI), `Puck` (Gemini) |
 
 ## Complete Configuration Examples
@@ -617,6 +618,21 @@ omniagent voice serve \
 ```
 
 Available voices: `Puck`, `Charon`, `Kore`, `Fenrir`, `Aoede`
+
+Audio format: PCM16 16kHz input, 24kHz output
+
+#### Deepgram Agent
+
+```bash
+omniagent voice serve \
+  --provider twilio \
+  --realtime deepgram \
+  --realtime-voice aura-2-thalia-en \
+  --system-prompt "You are a helpful customer service agent." \
+  --public-url https://your-server.com
+```
+
+Available voices: `aura-2-thalia-en`, `aura-2-andromeda-en`, `aura-2-arcas-en`, `aura-2-luna-en`, `aura-2-orion-en`, `aura-2-perseus-en`, `aura-2-stella-en`, `aura-2-zeus-en`, and more
 
 Audio format: PCM16 16kHz input, 24kHz output
 
