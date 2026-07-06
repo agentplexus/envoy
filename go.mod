@@ -23,7 +23,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/ogen-go/ogen v1.22.0
 	github.com/plexusone/agentauth v0.2.0
-	github.com/plexusone/omni-livekit v0.0.0-00010101000000-000000000000
+	github.com/plexusone/omni-livekit v0.1.0
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.17.0
@@ -31,14 +31,14 @@ require (
 	github.com/plexusone/omnimeet-core v0.1.0
 	github.com/plexusone/omnimemory v0.1.0
 	github.com/plexusone/omniobserve v0.11.0
-	github.com/plexusone/omnirole-facilitator v0.0.0-20260705051519-5f9d2aa7b574
+	github.com/plexusone/omnirole-facilitator v0.1.0
 	github.com/plexusone/omniserp v0.9.0
-	github.com/plexusone/omniskill v0.9.0
+	github.com/plexusone/omniskill v0.10.0
 	github.com/plexusone/omnistorage-core v0.5.0
 	github.com/plexusone/omnitoken v0.1.0
 	github.com/plexusone/omnivault v0.5.0
 	github.com/plexusone/omnivault-desktop v0.1.0
-	github.com/plexusone/omnivoice v0.12.1
+	github.com/plexusone/omnivoice v0.13.0
 	github.com/plexusone/omnivoice-core v0.15.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.2
@@ -168,7 +168,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
-	github.com/petermattis/goid v0.0.0-20260625140558-4207c655779d // indirect
+	github.com/petermattis/goid v0.0.0-20260701081913-4f67fd55d3b4 // indirect
 	github.com/pion/datachannel v1.6.2 // indirect
 	github.com/pion/dtls/v3 v3.1.4 // indirect
 	github.com/pion/ice/v4 v4.2.7 // indirect
@@ -191,7 +191,7 @@ require (
 	github.com/plexusone/omni-anthropic v0.3.0 // indirect
 	github.com/plexusone/omni-aws v0.9.0 // indirect
 	github.com/plexusone/omni-bitwarden v0.1.0 // indirect
-	github.com/plexusone/omni-deepgram v0.6.1 // indirect
+	github.com/plexusone/omni-deepgram v0.7.0 // indirect
 	github.com/plexusone/omni-google v0.7.0 // indirect
 	github.com/plexusone/omni-onepassword v0.4.0 // indirect
 	github.com/plexusone/omni-openai v0.5.0 // indirect
@@ -221,7 +221,7 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/twilio/twilio-go v1.30.9 // indirect
 	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
-	github.com/vektah/gqlparser/v2 v2.5.35 // indirect
+	github.com/vektah/gqlparser/v2 v2.5.36 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/ysmood/fetchup v0.2.3 // indirect
@@ -232,7 +232,7 @@ require (
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.mau.fi/libsignal v0.2.2 // indirect
 	go.mau.fi/util v0.9.10 // indirect
-	go.mau.fi/whatsmeow v0.0.0-20260622185415-5f04eac6dbbb // indirect
+	go.mau.fi/whatsmeow v0.0.0-20260630180629-b572e5bcb92b // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
@@ -275,12 +275,3 @@ replace github.com/ysmood/fetchup => github.com/ysmood/fetchup v0.2.3
 
 // Force log15/v3 to version compatible with ngrok v1.13.0 (has ext.RandId)
 replace github.com/inconshreveable/log15/v3 => github.com/inconshreveable/log15/v3 v3.0.0-testing.5
-
-// Local development dependency for omnimeet-core smoke tests
-replace github.com/plexusone/omnimeet-core => ../omnimeet-core
-
-// Local development dependency for omniskill role support
-replace github.com/plexusone/omniskill => ../omniskill
-
-// Local development dependency for LiveKit voice agents
-replace github.com/plexusone/omni-livekit => ../omni-livekit
