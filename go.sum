@@ -670,10 +670,14 @@ github.com/plexusone/omni-deepgram v0.6.1 h1:it+NVzGDEFkpir1MvSiCdzyefJiaW9U9cBx
 github.com/plexusone/omni-deepgram v0.6.1/go.mod h1:9x8nOXRsQKS5H+6nVLNg7jsvNsNCSQ5vYkQno82gw08=
 github.com/plexusone/omni-google v0.6.1 h1:cyzZnjkwWPRc8kWz6URYKau5hDsQuGkh+bJzM+mEXyg=
 github.com/plexusone/omni-google v0.6.1/go.mod h1:x6WQP6U/OyyvJqdJ+kX3khOaeZv7vzhsJm+3b8NnaRs=
+github.com/plexusone/omni-google v0.7.0 h1:RIYB80bHdW5z26+ncvNzHzhVADT4UyPKqeCYa7pAiJk=
+github.com/plexusone/omni-google v0.7.0/go.mod h1:gsA32NcWqjQ4caUI71+TjkXwo1HZPkGti3T0g40ILk0=
 github.com/plexusone/omni-onepassword v0.4.0 h1:KKo3iod6BDITDUG/OTou30erE8nHpGccnHk78E8KLR0=
 github.com/plexusone/omni-onepassword v0.4.0/go.mod h1:QhVIdFZJJPO5Togp2Hp5AjpOxHi4mA9ti5U4mn0w2eM=
 github.com/plexusone/omni-openai v0.4.1 h1:SjbeXGZlgjCGPR2QZrHupuFuhU5vteZazZUcMaSnSVA=
 github.com/plexusone/omni-openai v0.4.1/go.mod h1:01QuN0+nmicCsXHm5yEhJ2MoKFTOJgSix+DsSkjCnB0=
+github.com/plexusone/omni-openai v0.5.0 h1:Np+k0cgMMnp7P9x9V9SvNr/ZKsb+Y7bp99CMam0tG50=
+github.com/plexusone/omni-openai v0.5.0/go.mod h1:ILW/cX5X4F02ttLD0WiBa2FYkkVlpcolOem0F89zeJA=
 github.com/plexusone/omni-openrouter v0.1.1 h1:hfXW4GVb0O4w0W08hbmE6DjQOOS0Uo+SZA7vfnjMTIk=
 github.com/plexusone/omni-openrouter v0.1.1/go.mod h1:1eFEsl/uJMnYaoCJ2DMA9J2uD4QZ34WPbaWrxaeIcEg=
 github.com/plexusone/omni-telnyx v0.4.0 h1:Qa/8GB0MAk7ryA742Rb+fgsbc/SsG/GZs6ArgClT0cM=
@@ -688,6 +692,8 @@ github.com/plexusone/omnillm v0.16.1 h1:0dKXUV1uk8EiXV19boAx+yH7Ewp04dnthkjfJ/iE
 github.com/plexusone/omnillm v0.16.1/go.mod h1:aJhV9wmwP3aezYNgOdBTTQjorOm7cncfuoJUhgGzyB8=
 github.com/plexusone/omnillm-core v0.17.0 h1:mzM1yVt7sSFxHqNmyhoV6GxYsqfFOD/m1tWyv2qFpec=
 github.com/plexusone/omnillm-core v0.17.0/go.mod h1:180U/oa67fly3+T3h1sL/pBMvcjIKR+bvSEkAGnalMY=
+github.com/plexusone/omnillm-core v0.18.0 h1:JnONiIe08W+83hsyxyFHSouk0jkBY2o7/SzvJxF3mYI=
+github.com/plexusone/omnillm-core v0.18.0/go.mod h1:180U/oa67fly3+T3h1sL/pBMvcjIKR+bvSEkAGnalMY=
 github.com/plexusone/omnimemory v0.1.0 h1:Wv9i66aaVaKOXTUGmdcU++mLf1j98wKLpZcGrgAwXow=
 github.com/plexusone/omnimemory v0.1.0/go.mod h1:rKP37hULOs5WYe8V3MmLURYd5nJoZLkUEd8I0vExvdI=
 github.com/plexusone/omniobserve v0.11.0 h1:oFApQ2ULGVtmuhAiN0bsPpineL2G+Ncgg2FcoArMIgg=
@@ -706,6 +712,8 @@ github.com/plexusone/omnivault-desktop v0.1.0 h1:dfQ0pe4+Dh14MwTX8xlvaS//r55gg/Q
 github.com/plexusone/omnivault-desktop v0.1.0/go.mod h1:IKS1xhsjVUp9ETTdHCdqoIKtcJaqTEWxz3CtwTDYnLo=
 github.com/plexusone/omnivoice v0.12.0 h1:dhlmeFaRn4zge+TZXFMvkNMkIADzSBPzsKq4dIhLG8g=
 github.com/plexusone/omnivoice v0.12.0/go.mod h1:n9TGZYkxKEU1zu7pgGASpzPRM464BAftvdPXE4Xfk1o=
+github.com/plexusone/omnivoice v0.12.1 h1:DpFJ4/ujDudeTILsXpvrYUZav7kmBkysg5YN0rZZ7vA=
+github.com/plexusone/omnivoice v0.12.1/go.mod h1:4t4+2wiGzylR8jjMS7Vlbzbv3jPyxkpm1Z0VpykP5mI=
 github.com/plexusone/omnivoice-core v0.15.0 h1:lvzucRbP53bwzBhbZ/x15iRUfJexJqzEeLJvXo74GRM=
 github.com/plexusone/omnivoice-core v0.15.0/go.mod h1:SwFSgk9D1UH9XIyofLUU6BEEWEtHsS+PHKduMp+VucE=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
@@ -1344,6 +1352,7 @@ google.golang.org/genproto v0.0.0-20220505152158-f39f71e6c8f3/go.mod h1:RAyBrSAP
 google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd/go.mod h1:RAyBrSAP7Fh3Nc84ghnVLDPuV51xc9agzmm4Ph6i0Q4=
 google.golang.org/genproto v0.0.0-20260618152121-87f3d3e198d3 h1:QS9ra9U3VDDJzRX51Drz8usQSC4ACEcrDOdcoNafSnA=
 google.golang.org/genproto v0.0.0-20260618152121-87f3d3e198d3/go.mod h1:V5M1lxGXNUICs0aOqAMsK6HtmLnCyuzY031uOQS9rJE=
+google.golang.org/genproto v0.0.0-20260630182238-925bb5da69e7 h1:lQG76ePMKmtujel4VIVMiFoHVWVNtJdawbCZJtWlVXU=
 google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7 h1:jQ9p21COKWjP3VwuFrNRiiOTMh3mPpN45R7SLrH/HUU=
 google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7/go.mod h1:KqHwBx2upmfa1XSi1WuRvC+2VGCLtooKkfmyvRbUmqA=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 h1:eM/YSd5bBFagF51o1E745Ta7RwzpW0h+z+QDNZOgmQ8=
