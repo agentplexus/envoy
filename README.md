@@ -1,6 +1,6 @@
 # OmniAgent
 
-![OmniAgent Mascot - The Versatile Golang Agent](docs/images/img_omniagent_hero_v4.png)
+[![OmniAgent Mascot - The Versatile Golang Agent](docs/images/img_omniagent_hero_v4.png)](https://plexusone.dev/omniagent/)
 
 [![Go CI][go-ci-svg]][go-ci-url]
 [![Go Lint][go-lint-svg]][go-lint-url]
