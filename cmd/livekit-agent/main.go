@@ -403,7 +403,7 @@ func (va *VoiceAgent) transcribe(ctx context.Context, audio []byte) (string, err
 }
 
 // speak converts text to speech and sends to LiveKit
-func (va *VoiceAgent) speak(ctx context.Context, ag *livekitagent.Agent, text string) error {
+func (va *VoiceAgent) speak(ctx context.Context, _ *livekitagent.Agent, text string) error {
 	va.speakingMu.Lock()
 	va.speaking = true
 	va.speakingMu.Unlock()
@@ -486,20 +486,20 @@ func pcmToWav(pcm []byte, sampleRate, channels int) []byte {
 	w := func(data any) { _ = binary.Write(&buf, binary.LittleEndian, data) }
 
 	buf.WriteString("RIFF")
-	w(uint32(36 + len(pcm)))
+	w(uint32(36 + len(pcm))) //nolint:gosec // G115: PCM length bounded by audio frame size
 	buf.WriteString("WAVE")
 
 	buf.WriteString("fmt ")
 	w(uint32(16))
 	w(uint16(1))
-	w(uint16(channels))
-	w(uint32(sampleRate))
-	w(uint32(sampleRate * channels * 2))
-	w(uint16(channels * 2))
+	w(uint16(channels))                  //nolint:gosec // G115: channels is 1 or 2
+	w(uint32(sampleRate))                //nolint:gosec // G115: sample rate bounded (8000-48000)
+	w(uint32(sampleRate * channels * 2)) //nolint:gosec // G115: byte rate bounded by sample rate and channels
+	w(uint16(channels * 2))              //nolint:gosec // G115: channels is 1 or 2
 	w(uint16(16))
 
 	buf.WriteString("data")
-	w(uint32(len(pcm)))
+	w(uint32(len(pcm))) //nolint:gosec // G115: PCM length bounded by audio frame size
 	buf.Write(pcm)
 
 	return buf.Bytes()
@@ -513,20 +513,20 @@ func resample24to48(audio []byte) []byte {
 	numSamples := len(audio) / 2
 	samples := make([]int16, numSamples)
 	for i := 0; i < numSamples; i++ {
-		samples[i] = int16(binary.LittleEndian.Uint16(audio[i*2:]))
+		samples[i] = int16(binary.LittleEndian.Uint16(audio[i*2:])) //nolint:gosec // G115: PCM audio uses full uint16→int16 range
 	}
 
 	resampled := make([]int16, numSamples*2)
 	for i := 0; i < numSamples-1; i++ {
 		resampled[i*2] = samples[i]
-		resampled[i*2+1] = int16((int32(samples[i]) + int32(samples[i+1])) / 2)
+		resampled[i*2+1] = int16((int32(samples[i]) + int32(samples[i+1])) / 2) //nolint:gosec // G115: average of two int16 fits in int16
 	}
 	resampled[(numSamples-1)*2] = samples[numSamples-1]
 	resampled[(numSamples-1)*2+1] = samples[numSamples-1]
 
 	result := make([]byte, len(resampled)*2)
 	for i, s := range resampled {
-		binary.LittleEndian.PutUint16(result[i*2:], uint16(s))
+		binary.LittleEndian.PutUint16(result[i*2:], uint16(s)) //nolint:gosec // G115: int16→uint16 for binary encoding
 	}
 	return result
 }
