@@ -55,6 +55,25 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 📈 **Usage Analytics** - Token usage tracking, tool call statistics, and cost estimation
 - 🔧 **Tool Visualization** - Real-time tool call display with arguments and results in web UI
 
+## Ways to Connect
+
+OmniAgent supports multiple connection methods for different use cases:
+
+| Method | Protocol | Use Case | Latency |
+|--------|----------|----------|---------|
+| **WhatsApp** | WebSocket | Personal messaging, voice notes | Text: instant, Voice: ~2s |
+| **Telegram/Discord/Slack** | Bot API | Team messaging, notifications | Instant |
+| **OpenAI-Compatible API** | HTTP/SSE | Programmatic access, web apps | Streaming |
+| **Phone Calls** | Twilio/Telnyx | PSTN voice conversations | Traditional: 500ms+, Realtime: ~100ms |
+| **LiveKit (WebRTC)** | WebRTC | Browser/mobile voice, meetings | ~100-300ms |
+
+**Quick links:**
+
+- [WhatsApp Setup](#quick-start) - Scan QR code to connect
+- [OpenAI API](#openai-compatible-api) - Use any OpenAI client library
+- [Voice Gateway](#voice-gateway) - Phone calls via Twilio/Telnyx
+- [LiveKit Agents](#livekit-voice-agents) - WebRTC voice in meetings
+
 ## Installation
 
 ```bash
