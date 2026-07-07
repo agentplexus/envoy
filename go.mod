@@ -23,7 +23,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/ogen-go/ogen v1.22.0
 	github.com/plexusone/agentauth v0.2.0
-	github.com/plexusone/omni-livekit v0.1.0
+	github.com/plexusone/omni-livekit v0.2.0
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.17.0
