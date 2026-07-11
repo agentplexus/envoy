@@ -7,6 +7,35 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.14.0",
+      "date": "2026-07-11",
+      "commit": "edfc942",
+      "highlights": [
+        { "description": "Multi-agent panel discussions with 2-4 AI panelists" },
+        { "description": "Unified avatar configuration with Tavus lip-sync support" },
+        { "description": "bitHuman avatar provider via omni-livekit v0.3.0" }
+      ],
+      "added": [
+        { "description": "`livekit-agent-panel` command for multi-agent panel discussions", "commit": "e13ca60" },
+        { "description": "Panel coordinator with round-robin turn-taking", "commit": "e13ca60" },
+        { "description": "Configurable panelist personalities and voices", "commit": "e13ca60" },
+        { "description": "Shared transcript for contextual panelist responses", "commit": "e13ca60" },
+        { "description": "Unified avatar configuration via `AVATAR_PROVIDER` env var", "commit": "2339860" },
+        { "description": "Tavus lip-sync avatar support in livekit-agent", "commit": "2339860" },
+        { "description": "Legacy `AGENT_AVATAR` compatibility for static avatars", "commit": "2339860" }
+      ],
+      "documentation": [
+        { "description": "Avatar configuration guide with static and Tavus modes", "commit": "d50371a" },
+        { "description": "Panel agent documentation in README", "commit": "d50371a" },
+        { "description": "Environment variables for Tavus configuration", "commit": "d50371a" }
+      ],
+      "dependencies": [
+        { "description": "`github.com/plexusone/omni-livekit` v0.2.0 → v0.3.0 (bitHuman provider)", "commit": "edfc942" },
+        { "description": "`github.com/go-chi/chi/v5` v5.3.0 → v5.3.1", "commit": "22fac24" },
+        { "description": "`golang.org/x/net` v0.56.0 → v0.57.0", "commit": "25d1b06" }
+      ]
+    },
+    {
       "version": "v0.13.0",
       "date": "2026-07-05",
       "highlights": [
