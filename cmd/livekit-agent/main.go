@@ -37,6 +37,7 @@ import (
 	"time"
 
 	livekitagent "github.com/plexusone/omni-livekit/agent"
+	"github.com/plexusone/omni-livekit/avatar"
 	"github.com/plexusone/omni-livekit/room"
 	omniagent "github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omnimeet-core/participant"
@@ -46,6 +47,9 @@ import (
 
 	// Import all omnivoice providers
 	_ "github.com/plexusone/omnivoice/providers/all"
+
+	// Register avatar providers
+	_ "github.com/plexusone/omni-livekit/avatar/tavus"
 )
 
 func main() {
@@ -65,9 +69,16 @@ func main() {
 	llmModel := getEnvOrDefault("LLM_MODEL", "claude-sonnet-4-20250514")
 
 	// Avatar configuration
-	// AGENT_AVATAR: "true" or "1" to enable avatar (uses default OmniAgent icon)
-	// AGENT_AVATAR: path to .h264 file for custom pre-encoded avatar
-	avatarConfig := os.Getenv("AGENT_AVATAR")
+	// AVATAR_PROVIDER: "static", "tavus", or "" (none/audio-only)
+	// For static: AGENT_AVATAR="true" or path to .h264 file
+	// For tavus: TAVUS_API_KEY, TAVUS_PAL_ID (optional), TAVUS_FACE_ID (optional)
+	avatarProvider := getEnvOrDefault("AVATAR_PROVIDER", "")
+	avatarConfig := os.Getenv("AGENT_AVATAR") // Legacy support for static avatars
+
+	// Legacy: if AGENT_AVATAR is set but AVATAR_PROVIDER is not, treat as static
+	if avatarConfig != "" && avatarProvider == "" {
+		avatarProvider = avatar.ProviderStatic
+	}
 
 	// Resolve API keys
 	sttAPIKey := resolveAPIKey(sttProviderName)
@@ -218,16 +229,55 @@ Examples of when to search:
 		},
 	}
 
-	// Enable avatar if configured
-	if avatarConfig != "" {
-		agentOpts.MediaMode = livekitagent.AudioWithImage
-		// If it's a path to a file, use it as custom avatar
-		if avatarConfig != "true" && avatarConfig != "1" {
-			agentOpts.Image.H264Path = avatarConfig
-			fmt.Printf("Using custom avatar: %s\n", avatarConfig)
-		} else {
-			fmt.Println("Using default OmniAgent avatar")
+	// Set up avatar using unified configuration
+	avatarSetupCfg := avatar.SetupConfig{
+		Provider:         avatarProvider,
+		LiveKitURL:       serverURL,
+		LiveKitAPIKey:    apiKey,
+		LiveKitAPISecret: apiSecret,
+	}
+
+	// Configure static avatar
+	if avatarProvider == avatar.ProviderStatic {
+		if avatarConfig == "true" || avatarConfig == "1" {
+			avatarSetupCfg.StaticImage.UseDefault = true
+		} else if avatarConfig != "" {
+			avatarSetupCfg.StaticImage.H264Path = avatarConfig
 		}
+	}
+
+	// Configure Tavus avatar
+	if avatarProvider == avatar.ProviderTavus {
+		avatarSetupCfg.Tavus = avatar.TavusConfig{
+			APIKey: os.Getenv("TAVUS_API_KEY"),
+			PalID:  os.Getenv("TAVUS_PAL_ID"),
+			FaceID: os.Getenv("TAVUS_FACE_ID"),
+		}
+	}
+
+	// Set up avatar
+	avatarResult, err := avatar.Setup(avatarSetupCfg)
+	if err != nil {
+		log.Fatalf("Failed to set up avatar: %v", err)
+	}
+
+	// Apply avatar configuration to agent options
+	switch avatarResult.Mode {
+	case avatar.SetupModeStatic:
+		agentOpts.MediaMode = livekitagent.AudioWithImage
+		if avatarResult.StaticImage != nil {
+			if avatarResult.StaticImage.H264Path != "" {
+				agentOpts.Image.H264Path = avatarResult.StaticImage.H264Path
+				fmt.Printf("Using custom avatar: %s\n", avatarResult.StaticImage.H264Path)
+			} else {
+				fmt.Println("Using default OmniAgent avatar")
+			}
+		}
+	case avatar.SetupModeLive:
+		// Live avatars don't use agent's image mode - avatar joins as separate participant
+		fmt.Printf("Using live %s avatar\n", avatarProvider)
+	default:
+		fmt.Println("Audio-only mode (no avatar)")
 	}
 
 	// Create LiveKit agent
@@ -264,6 +314,35 @@ Examples of when to search:
 	}
 	va.audioWriter = audioWriter
 
+	// Start live avatar session if configured
+	if avatarResult.Mode == avatar.SetupModeLive && avatarResult.Session != nil {
+		fmt.Println("Starting live avatar session...")
+		err := avatarResult.Session.Start(ctx, avatar.StartOptions{
+			Room:             lkAgent.Room(),
+			AgentIdentity:    agentOpts.Identity,
+			LiveKitURL:       serverURL,
+			LiveKitAPIKey:    apiKey,
+			LiveKitAPISecret: apiSecret,
+		})
+		if err != nil {
+			log.Fatalf("Failed to start avatar session: %v", err)
+		}
+		defer func() {
+			if err := avatarResult.Session.Close(context.Background()); err != nil {
+				log.Printf("Error closing avatar session: %v", err)
+			}
+		}()
+
+		// Wait for avatar to join
+		if err := avatarResult.Session.WaitForJoin(ctx, 30*time.Second); err != nil {
+			log.Fatalf("Avatar failed to join: %v", err)
+		}
+		fmt.Printf("Avatar joined as %s\n", avatarResult.Session.AvatarIdentity())
+
+		// Use avatar's audio output for TTS (lip-sync)
+		va.avatarAudioOut = avatarResult.Session.AudioOutput()
+	}
+
 	// Subscribe to audio from participants
 	audioCh, err := lkAgent.SubscribeToAllAudio(ctx)
 	if err != nil {
@@ -292,14 +371,15 @@ Examples of when to search:
 
 // VoiceAgent handles the voice processing pipeline with OmniAgent
 type VoiceAgent struct {
-	sttProvider stt.Provider
-	ttsProvider tts.Provider
-	omniAgent   *omniagent.Agent
-	audioWriter livekitagent.AudioWriter
-	sessionID   string
-	speaking    bool
-	speakingMu  sync.Mutex
-	sampleRate  int
+	sttProvider    stt.Provider
+	ttsProvider    tts.Provider
+	omniAgent      *omniagent.Agent
+	audioWriter    livekitagent.AudioWriter
+	avatarAudioOut avatar.AudioDestination // For live avatar lip-sync
+	sessionID      string
+	speaking       bool
+	speakingMu     sync.Mutex
+	sampleRate     int
 }
 
 // processAudio handles incoming audio from participants
@@ -402,7 +482,7 @@ func (va *VoiceAgent) transcribe(ctx context.Context, audio []byte) (string, err
 	return result.Text, nil
 }
 
-// speak converts text to speech and sends to LiveKit
+// speak converts text to speech and sends to LiveKit (or live avatar)
 func (va *VoiceAgent) speak(ctx context.Context, _ *livekitagent.Agent, text string) error {
 	va.speakingMu.Lock()
 	va.speaking = true
@@ -422,12 +502,48 @@ func (va *VoiceAgent) speak(ctx context.Context, _ *livekitagent.Agent, text str
 		return fmt.Errorf("TTS synthesis: %w", err)
 	}
 
-	audioData := result.Audio
-	if result.SampleRate == 24000 {
+	// If we have a live avatar, send audio to it for lip-sync
+	if va.avatarAudioOut != nil {
+		return va.speakToAvatar(ctx, result.Audio)
+	}
+
+	// Otherwise, send directly to LiveKit audio track
+	return va.speakToLiveKit(result.Audio, result.SampleRate)
+}
+
+// speakToAvatar sends audio to a live avatar for lip-sync
+func (va *VoiceAgent) speakToAvatar(ctx context.Context, audio []byte) error {
+	// Avatar expects 24kHz mono PCM16, which is what TTS produces
+	// Send in 20ms frames (960 bytes at 24kHz mono)
+	frameSize := 960
+	for i := 0; i < len(audio); i += frameSize {
+		end := i + frameSize
+		if end > len(audio) {
+			end = len(audio)
+		}
+		frame := audio[i:end]
+
+		if err := va.avatarAudioOut.CaptureFrame(ctx, frame); err != nil {
+			return fmt.Errorf("avatar capture frame: %w", err)
+		}
+	}
+
+	// Signal end of utterance
+	if err := va.avatarAudioOut.Flush(ctx); err != nil {
+		return fmt.Errorf("avatar flush: %w", err)
+	}
+
+	return nil
+}
+
+// speakToLiveKit sends audio directly to LiveKit audio track
+func (va *VoiceAgent) speakToLiveKit(audio []byte, sampleRate int) error {
+	audioData := audio
+	if sampleRate == 24000 {
 		audioData = resample24to48(audioData)
 	}
 
-	// Write to LiveKit in 20ms frames
+	// Write to LiveKit in 20ms frames (1920 bytes at 48kHz mono)
 	frameSize := 1920
 	for i := 0; i < len(audioData); i += frameSize {
 		end := i + frameSize
