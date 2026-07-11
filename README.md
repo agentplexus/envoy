@@ -640,6 +640,11 @@ See [Access Policies Guide](docs/guides/policies.md) for details.
 | `LIVEKIT_API_SECRET` | LiveKit API secret |
 | `REALTIME_PROVIDER` | Realtime voice provider: `openai`, `gemini`, `deepgram` |
 | `REALTIME_VOICE` | Voice for realtime API (provider-specific) |
+| `AVATAR_PROVIDER` | Avatar mode: `""` (none), `static`, `tavus` |
+| `AVATAR_IMAGE_PATH` | Static avatar image path (for `static` mode) |
+| `TAVUS_API_KEY` | Tavus API key (for `tavus` mode) |
+| `TAVUS_PAL_ID` | Tavus PAL ID (optional, uses default if not set) |
+| `TAVUS_FACE_ID` | Tavus Face ID override (optional) |
 
 ## Vault-Backed Credentials
 
@@ -841,22 +846,48 @@ export DEEPGRAM_API_KEY="your-deepgram-key"
 # export TTS_PROVIDER="openai"
 # export TTS_API_KEY="your-openai-key"
 
-# Optional: Enable avatar (displays image in video tile)
-export AGENT_AVATAR="true"
-
 # Run the generic voice agent
 go run ./cmd/livekit-agent
 
 # Or run the meeting facilitator (with Meeting PM role)
 go run ./cmd/livekit-agent-facilitator
+
+# Or run multi-agent panel discussions
+go run ./cmd/livekit-agent-panel
 ```
 
 | Command | Description |
 |---------|-------------|
 | `cmd/livekit-agent` | Generic voice agent with web search |
 | `cmd/livekit-agent-facilitator` | Meeting facilitator with Meeting PM role, supports realtime mode |
+| `cmd/livekit-agent-panel` | Multi-agent panel discussions with 2-4 AI panelists |
 
-These agents use [omni-livekit](https://github.com/plexusone/omni-livekit) for LiveKit transport. The avatar is displayed at 640x360 (16:9) for optimal display in LiveKit video slots.
+#### Avatar Configuration
+
+Agents can display visual avatars in video tiles. Three modes are supported:
+
+| Mode | `AVATAR_PROVIDER` | Description |
+|------|-------------------|-------------|
+| None | `""` (empty) | Audio-only, no video tile |
+| Static | `static` | Display static image (640x360) |
+| Live | `tavus` | Real-time lip-sync via Tavus |
+
+```bash
+# Static image avatar
+export AVATAR_PROVIDER="static"
+export AVATAR_IMAGE_PATH="./avatar.png"  # Optional, has default
+
+# Tavus live avatar (lip-sync video)
+export AVATAR_PROVIDER="tavus"
+export TAVUS_API_KEY="your-tavus-key"
+export TAVUS_PAL_ID="your-pal-id"  # Optional, uses default
+
+# Legacy: AGENT_AVATAR=true maps to AVATAR_PROVIDER=static
+```
+
+See [omni-livekit avatar documentation](https://github.com/plexusone/omni-livekit/blob/main/docs/guides/tavus-avatars.md) for detailed setup instructions.
+
+These agents use [omni-livekit](https://github.com/plexusone/omni-livekit) for LiveKit transport.
 
 ## Architecture
 
