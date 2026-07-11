@@ -9,6 +9,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 💬 **Multi-Channel Support** - Telegram, Discord, Slack, WhatsApp, and more
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, OpenRouter)
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
+- 📹 **LiveKit Voice Agents** - Real-time voice AI with avatar support and multi-agent panels
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 🧠 **Semantic Memory** - Store and retrieve information with vector search via omniretrieve
 - 📋 **Workboard** - Project management with cards, columns, and dependencies
@@ -86,6 +87,7 @@ A QR code will appear in your terminal. Scan it with WhatsApp to connect.
 | [omniretrieve](https://github.com/plexusone/omniretrieve) | Vector search, BM25, semantic memory |
 | [omniworkboard](https://github.com/plexusone/omniworkboard) | Project management workboard |
 | [omnivoice](https://github.com/plexusone/omnivoice) | Voice STT/TTS interfaces |
+| [omni-livekit](https://github.com/plexusone/omni-livekit) | LiveKit voice agents with avatars |
 | [omniimage](https://github.com/plexusone/omniimage) | Image generation (OpenAI, Fal AI) |
 | [omniobserve](https://github.com/plexusone/omniobserve) | LLM observability |
 | [omnistorage-core](https://github.com/plexusone/omnistorage-core) | Key-value and object storage |
