@@ -670,8 +670,8 @@ github.com/plexusone/omni-deepgram v0.7.0 h1:5CAdKlT5nBMVCSYt259B24sR2zcsM2Q8qtU
 github.com/plexusone/omni-deepgram v0.7.0/go.mod h1:T/1ADMGTnA+Fert63+KgE3wxaQvoUOyqz1TeVqgYqbQ=
 github.com/plexusone/omni-google v0.7.0 h1:RIYB80bHdW5z26+ncvNzHzhVADT4UyPKqeCYa7pAiJk=
 github.com/plexusone/omni-google v0.7.0/go.mod h1:gsA32NcWqjQ4caUI71+TjkXwo1HZPkGti3T0g40ILk0=
-github.com/plexusone/omni-livekit v0.1.0 h1:8Qi1h+kK4QHnIDddicoMWgB28JGwPODlH8MmKdAWn+g=
-github.com/plexusone/omni-livekit v0.1.0/go.mod h1:tGvPMozfxzlH8uk3aiPPE8Fd6CA2Jgt/sfy7gRHxm8k=
+github.com/plexusone/omni-livekit v0.2.0 h1:gkdNV9fJRjJxH7+BokBH6RdeVVqzxWzCrbRuzRfYgvU=
+github.com/plexusone/omni-livekit v0.2.0/go.mod h1:L921e0MKamja0HpyWpaJpzSZp026xGjlm2awg1EPg78=
 github.com/plexusone/omni-onepassword v0.4.0 h1:KKo3iod6BDITDUG/OTou30erE8nHpGccnHk78E8KLR0=
 github.com/plexusone/omni-onepassword v0.4.0/go.mod h1:QhVIdFZJJPO5Togp2Hp5AjpOxHi4mA9ti5U4mn0w2eM=
 github.com/plexusone/omni-openai v0.5.0 h1:Np+k0cgMMnp7P9x9V9SvNr/ZKsb+Y7bp99CMam0tG50=
