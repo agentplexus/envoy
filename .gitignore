@@ -11,4 +11,6 @@ debug.test
 main
 main.zip
 /omniagent
-/site//livekit-agent-facilitator
+/livekit-agent
+/livekit-agent-facilitator
+/livekit-agent-panel
