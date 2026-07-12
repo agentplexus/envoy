@@ -82,8 +82,8 @@ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/OpenRouterTeam/go-sdk v0.5.16 h1:e5pARKCM9iQ5VNWL49V4I8PvXve8VscA/ln901jLjfM=
-github.com/OpenRouterTeam/go-sdk v0.5.16/go.mod h1:8ZRHxPEBG2Lu7BXRGbcoTdhRQnXGFZ+y0jKVpCAQR8c=
+github.com/OpenRouterTeam/go-sdk v0.5.17 h1:UCVyMhlQscgSLvadz9qeDhe54ToI5MZevAy+yOzibS0=
+github.com/OpenRouterTeam/go-sdk v0.5.17/go.mod h1:8ZRHxPEBG2Lu7BXRGbcoTdhRQnXGFZ+y0jKVpCAQR8c=
 github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
 github.com/agnivade/levenshtein v1.2.1/go.mod h1:QVVI16kDrtSuwcpd0p1+xMC6Z/VfhtCyDIjcwga4/DU=
 github.com/aistandardsio/agent-protocols v0.6.1 h1:bJuoqXHcKgPjuBY3wF6GlddeYUoKetxgUfCRTC1VHzo=
@@ -223,8 +223,8 @@ github.com/dvonthenen/websocket v1.5.1-dyv.2 h1:OXlWJJkeHt8k4+MEI0Y8SQjY2ihHYD2z
 github.com/dvonthenen/websocket v1.5.1-dyv.2/go.mod h1:q2GbopbpFJvBP4iqVvqwwahVmvu2HnCfdqCWDoQVKMM=
 github.com/dylibso/observe-sdk/go v0.0.0-20240828172851-9145d8ad07e1 h1:idfl8M8rPW93NehFw5H1qqH8yG158t5POr+LX9avbJY=
 github.com/dylibso/observe-sdk/go v0.0.0-20240828172851-9145d8ad07e1/go.mod h1:C8DzXehI4zAbrdlbtOByKX6pfivJTBiV9Jjqv56Yd9Q=
-github.com/elliotchance/orderedmap/v3 v3.1.0 h1:j4DJ5ObEmMBt/lcwIecKcoRxIQUEnw0L804lXYDt/pg=
-github.com/elliotchance/orderedmap/v3 v3.1.0/go.mod h1:G+Hc2RwaZvJMcS4JpGCOyViCnGeKf0bTYCGTO4uhjSo=
+github.com/elliotchance/orderedmap/v3 v3.1.1 h1:eV7lfZ5fVL8d36b8Wogqi/eqm7R/kZcftA9Yiyj+63M=
+github.com/elliotchance/orderedmap/v3 v3.1.1/go.mod h1:G+Hc2RwaZvJMcS4JpGCOyViCnGeKf0bTYCGTO4uhjSo=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
@@ -257,8 +257,8 @@ github.com/gammazero/deque v1.2.1 h1:9fnQVFCCZ9/NOc7ccTNqzoKd1tCWOqeI05/lPqFPMGQ
 github.com/gammazero/deque v1.2.1/go.mod h1:5nSFkzVm+afG9+gy0VIowlqVAW4N8zNcMne+CMQVD2g=
 github.com/gen2brain/x264-go v0.4.0 h1:lYZBwF/EyuqTHh97VZPGsCMWnVebDDmCrqmMLAUuq/w=
 github.com/gen2brain/x264-go v0.4.0/go.mod h1:G1o5Y+S77DZ2EFsy6mcsygsMgtOPC5/DkD13Ki1jW3c=
-github.com/getkin/kin-openapi v0.141.0 h1:+iHRJ+BxtwBx82AkMoes6WDeicK8xxT9zyEkQdIHeYs=
-github.com/getkin/kin-openapi v0.141.0/go.mod h1:3BH9M9XDe/y9M5DSvEocVYAYq1w0qrhJHjC/vZi0AaY=
+github.com/getkin/kin-openapi v0.142.0 h1:izj0vBdFprMhitfzaX8sTqztsEQyvwhssBoB6n8NO7w=
+github.com/getkin/kin-openapi v0.142.0/go.mod h1:3BH9M9XDe/y9M5DSvEocVYAYq1w0qrhJHjC/vZi0AaY=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-chi/chi/v5 v5.3.1 h1:3j4HZLGZQ3JpMCrPJF/Jl3mYJfWLKBfNJ6quurUGCf8=
@@ -425,8 +425,8 @@ github.com/grokify/goauth v0.23.30 h1:hQU5wLwnQcTz5Q2AAsqD9+ubdKJ8hvk2oXMuRErUU0
 github.com/grokify/goauth v0.23.30/go.mod h1:CCPrQOi1aE9FElsZiORlIFIW99/CUEh46iwRnm7+hpE=
 github.com/grokify/mogo v0.74.6 h1:isdwQOfayT1E9w4il4btc2on6KY72VZnjRaRAka2iXY=
 github.com/grokify/mogo v0.74.6/go.mod h1:MUheNHoi0hatrQbS60W61CMOkcu/yYRbOQBkNnJCUQY=
-github.com/grokify/oscompat v0.4.0 h1:1orYWC7QG8vAdlDqCFULZf9eIovwc35UFzVoxGNFRSY=
-github.com/grokify/oscompat v0.4.0/go.mod h1:Ekex/WzHaA39LNt5xbeQRASo74NEXAIqBlqdvNF2oUM=
+github.com/grokify/oscompat v0.5.0 h1:qGUym1Jt+yecBmBM7FnimvuUWLs8VVRCxotpHTzaWH0=
+github.com/grokify/oscompat v0.5.0/go.mod h1:Ekex/WzHaA39LNt5xbeQRASo74NEXAIqBlqdvNF2oUM=
 github.com/grokify/sogo v0.15.0 h1:RS4DPxNhZQLmz/qcLa5t1Mr+SjGwSZPJgpefp9BJInE=
 github.com/grokify/sogo v0.15.0/go.mod h1:BZjNVHThtkfC80J2kcPWCytQzu5XKtHTxCRffpZaWb8=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
@@ -531,8 +531,8 @@ github.com/livekit/protocol v1.49.0 h1:Q5nthDO1v7c0JHiWjMhgUQTlsKmCsBL/KCKxdHVaz
 github.com/livekit/protocol v1.49.0/go.mod h1:jO+y05AU9Ec4JswDyuzKCZ4bhziOS0CzMqgnbj60Dzs=
 github.com/livekit/psrpc v0.7.2 h1:6oZ+NODJ2pLyaT6VqDq1F4Qc/3TpDUSpyphj/P9MhQc=
 github.com/livekit/psrpc v0.7.2/go.mod h1:rAI+m2+/cb4x9RXhLRtUx5ZwdfjjXOl4zi46IjEetaw=
-github.com/livekit/server-sdk-go/v2 v2.17.0 h1:FzVQMoxHv0WIg164yGqSxLeV+h3aJomjAv1lFeR9MMw=
-github.com/livekit/server-sdk-go/v2 v2.17.0/go.mod h1:5nzTfVBH2Jz+TW1SrfpqC7wrbcD1lT94KZCJ9hOMyvk=
+github.com/livekit/server-sdk-go/v2 v2.18.0 h1:2Um9PB4EzY7Oilas6vlW+J3lOdNk9aPcKHIOV5euKnY=
+github.com/livekit/server-sdk-go/v2 v2.18.0/go.mod h1:+bs7OOMFfMNP/Iop4MWpV1pX7xpFxYdLxLlTF8jOxdw=
 github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275 h1:IZycmTpoUtQK3PD60UYBwjaCUHUP7cML494ao9/O8+Q=
 github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275/go.mod h1:zt6UU74K6Z6oMOYJbJzYpYucqdcQwSMPBEdSvGiaUMw=
 github.com/magefile/mage v1.17.2 h1:fyXVu1eadI8Ap1HCCNgEhJ5McIWiYhLR8uol64ZZc40=
@@ -670,8 +670,8 @@ github.com/plexusone/omni-deepgram v0.7.0 h1:5CAdKlT5nBMVCSYt259B24sR2zcsM2Q8qtU
 github.com/plexusone/omni-deepgram v0.7.0/go.mod h1:T/1ADMGTnA+Fert63+KgE3wxaQvoUOyqz1TeVqgYqbQ=
 github.com/plexusone/omni-google v0.7.0 h1:RIYB80bHdW5z26+ncvNzHzhVADT4UyPKqeCYa7pAiJk=
 github.com/plexusone/omni-google v0.7.0/go.mod h1:gsA32NcWqjQ4caUI71+TjkXwo1HZPkGti3T0g40ILk0=
-github.com/plexusone/omni-livekit v0.3.0 h1:WamJMUUHF5u/fzaO958T5c/VxOJBZvXHuOxArDTKjgs=
-github.com/plexusone/omni-livekit v0.3.0/go.mod h1:fKVHRaPLKmDEZbD3enqvc4y5mMfhfLIAiVQ5rnMy5nY=
+github.com/plexusone/omni-livekit v0.4.0 h1:GC9eoeHW5MDSfbpfcU2OEWMz5SuFfUkTGOGEDdaG9YU=
+github.com/plexusone/omni-livekit v0.4.0/go.mod h1:xkHLWGNGKlCgUy+/InY1EMhquYTbN+SHvIA18OMjVeo=
 github.com/plexusone/omni-onepassword v0.4.0 h1:KKo3iod6BDITDUG/OTou30erE8nHpGccnHk78E8KLR0=
 github.com/plexusone/omni-onepassword v0.4.0/go.mod h1:QhVIdFZJJPO5Togp2Hp5AjpOxHi4mA9ti5U4mn0w2eM=
 github.com/plexusone/omni-openai v0.5.0 h1:Np+k0cgMMnp7P9x9V9SvNr/ZKsb+Y7bp99CMam0tG50=
@@ -682,6 +682,10 @@ github.com/plexusone/omni-telnyx v0.4.0 h1:Qa/8GB0MAk7ryA742Rb+fgsbc/SsG/GZs6Arg
 github.com/plexusone/omni-telnyx v0.4.0/go.mod h1:DvXKIErUst6r0CYmHQKMh+si8YKdlh0n7x1467x3dLo=
 github.com/plexusone/omni-twilio v0.9.0 h1:Bumm1HVnN7EYpPgRTKz9h16SUjAZam59XIHD+yayTs8=
 github.com/plexusone/omni-twilio v0.9.0/go.mod h1:CI1n6fwjgaBl3i1Dcx4x9lTgIxdEBVwwb18kC4weo3k=
+github.com/plexusone/omniavatar v0.1.0 h1:sZfQmty4cmgfZRC6fYewlHlMJxdSMC2vIio670/mlaw=
+github.com/plexusone/omniavatar v0.1.0/go.mod h1:yHYcTO9m+XPspGWKSMsiMfgvnjd8ST41F9RJy+N0QsE=
+github.com/plexusone/omniavatar-core v0.1.0 h1:Bx1HIN1pKRvzkbflJMmsXmwqcGRIjOecdx1CuFuxaIE=
+github.com/plexusone/omniavatar-core v0.1.0/go.mod h1:vp9MofUv8Z0LP8lBk1NsGPlO1XxcZkoJSTkH3wHoh6k=
 github.com/plexusone/omnichat v0.8.0 h1:PZofl+lWVMtOUurzULxwcHrl6fjvEMwvsvd5a+tCQMM=
 github.com/plexusone/omnichat v0.8.0/go.mod h1:bHZN8Yqbb7wTbnHNe/0zVmvlxLEw1tGUsjlbRWzAHyo=
 github.com/plexusone/omniimage v0.1.0 h1:d0+GBVbE6EtuL/uhIVsPe49hAH8tkmL1vHNYt+KIGv8=

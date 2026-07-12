@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/bdpiprava/scalar-go v0.13.0
 	github.com/danielgtaylor/huma/v2 v2.38.0
-	github.com/getkin/kin-openapi v0.141.0
+	github.com/getkin/kin-openapi v0.142.0
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.2.0
@@ -23,7 +23,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/ogen-go/ogen v1.23.0
 	github.com/plexusone/agentauth v0.2.0
-	github.com/plexusone/omni-livekit v0.3.0
+	github.com/plexusone/omni-livekit v0.4.0
 	github.com/plexusone/omnichat v0.8.0
 	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.17.0
@@ -64,7 +64,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/1password/onepassword-sdk-go v0.4.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/OpenRouterTeam/go-sdk v0.5.16 // indirect
+	github.com/OpenRouterTeam/go-sdk v0.5.17 // indirect
 	github.com/aistandardsio/agent-protocols v0.6.1 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.57.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
@@ -106,7 +106,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvonthenen/websocket v1.5.1-dyv.2 // indirect
 	github.com/dylibso/observe-sdk/go v0.0.0-20240828172851-9145d8ad07e1 // indirect
-	github.com/elliotchance/orderedmap/v3 v3.1.0 // indirect
+	github.com/elliotchance/orderedmap/v3 v3.1.1 // indirect
 	github.com/extism/go-sdk v1.7.1 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
@@ -132,7 +132,7 @@ require (
 	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/grokify/goauth v0.23.30 // indirect
-	github.com/grokify/oscompat v0.4.0 // indirect
+	github.com/grokify/oscompat v0.5.0 // indirect
 	github.com/grokify/sogo v0.15.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
@@ -152,7 +152,7 @@ require (
 	github.com/livekit/mediatransportutil v0.0.0-20260608063931-a3417d38cda0 // indirect
 	github.com/livekit/protocol v1.49.0 // indirect
 	github.com/livekit/psrpc v0.7.2 // indirect
-	github.com/livekit/server-sdk-go/v2 v2.17.0 // indirect
+	github.com/livekit/server-sdk-go/v2 v2.18.0 // indirect
 	github.com/magefile/mage v1.17.2 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
@@ -198,6 +198,8 @@ require (
 	github.com/plexusone/omni-openrouter v0.2.0 // indirect
 	github.com/plexusone/omni-telnyx v0.4.0 // indirect
 	github.com/plexusone/omni-twilio v0.9.0 // indirect
+	github.com/plexusone/omniavatar v0.1.0 // indirect
+	github.com/plexusone/omniavatar-core v0.1.0 // indirect
 	github.com/plexusone/tavus-go v0.2.0 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
