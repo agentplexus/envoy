@@ -14,6 +14,7 @@ type ModeratorConfig struct {
 	Name        string       // Display name (e.g., "Sam")
 	Personality string       // Personality description
 	Voice       string       // TTS voice ID
+	AvatarID    string       // HeyGen avatar ID (optional)
 	TTSProvider tts.Provider // TTS provider for speech synthesis
 	LLMClient   LLMClient    // LLM client for question generation
 	Questions   []string     // Pre-defined questions (optional)
@@ -25,6 +26,7 @@ type Moderator struct {
 	Name        string
 	Personality string
 	Voice       string
+	AvatarID    string
 	ttsProvider tts.Provider
 	llmClient   LLMClient
 	questions   []string
@@ -44,6 +46,7 @@ func NewModerator(cfg ModeratorConfig) *Moderator {
 		Name:        cfg.Name,
 		Personality: cfg.Personality,
 		Voice:       cfg.Voice,
+		AvatarID:    cfg.AvatarID,
 		ttsProvider: cfg.TTSProvider,
 		llmClient:   cfg.LLMClient,
 		questions:   cfg.Questions,
@@ -74,6 +77,9 @@ func (m *Moderator) GetAudioWriter() livekitagent.AudioWriter { return m.audioWr
 
 // GetName returns the moderator's name.
 func (m *Moderator) GetName() string { return m.Name }
+
+// GetAgent returns the LiveKit agent.
+func (m *Moderator) GetAgent() *livekitagent.Agent { return m.agent }
 
 // GenerateIntroduction generates the opening statement for the panel.
 func (m *Moderator) GenerateIntroduction(ctx context.Context, topic string, panelistNames []string) (string, error) {

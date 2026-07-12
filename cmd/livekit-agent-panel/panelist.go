@@ -14,6 +14,7 @@ type PanelistConfig struct {
 	Name        string       // Display name (e.g., "Alex")
 	Personality string       // Personality description
 	Voice       string       // TTS voice ID
+	AvatarID    string       // HeyGen avatar ID (optional)
 	TTSProvider tts.Provider // TTS provider for speech synthesis
 	LLMClient   LLMClient    // LLM client for response generation
 }
@@ -23,6 +24,7 @@ type Panelist struct {
 	Name        string
 	Personality string
 	Voice       string
+	AvatarID    string
 	ttsProvider tts.Provider
 	llmClient   LLMClient
 	audioWriter livekitagent.AudioWriter
@@ -35,6 +37,7 @@ func NewPanelist(cfg PanelistConfig) *Panelist {
 		Name:        cfg.Name,
 		Personality: cfg.Personality,
 		Voice:       cfg.Voice,
+		AvatarID:    cfg.AvatarID,
 		ttsProvider: cfg.TTSProvider,
 		llmClient:   cfg.LLMClient,
 	}
@@ -63,6 +66,9 @@ func (p *Panelist) GetAudioWriter() livekitagent.AudioWriter { return p.audioWri
 
 // GetName returns the panelist's name.
 func (p *Panelist) GetName() string { return p.Name }
+
+// GetAgent returns the LiveKit agent.
+func (p *Panelist) GetAgent() *livekitagent.Agent { return p.agent }
 
 // GenerateResponse generates a response based on the transcript and topic.
 func (p *Panelist) GenerateResponse(ctx context.Context, transcript *Transcript, question string) (string, error) {
