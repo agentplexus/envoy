@@ -34,6 +34,14 @@
 //	export PANELIST_1_VOICE="nova"
 //	export PANELIST_1_PERSONALITY="A physician specializing in AI diagnostics"
 //
+//	# HeyGen Avatar Configuration (optional)
+//	export HEYGEN_API_KEY="your-key"
+//	export HEYGEN_SANDBOX=false           # Set to "true" for sandbox mode
+//	export HEYGEN_VIDEO_QUALITY="high"    # "high", "medium", or "low"
+//	export MODERATOR_AVATAR_ID="avatar-id"
+//	export PANELIST_1_AVATAR_ID="avatar-id"
+//	export PANELIST_2_AVATAR_ID="avatar-id"
+//
 //	go run -tags opus ./cmd/livekit-agent-panel
 package main
 
@@ -313,6 +321,7 @@ func runAutoMode(
 		Name:        getEnvOrDefault("MODERATOR_NAME", modDefaults.Name),
 		Personality: getEnvOrDefault("MODERATOR_PERSONALITY", modDefaults.Personality),
 		Voice:       getEnvOrDefault("MODERATOR_VOICE", modDefaults.Voice),
+		AvatarID:    os.Getenv("MODERATOR_AVATAR_ID"),
 		TTSProvider: ttsProv,
 		LLMClient:   llmClient,
 		Questions:   questions,
@@ -385,6 +394,23 @@ func createPanelistAgent(ctx context.Context, serverURL, apiKey, apiSecret, room
 		},
 	}
 
+	// Configure HeyGen avatar if avatar ID is provided
+	if panelist.AvatarID != "" {
+		heygenKey := os.Getenv("HEYGEN_API_KEY")
+		if heygenKey == "" {
+			log.Fatalf("HEYGEN_API_KEY required for panelist %s avatar", panelist.Name)
+		}
+		agentOpts.Avatar = &livekitagent.AvatarConfig{
+			Provider: "heygen",
+			HeyGen: &livekitagent.HeyGenAvatarConfig{
+				APIKey:       heygenKey,
+				AvatarID:     panelist.AvatarID,
+				Sandbox:      os.Getenv("HEYGEN_SANDBOX") == "true",
+				VideoQuality: getEnvOrDefault("HEYGEN_VIDEO_QUALITY", "high"),
+			},
+		}
+	}
+
 	ag, err := livekitagent.New(agentOpts)
 	if err != nil {
 		log.Fatalf("Failed to create agent for %s: %v", panelist.Name, err)
@@ -393,7 +419,12 @@ func createPanelistAgent(ctx context.Context, serverURL, apiKey, apiSecret, room
 	if err := ag.Join(ctx, roomName); err != nil {
 		log.Fatalf("Failed to join room for %s: %v", panelist.Name, err)
 	}
-	fmt.Printf("  [+] %s joined\n", panelist.Name)
+
+	if panelist.AvatarID != "" {
+		fmt.Printf("  [+] %s joined (avatar: %s)\n", panelist.Name, panelist.AvatarID)
+	} else {
+		fmt.Printf("  [+] %s joined\n", panelist.Name)
+	}
 
 	audioWriter, err := ag.StartAudio(ctx)
 	if err != nil {
@@ -421,6 +452,23 @@ func createModeratorAgent(ctx context.Context, serverURL, apiKey, apiSecret, roo
 		},
 	}
 
+	// Configure HeyGen avatar if avatar ID is provided
+	if moderator.AvatarID != "" {
+		heygenKey := os.Getenv("HEYGEN_API_KEY")
+		if heygenKey == "" {
+			log.Fatal("HEYGEN_API_KEY required for moderator avatar")
+		}
+		agentOpts.Avatar = &livekitagent.AvatarConfig{
+			Provider: "heygen",
+			HeyGen: &livekitagent.HeyGenAvatarConfig{
+				APIKey:       heygenKey,
+				AvatarID:     moderator.AvatarID,
+				Sandbox:      os.Getenv("HEYGEN_SANDBOX") == "true",
+				VideoQuality: getEnvOrDefault("HEYGEN_VIDEO_QUALITY", "high"),
+			},
+		}
+	}
+
 	ag, err := livekitagent.New(agentOpts)
 	if err != nil {
 		log.Fatalf("Failed to create moderator agent: %v", err)
@@ -429,7 +477,12 @@ func createModeratorAgent(ctx context.Context, serverURL, apiKey, apiSecret, roo
 	if err := ag.Join(ctx, roomName); err != nil {
 		log.Fatalf("Failed to join room for moderator: %v", err)
 	}
-	fmt.Printf("  [+] %s (moderator) joined\n", moderator.Name)
+
+	if moderator.AvatarID != "" {
+		fmt.Printf("  [+] %s (moderator) joined (avatar: %s)\n", moderator.Name, moderator.AvatarID)
+	} else {
+		fmt.Printf("  [+] %s (moderator) joined\n", moderator.Name)
+	}
 
 	audioWriter, err := ag.StartAudio(ctx)
 	if err != nil {
@@ -578,6 +631,7 @@ func createPanelists(count int, ttsProv tts.Provider, llmClient LLMClient) []*Pa
 		name := os.Getenv(fmt.Sprintf("PANELIST_%d_NAME", idx))
 		voice := os.Getenv(fmt.Sprintf("PANELIST_%d_VOICE", idx))
 		personality := os.Getenv(fmt.Sprintf("PANELIST_%d_PERSONALITY", idx))
+		avatarID := os.Getenv(fmt.Sprintf("PANELIST_%d_AVATAR_ID", idx))
 
 		if i < len(defaults) {
 			if name == "" {
@@ -605,6 +659,7 @@ func createPanelists(count int, ttsProv tts.Provider, llmClient LLMClient) []*Pa
 			Name:        name,
 			Personality: personality,
 			Voice:       voice,
+			AvatarID:    avatarID,
 			TTSProvider: ttsProv,
 			LLMClient:   llmClient,
 		}))
