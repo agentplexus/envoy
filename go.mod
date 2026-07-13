@@ -17,11 +17,14 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/grokify/echartify v0.2.1
 	github.com/grokify/mogo v0.74.6
+	github.com/livekit/protocol v1.49.0
+	github.com/livekit/server-sdk-go/v2 v2.18.0
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.0
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/ogen-go/ogen v1.23.0
+	github.com/pion/webrtc/v4 v4.2.16
 	github.com/plexusone/agentauth v0.2.0
 	github.com/plexusone/omni-livekit v0.4.0
 	github.com/plexusone/omnichat v0.8.0
@@ -150,9 +153,7 @@ require (
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
 	github.com/livekit/media-sdk v0.0.0-20260623124604-40d3338a7426 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20260608063931-a3417d38cda0 // indirect
-	github.com/livekit/protocol v1.49.0 // indirect
 	github.com/livekit/psrpc v0.7.2 // indirect
-	github.com/livekit/server-sdk-go/v2 v2.18.0 // indirect
 	github.com/magefile/mage v1.17.2 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
@@ -184,7 +185,6 @@ require (
 	github.com/pion/stun/v3 v3.1.6 // indirect
 	github.com/pion/transport/v4 v4.0.2 // indirect
 	github.com/pion/turn/v5 v5.0.12 // indirect
-	github.com/pion/webrtc/v4 v4.2.16 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/plexusone/elevenlabs-go v0.13.0 // indirect
 	github.com/plexusone/ogen-tools v0.3.0 // indirect

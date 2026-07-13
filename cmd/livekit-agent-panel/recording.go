@@ -85,7 +85,7 @@ func (m *RecordingManager) Start(ctx context.Context) error {
 		},
 	}
 
-	log.Printf("[Recording] Starting room composite egress for %s...", m.roomName)
+	log.Printf("[Recording] Starting room composite egress for %s...", m.roomName) //nolint:gosec // G706: roomName is not user input
 
 	info, err := m.egress.StartRoomCompositeEgress(ctx, req)
 	if err != nil {
@@ -95,7 +95,7 @@ func (m *RecordingManager) Start(ctx context.Context) error {
 	m.egressID = info.EgressId
 	m.startedAt = time.Now()
 
-	log.Printf("[Recording] Started egress %s", m.egressID)
+	log.Printf("[Recording] Started egress %s", m.egressID) //nolint:gosec // G706: egressID is not user input
 	return nil
 }
 
@@ -108,7 +108,7 @@ func (m *RecordingManager) Stop(ctx context.Context) error {
 		return nil // Not recording
 	}
 
-	log.Printf("[Recording] Stopping egress %s...", m.egressID)
+	log.Printf("[Recording] Stopping egress %s...", m.egressID) //nolint:gosec // G706: egressID is not user input
 
 	_, err := m.egress.StopEgress(ctx, &livekit.StopEgressRequest{
 		EgressId: m.egressID,
@@ -118,7 +118,7 @@ func (m *RecordingManager) Stop(ctx context.Context) error {
 	}
 
 	duration := time.Since(m.startedAt)
-	log.Printf("[Recording] Stopped. Duration: %s", duration.Round(time.Second))
+	log.Printf("[Recording] Stopped. Duration: %s", duration.Round(time.Second)) //nolint:gosec // G706: duration is internal
 
 	m.egressID = ""
 	return nil

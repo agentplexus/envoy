@@ -62,6 +62,7 @@ import (
 
 	livekitagent "github.com/plexusone/omni-livekit/agent"
 	"github.com/plexusone/omni-livekit/room"
+	"github.com/plexusone/omniagent/cmd/livekit-agent-panel/panel"
 	"github.com/plexusone/omnimeet-core/participant"
 	"github.com/plexusone/omnivoice"
 	"github.com/plexusone/omnivoice-core/stt"
@@ -368,10 +369,36 @@ func runAutoMode(
 	// Give agents time to stabilize
 	time.Sleep(time.Second)
 
+	// Start recording if enabled
+	var recorder *RecordingManager
+	if os.Getenv("PANEL_RECORD") == "true" {
+		recordingSettings := &panel.RecordingSettings{
+			Enabled:  true,
+			Format:   getEnvOrDefault("PANEL_RECORD_FORMAT", "mp4"),
+			Layout:   getEnvOrDefault("PANEL_RECORD_LAYOUT", "speaker"),
+			FilePath: os.Getenv("PANEL_RECORD_PATH"),
+			S3Bucket: os.Getenv("PANEL_RECORD_S3_BUCKET"),
+			S3Region: os.Getenv("PANEL_RECORD_S3_REGION"),
+		}
+		recorder = NewRecordingManager(serverURL, apiKey, apiSecret, roomName, recordingSettings)
+		if err := recorder.Start(ctx); err != nil {
+			log.Printf("Warning: Could not start recording: %v", err)
+		} else {
+			fmt.Printf("Recording:  ENABLED (egress: %s)\n", recorder.EgressID())
+		}
+	}
+
 	// Run the automated panel discussion
 	if err := coordinator.RunAutoPanel(ctx, moderator); err != nil {
 		if ctx.Err() == nil {
 			log.Printf("Error running auto panel: %v", err)
+		}
+	}
+
+	// Stop recording
+	if recorder != nil && recorder.IsRecording() {
+		if err := recorder.Stop(context.Background()); err != nil {
+			log.Printf("Warning: Could not stop recording: %v", err)
 		}
 	}
 
