@@ -1,0 +1,113 @@
+{
+  "version": "1.0",
+  "topic": "How Far Can Companies Go with Autonomous Software Delivery? The State of Level 5, 6, and 7 in July 2026",
+  "duration_minutes": 45,
+
+  "moderator": {
+    "name": "Maya",
+    "personality": "Sharp, well-prepared moderator who synthesizes complex technical debates into actionable insights. Ensures controversial claims are challenged and evidence is cited.",
+    "voice": "shimmer",
+    "avatar_id": "Wayne_20240711",
+    "background": "Editor-in-chief of a leading software engineering publication. Has covered DevOps, platform engineering, and AI-assisted development for 12 years. Authored 'The Human Element in Automated Systems'."
+  },
+
+  "panelists": [
+    {
+      "name": "Darius",
+      "personality": "Bold advocate for full autonomy. Believes human code review is already obsolete and companies clinging to it are leaving productivity on the table. Cites metrics relentlessly.",
+      "voice": "onyx",
+      "avatar_id": "Wade_public_2_20240228",
+      "background": "VP of Engineering at a security infrastructure company operating at ASDM Level 6. Their software factory has achieved 0% human-written code and 0% human code review. Previously built autonomous trading systems at a hedge fund.",
+      "expertise": ["level-6", "software-factory", "scenario-validation", "digital-twins", "economics"]
+    },
+    {
+      "name": "Priya",
+      "personality": "Pragmatic optimist grounded in operational reality. Excited about Level 5 but cautious about Level 6. Values proven patterns over theoretical possibilities. Shares real deployment stories.",
+      "voice": "nova",
+      "avatar_id": "Kristin_public_2_20240108",
+      "background": "Principal Engineer at a major cloud provider. Led a team of 9 senior engineers building a new inference engine using agentic engineering. Reported 10x commit velocity with 80-90% of change cycles running without human attention.",
+      "expertise": ["level-5", "agentic-engineering", "cloud-infrastructure", "team-dynamics", "async-development"]
+    },
+    {
+      "name": "Marcus",
+      "personality": "Measured analyst who examines claims with empiricism. Questions economic assumptions and sustainability. Connects individual case studies to industry-wide adoption curves.",
+      "voice": "echo",
+      "avatar_id": "Eric_public_pro2_20230608",
+      "background": "Research Director at a technology analyst firm. Published the 2026 State of AI-Assisted Development report surveying 2,000 engineering organizations. Former software architect at a Fortune 50 financial institution.",
+      "expertise": ["industry-analysis", "adoption-curves", "enterprise-constraints", "roi-analysis", "regulated-industries"]
+    },
+    {
+      "name": "Lena",
+      "personality": "Thoughtful skeptic focused on second-order effects. Asks what happens when the entire industry adopts these practices. Concerned about skill atrophy, moat erosion, and invisible technical debt.",
+      "voice": "alloy",
+      "avatar_id": "Anna_public_3_20240108",
+      "background": "Professor of Software Engineering at a leading technical university. Researches human factors in automated systems. Advises regulators on AI governance in critical infrastructure. Co-authored 'When Machines Write Code: Accountability in Autonomous Software'.",
+      "expertise": ["human-factors", "technical-debt", "skill-atrophy", "governance", "long-term-risks"]
+    }
+  ],
+
+  "segments": [
+    {
+      "type": "moderator_intro",
+      "duration_seconds": 45,
+      "prompt": "Set the stage by explaining the ASDM maturity model briefly: Level 5 (Agentic Engineering) where humans batch-review AI work, Level 6 (Autonomous Coding & Review) where humans don't write or review code, and Level 7 (Autonomous Operations) where production deployments are policy-governed. Note that as of July 2026, we have proven Level 5 examples and controversial Level 6 claims. Ask what the realistic frontier is today."
+    },
+    {
+      "type": "panelist_backgrounds",
+      "style": "detailed",
+      "duration_seconds": 180,
+      "prompt": "Each panelist should introduce themselves with their specific experience at different ASDM levels. Darius should mention his Level 6 software factory. Priya should mention the 10x velocity results. Marcus should cite his survey findings. Lena should mention her research on long-term effects."
+    },
+    {
+      "type": "discussion_round",
+      "question": "Let's establish the baseline: What does Level 5 'Agentic Engineering' actually look like in practice today? Priya, your team reported 80-90% of change cycles running without human attention. What does that mean concretely?",
+      "response_order": "fixed",
+      "fixed_order": ["Priya", "Marcus", "Darius", "Lena"]
+    },
+    {
+      "type": "discussion_round",
+      "question": "Darius, your company claims to operate at Level 6 with zero human code review. Critics say this is either impossible or reckless. How do you achieve confidence without humans reading the code?",
+      "response_order": "fixed",
+      "fixed_order": ["Darius", "Lena", "Priya", "Marcus"]
+    },
+    {
+      "type": "discussion_round",
+      "question": "The economics are striking: Level 6 reportedly costs $1,000 or more per engineer per day in tokens alone—potentially $240,000 per year. Marcus, does your research suggest this is sustainable or even accurate?",
+      "response_order": "fixed",
+      "fixed_order": ["Marcus", "Darius", "Priya", "Lena"]
+    },
+    {
+      "type": "discussion_round",
+      "question": "Let's talk about prerequisites. Both the AWS team and the music streaming company's automation system emphasized years of infrastructure investment before agentic workflows became viable. Is Level 5 or 6 even possible without that foundation?",
+      "response_order": "relevance"
+    },
+    {
+      "type": "discussion_round",
+      "question": "Lena, you've written about 'invisible technical debt' accumulating when humans stop reading code. What evidence do we have that autonomous coding doesn't just accelerate entropy?",
+      "response_order": "fixed",
+      "fixed_order": ["Lena", "Darius", "Priya", "Marcus"]
+    },
+    {
+      "type": "discussion_round",
+      "question": "What about Level 7—Autonomous Operations? Is anyone actually doing autonomous deployment, rollback, and remediation without human gates? Or is that still theoretical?",
+      "response_order": "relevance"
+    },
+    {
+      "type": "discussion_round",
+      "question": "Final question: If an engineering leader came to each of you asking 'Should we push for Level 6?' what would you tell them? What's the honest recommendation for most organizations in July 2026?",
+      "response_order": "rotation"
+    },
+    {
+      "type": "closing",
+      "duration_seconds": 60,
+      "prompt": "Summarize the key tensions: proven Level 5 success vs controversial Level 6 claims, economic sustainability questions, infrastructure prerequisites, and the open question of Level 7. Note where the panel agreed and disagreed."
+    }
+  ],
+
+  "settings": {
+    "speaker_pause_ms": 2000,
+    "max_response_words": 180,
+    "record_audio": true,
+    "output_file": "asdm-panel-output.json"
+  }
+}
