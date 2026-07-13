@@ -72,6 +72,30 @@ type PanelistSchedule struct {
 
 	// Expertise lists areas of expertise for relevance-based ordering.
 	Expertise []string `json:"expertise,omitempty"`
+
+	// Slides contains slides this panelist can share (optional).
+	Slides []Slide `json:"slides,omitempty"`
+}
+
+// Slide represents a visual asset a panelist can share.
+type Slide struct {
+	// ID is a unique identifier for the slide.
+	ID string `json:"id"`
+
+	// Title is the slide title (for reference).
+	Title string `json:"title"`
+
+	// ImagePath is the local path to the slide image.
+	ImagePath string `json:"image_path,omitempty"`
+
+	// ImageURL is a URL to fetch the slide image.
+	ImageURL string `json:"image_url,omitempty"`
+
+	// Keywords trigger automatic slide sharing when mentioned.
+	Keywords []string `json:"keywords,omitempty"`
+
+	// ShowDuring specifies segment types when this slide can be shown.
+	ShowDuring []SegmentType `json:"show_during,omitempty"`
 }
 
 // SegmentType identifies the type of discussion segment.
@@ -161,14 +185,32 @@ type ScheduleSettings struct {
 	// MaxResponseWords limits panelist response length.
 	MaxResponseWords int `json:"max_response_words,omitempty"`
 
-	// RecordAudio enables audio recording.
-	RecordAudio bool `json:"record_audio,omitempty"`
-
-	// RecordVideo enables video recording.
-	RecordVideo bool `json:"record_video,omitempty"`
-
 	// OutputFile specifies where to write the output JSON.
 	OutputFile string `json:"output_file,omitempty"`
+
+	// Recording configures video recording.
+	Recording *RecordingSettings `json:"recording,omitempty"`
+}
+
+// RecordingSettings configures panel recording.
+type RecordingSettings struct {
+	// Enabled turns recording on/off.
+	Enabled bool `json:"enabled"`
+
+	// Format is the output format ("mp4" or "webm").
+	Format string `json:"format,omitempty"`
+
+	// Layout is the recording layout ("grid", "speaker", "single-speaker").
+	Layout string `json:"layout,omitempty"`
+
+	// FilePath is the local file path for the recording.
+	FilePath string `json:"file_path,omitempty"`
+
+	// S3Bucket is the S3 bucket for upload (optional).
+	S3Bucket string `json:"s3_bucket,omitempty"`
+
+	// S3Region is the S3 region.
+	S3Region string `json:"s3_region,omitempty"`
 }
 
 // LoadSchedule reads a schedule from a JSON file.
