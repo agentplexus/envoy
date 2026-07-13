@@ -7,6 +7,38 @@
   "maintainers": ["plexusone", "johncwang@gmail.com"],
   "releases": [
     {
+      "version": "v0.15.0",
+      "date": "2026-07-13",
+      "highlights": [
+        { "description": "HeyGen avatar integration for panel agents with lip-sync support" },
+        { "description": "JSON IR for panel scheduling and output capture" },
+        { "description": "Slide sharing with keyword-triggered automatic display" },
+        { "description": "Recording manager with LiveKit Egress and S3 upload" }
+      ],
+      "added": [
+        { "description": "HeyGen avatar configuration for panel moderator and panelists", "commit": "30c9e1e" },
+        { "description": "Avatar audio routing at 24kHz for lip-sync synchronization", "commit": "7c90021" },
+        { "description": "`GetAgent()` method on Panelist and Moderator for avatar detection", "commit": "140c102" },
+        { "description": "`Schedule` type for JSON-based panel definition with segments", "commit": "6bedef1" },
+        { "description": "`LoadSchedule()` for reading panel schedules from JSON files", "commit": "6bedef1" },
+        { "description": "Segment types: moderator_intro, panelist_backgrounds, discussion_round, open_discussion, closing", "commit": "6bedef1" },
+        { "description": "Response ordering options: relevance, rotation, random, fixed", "commit": "6bedef1" },
+        { "description": "`Output` type for structured panel transcripts with statistics", "commit": "c3ba48d" },
+        { "description": "`OutputMetadata`, `OutputSegment`, `OutputEntry` types for panel output", "commit": "c3ba48d" },
+        { "description": "`SlideManager` for dynamic slide sharing during panels", "commit": "74cd2d8" },
+        { "description": "Slide configuration with keywords for automatic display triggers", "commit": "0d180e1" },
+        { "description": "`RecordingManager` for LiveKit Egress-based panel recording", "commit": "1a7f999" },
+        { "description": "Recording integration in auto mode with S3 upload support", "commit": "9db97d4" }
+      ],
+      "documentation": [
+        { "description": "ASDM state-of-the-art panel schedule (Level 5-7 autonomous delivery)", "commit": "e86a494" },
+        { "description": "AI agents panel example schedule with HeyGen avatars", "commit": "75ab768" }
+      ],
+      "dependencies": [
+        { "description": "Updated Go module dependencies", "commit": "2fada9e" }
+      ]
+    },
+    {
       "version": "v0.14.0",
       "date": "2026-07-11",
       "commit": "edfc942",
