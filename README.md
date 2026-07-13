@@ -860,17 +860,18 @@ go run ./cmd/livekit-agent-panel
 |---------|-------------|
 | `cmd/livekit-agent` | Generic voice agent with web search |
 | `cmd/livekit-agent-facilitator` | Meeting facilitator with Meeting PM role, supports realtime mode |
-| `cmd/livekit-agent-panel` | Multi-agent panel discussions with 2-4 AI panelists |
+| `cmd/livekit-agent-panel` | Multi-agent panel discussions with HeyGen avatars, JSON scheduling, slides, and recording |
 
 #### Avatar Configuration
 
-Agents can display visual avatars in video tiles. Three modes are supported:
+Agents can display visual avatars in video tiles. Multiple providers are supported:
 
 | Mode | `AVATAR_PROVIDER` | Description |
 |------|-------------------|-------------|
 | None | `""` (empty) | Audio-only, no video tile |
 | Static | `static` | Display static image (640x360) |
-| Live | `tavus` | Real-time lip-sync via Tavus |
+| Tavus | `tavus` | Real-time lip-sync via Tavus |
+| HeyGen | `heygen` | Real-time lip-sync via HeyGen (panel agents) |
 
 ```bash
 # Static image avatar
@@ -882,10 +883,16 @@ export AVATAR_PROVIDER="tavus"
 export TAVUS_API_KEY="your-tavus-key"
 export TAVUS_PAL_ID="your-pal-id"  # Optional, uses default
 
+# HeyGen avatars (panel agents)
+export HEYGEN_API_KEY="your-api-key"
+export HEYGEN_SANDBOX=true  # Use sandbox for testing
+export MODERATOR_AVATAR_ID="avatar-id-1"
+export PANELIST_1_AVATAR_ID="avatar-id-2"
+
 # Legacy: AGENT_AVATAR=true maps to AVATAR_PROVIDER=static
 ```
 
-See [omni-livekit avatar documentation](https://github.com/plexusone/omni-livekit/blob/main/docs/guides/tavus-avatars.md) for detailed setup instructions.
+See [omni-livekit avatar documentation](https://github.com/plexusone/omni-livekit/blob/main/docs/guides/tavus-avatars.md) and [Panel Discussions Guide](docs/guides/panel-discussions.md) for detailed setup instructions.
 
 These agents use [omni-livekit](https://github.com/plexusone/omni-livekit) for LiveKit transport.
 

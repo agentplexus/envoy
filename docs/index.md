@@ -10,6 +10,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, OpenRouter)
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
 - 📹 **LiveKit Voice Agents** - Real-time voice AI with avatar support and multi-agent panels
+- 👥 **Panel Discussions** - Multi-agent AI panels with HeyGen avatars, JSON scheduling, slides, and recording
 - 🧩 **Skills System** - Markdown skills (OpenClaw compatible) and compiled Go skills
 - 🧠 **Semantic Memory** - Store and retrieve information with vector search via omniretrieve
 - 📋 **Workboard** - Project management with cards, columns, and dependencies
