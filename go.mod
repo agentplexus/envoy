@@ -17,7 +17,7 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/grokify/echartify v0.2.1
 	github.com/grokify/mogo v0.74.6
-	github.com/livekit/protocol v1.49.0
+	github.com/livekit/protocol v1.50.0
 	github.com/livekit/server-sdk-go/v2 v2.18.0
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/moby/moby/api v1.55.0
