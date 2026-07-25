@@ -33,7 +33,7 @@ require (
 	github.com/plexusone/omnillm-core v0.18.0
 	github.com/plexusone/omnimeet-core v0.1.0
 	github.com/plexusone/omnimemory v0.1.0
-	github.com/plexusone/omniobserve v0.11.0
+	github.com/plexusone/omniobserve v0.12.0
 	github.com/plexusone/omnirole-facilitator v0.1.0
 	github.com/plexusone/omniserp v0.9.0
 	github.com/plexusone/omniskill v0.10.0
@@ -67,7 +67,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/1password/onepassword-sdk-go v0.4.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/OpenRouterTeam/go-sdk v0.5.19 // indirect
+	github.com/OpenRouterTeam/go-sdk v0.5.20 // indirect
 	github.com/aistandardsio/agent-protocols v0.6.1 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.58.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
@@ -96,6 +96,7 @@ require (
 	github.com/bitwarden/sdk-go/v2 v2.1.0 // indirect
 	github.com/buger/jsonparser v1.2.0 // indirect
 	github.com/bwmarrin/discordgo v0.29.0 // indirect
+	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.15 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
@@ -137,6 +138,7 @@ require (
 	github.com/grokify/goauth v0.23.30 // indirect
 	github.com/grokify/oscompat v0.5.0 // indirect
 	github.com/grokify/sogo v0.15.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/hokaccha/go-prettyjson v0.0.0-20211117102719-0474bc63780f // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/ianlancetaylor/demangle v0.0.0-20260505044615-1ff4bf46051f // indirect
@@ -194,7 +196,7 @@ require (
 	github.com/plexusone/omni-deepgram v0.7.0 // indirect
 	github.com/plexusone/omni-google v0.7.0 // indirect
 	github.com/plexusone/omni-onepassword v0.4.0 // indirect
-	github.com/plexusone/omni-openai v0.5.0 // indirect
+	github.com/plexusone/omni-openai v0.6.0 // indirect
 	github.com/plexusone/omni-openrouter v0.2.0 // indirect
 	github.com/plexusone/omni-telnyx v0.4.0 // indirect
 	github.com/plexusone/omni-twilio v0.9.0 // indirect
@@ -204,6 +206,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.0 // indirect
+	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/puzpuzpuz/xsync/v4 v4.5.0 // indirect
 	github.com/redis/go-redis/v9 v9.21.0 // indirect
@@ -237,7 +240,23 @@ require (
 	go.mau.fi/util v0.9.12-0.20260717235539-f9ffa7eca58d // indirect
 	go.mau.fi/whatsmeow v0.0.0-20260718134955-fac667d55293 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/contrib/bridges/otelslog v0.19.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.20.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.20.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.66.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdoutlog v0.20.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.44.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.44.0 // indirect
+	go.opentelemetry.io/otel/log v0.20.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
+	go.opentelemetry.io/otel/sdk/log v0.20.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
