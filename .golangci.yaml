@@ -23,6 +23,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - linters:
+          - unparam
+        path: _test\.go
   settings:
     staticcheck:
       checks:

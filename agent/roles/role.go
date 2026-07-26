@@ -31,6 +31,7 @@ package roles
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/plexusone/omniagent/skills/compiled"
@@ -53,6 +54,7 @@ type Manager struct {
 	metricsStore     MetricsStore
 	metricsCollector *MetricsCollector
 	delegator        *Delegator
+	executor         *DelegationExecutor
 }
 
 // NewManager creates a new role manager with the given role and skills.
@@ -245,6 +247,59 @@ func (m *Manager) IsAutonomousDelegation(taskType string) bool {
 		return false
 	}
 	return m.delegator.IsAutonomous(taskType)
+}
+
+// SetExecutor sets the delegation executor for running sub-agents.
+func (m *Manager) SetExecutor(executor *DelegationExecutor) {
+	m.executor = executor
+}
+
+// Executor returns the delegation executor, or nil if not configured.
+func (m *Manager) Executor() *DelegationExecutor {
+	return m.executor
+}
+
+// ExecuteDelegation executes a delegation request using the configured executor.
+// Returns an error if no executor is configured.
+func (m *Manager) ExecuteDelegation(ctx context.Context, req *DelegationRequest) error {
+	if m.executor == nil {
+		return errors.New("delegation executor not configured")
+	}
+	return m.executor.Execute(ctx, req)
+}
+
+// ExecuteDelegationSync executes a delegation request synchronously.
+// Blocks until the task completes or times out.
+func (m *Manager) ExecuteDelegationSync(ctx context.Context, req *DelegationRequest) (*role.DelegationResult, error) {
+	if m.executor == nil {
+		return nil, errors.New("delegation executor not configured")
+	}
+	return m.executor.ExecuteSync(ctx, req)
+}
+
+// DelegateAndExecute is a convenience method that creates and executes a delegation.
+// Combines Delegate() and ExecuteDelegation() into a single call.
+func (m *Manager) DelegateAndExecute(ctx context.Context, taskType, taskID string, input map[string]any) (*DelegationRequest, error) {
+	req, err := m.Delegate(ctx, taskType, taskID, input)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := m.ExecuteDelegation(ctx, req); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// DelegateAndWait is a convenience method that delegates, executes, and waits for completion.
+func (m *Manager) DelegateAndWait(ctx context.Context, taskType, taskID string, input map[string]any) (*role.DelegationResult, error) {
+	req, err := m.Delegate(ctx, taskType, taskID, input)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.ExecuteDelegationSync(ctx, req)
 }
 
 // OptionalSkills returns the optional skills for the role, if defined.
