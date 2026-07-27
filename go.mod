@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/bdpiprava/scalar-go v0.13.0
 	github.com/danielgtaylor/huma/v2 v2.39.0
-	github.com/getkin/kin-openapi v0.144.0
+	github.com/getkin/kin-openapi v0.145.0
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-faster/errors v0.8.0
 	github.com/go-faster/jx v1.2.0
