@@ -22,7 +22,7 @@ require (
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.0
-	github.com/modelcontextprotocol/go-sdk v1.6.1
+	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/ogen-go/ogen v1.23.0
 	github.com/pion/webrtc/v4 v4.2.17
 	github.com/plexusone/agentauth v0.2.0
