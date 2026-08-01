@@ -174,3 +174,60 @@ func TestStatusFromError(t *testing.T) {
 		t.Error("non-nil error should return 'error'")
 	}
 }
+
+func TestObservability_EndTraceNil(t *testing.T) {
+	obs, err := NewObservability(ObservabilityConfig{})
+	if err != nil {
+		t.Fatalf("NewObservability failed: %v", err)
+	}
+
+	// Should not panic with nil TraceContext
+	obs.EndTrace(nil, nil)
+}
+
+func TestObservability_RecordMessageWithError(t *testing.T) {
+	obs, err := NewObservability(ObservabilityConfig{})
+	if err != nil {
+		t.Fatalf("NewObservability failed: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// Record different message types
+	obs.RecordMessage(ctx, "client-1", MessageTypePing, nil)
+	obs.RecordMessage(ctx, "client-1", MessageTypePong, nil)
+	obs.RecordMessage(ctx, "client-1", MessageTypeEvent, errors.New("event error"))
+	obs.RecordMessage(ctx, "client-1", MessageTypeResponse, nil)
+}
+
+func TestObservability_RecordToolInvocationVariants(t *testing.T) {
+	obs, err := NewObservability(ObservabilityConfig{})
+	if err != nil {
+		t.Fatalf("NewObservability failed: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// Record various durations
+	obs.RecordToolInvocation(ctx, "fast_tool", 10*time.Millisecond, nil)
+	obs.RecordToolInvocation(ctx, "slow_tool", 5*time.Second, nil)
+	obs.RecordToolInvocation(ctx, "failed_tool", 100*time.Millisecond, errors.New("timeout"))
+}
+
+func TestObservability_WithServiceNameAndVersion(t *testing.T) {
+	obs, err := NewObservability(ObservabilityConfig{
+		ServiceName:    "custom-gateway",
+		ServiceVersion: "1.2.3",
+	})
+	if err != nil {
+		t.Fatalf("NewObservability failed: %v", err)
+	}
+
+	if obs.config.ServiceName != "custom-gateway" {
+		t.Errorf("ServiceName = %q, want 'custom-gateway'", obs.config.ServiceName)
+	}
+
+	if obs.config.ServiceVersion != "1.2.3" {
+		t.Errorf("ServiceVersion = %q, want '1.2.3'", obs.config.ServiceVersion)
+	}
+}

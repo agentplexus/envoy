@@ -226,3 +226,92 @@ func TestToolsListHandler_WithTools(t *testing.T) {
 		t.Errorf("Expected 2 tools, got %d", len(resp.Tools))
 	}
 }
+
+// errorMockTool returns an error when executed.
+type errorMockTool struct {
+	name string
+	err  error
+}
+
+func (t *errorMockTool) Name() string        { return t.name }
+func (t *errorMockTool) Description() string { return "A tool that errors" }
+func (t *errorMockTool) Parameters() map[string]interface{} {
+	return map[string]interface{}{
+		"type":       "object",
+		"properties": map[string]interface{}{},
+	}
+}
+func (t *errorMockTool) Execute(_ context.Context, _ json.RawMessage) (string, error) {
+	return "", t.err
+}
+
+func TestToolsRPCHandler_ToolExecutionError(t *testing.T) {
+	registry := agent.NewToolRegistry()
+	registry.Register(&errorMockTool{
+		name: "error_tool",
+		err:  context.DeadlineExceeded,
+	})
+
+	handler := NewToolsRPCHandler(ToolsRPCConfig{
+		ToolRegistry: registry,
+	})
+
+	body := `{"tool": "error_tool", "arguments": {}}`
+	req := httptest.NewRequest(http.MethodPost, "/tools/invoke", bytes.NewReader([]byte(body)))
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	// Tool execution errors return 500
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", w.Code)
+	}
+
+	var resp ToolInvokeResponse
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if resp.Error == "" {
+		t.Error("Expected error in response")
+	}
+}
+
+func TestToolsRPCHandler_WithArguments(t *testing.T) {
+	registry := agent.NewToolRegistry()
+	registry.Register(&mockTool{
+		name:   "test_tool",
+		result: "done",
+	})
+
+	handler := NewToolsRPCHandler(ToolsRPCConfig{
+		ToolRegistry: registry,
+	})
+
+	body := `{"tool": "test_tool", "arguments": {"key": "value", "number": 42}}`
+	req := httptest.NewRequest(http.MethodPost, "/tools/invoke", bytes.NewReader([]byte(body)))
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+}
+
+func TestToolsRPCHandler_RequestTooLarge(t *testing.T) {
+	handler := NewToolsRPCHandler(ToolsRPCConfig{
+		MaxRequestSize: 10, // Very small limit
+	})
+
+	body := `{"tool": "test_tool", "arguments": {"data": "this is way too long for the limit"}}`
+	req := httptest.NewRequest(http.MethodPost, "/tools/invoke", bytes.NewReader([]byte(body)))
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	// Should fail due to size limit
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
+	}
+}
