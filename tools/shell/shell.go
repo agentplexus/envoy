@@ -150,22 +150,23 @@ func (t *Tool) Execute(ctx context.Context, args json.RawMessage) (string, error
 }
 
 // isAllowed checks if a command is in the allowlist.
+// Comparisons are case-insensitive to handle mixed-case tool names.
 func (t *Tool) isAllowed(command string) bool {
 	// Extract the base command (first word)
 	parts := strings.Fields(command)
 	if len(parts) == 0 {
 		return false
 	}
-	baseCmd := parts[0]
+	baseCmd := strings.ToLower(parts[0])
 
 	for _, allowed := range t.allowlist {
+		allowedLower := strings.ToLower(allowed)
 		// Support prefix matching with *
-		if strings.HasSuffix(allowed, "*") {
-			prefix := strings.TrimSuffix(allowed, "*")
+		if prefix, found := strings.CutSuffix(allowedLower, "*"); found {
 			if strings.HasPrefix(baseCmd, prefix) {
 				return true
 			}
-		} else if baseCmd == allowed {
+		} else if baseCmd == allowedLower {
 			return true
 		}
 	}
