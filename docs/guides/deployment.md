@@ -20,10 +20,10 @@ Follow these steps to deploy your OmniAgent application to AWS LightSail.
 
 Before starting, ensure you have:
 
-- [ ] Go 1.24+ installed
+- [ ] Go 1.26+ installed
 - [ ] Docker installed and running
 - [ ] AWS CLI configured
-- [ ] GitHub account (for container registry)
+- [ ] GitHub account with a Personal Access Token (PAT) for GHCR
 
 ### Step 1: Prepare Deployment Files
 
@@ -60,15 +60,44 @@ Pushing to GitHub triggers the build workflow automatically. The image is pushed
 # Start Docker if not running
 open -a Docker  # macOS
 
-# Build
-docker build -t ghcr.io/<owner>/<repo>:latest .
+# Build for linux/amd64 (required for Lightsail)
+docker build --platform linux/amd64 -t ghcr.io/<owner>/<repo>:latest .
 
-# Login to GHCR
+# Login to GHCR (see GHCR Authentication below)
 echo $GITHUB_TOKEN | docker login ghcr.io -u <username> --password-stdin
 
 # Push
 docker push ghcr.io/<owner>/<repo>:latest
 ```
+
+### GHCR Authentication
+
+GitHub Container Registry (GHCR) uses a standard GitHub Personal Access Token (PAT).
+
+**Create a token:**
+
+1. Go to https://github.com/settings/tokens
+2. Click **Generate new token (classic)**
+3. Select scopes: `write:packages`, `read:packages`, `delete:packages`
+4. Copy the token (shown once)
+
+**Login:**
+
+```bash
+# Store token in environment (don't commit)
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Login to GHCR
+echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+**Make the package public (one-time, after first push):**
+
+1. Go to https://github.com/orgs/<org>/packages (or your user packages page)
+2. Find the package and open **Package settings**
+3. Under **Danger Zone**, click **Change visibility** → **Public**
+
+Once public, Lightsail can pull the image without registry credentials, which sidesteps the need for `PrivateRegistryAccess` configuration.
 
 ### Step 4: Install OmniDeploy
 
@@ -248,7 +277,7 @@ agent:
 
 llm:
   provider: anthropic
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-5
 
 gateway:
   enabled: true
@@ -266,7 +295,7 @@ Create a multi-stage Dockerfile for minimal image size:
 
 ```dockerfile
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -306,7 +335,7 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -q --spider http://localhost:8080/health || exit 1
 
-ENV ADDR=":8080" \
+ENV OMNIAGENT_GATEWAY_ADDRESS="0.0.0.0:8080" \
     STORAGE_PATH="/data/omniagent.db"
 
 ENTRYPOINT ["/opt/omniagent/my-agent"]
@@ -366,10 +395,10 @@ resources:
   size: small
 
 environment:
-  ADDR: ":8080"
+  OMNIAGENT_GATEWAY_ADDRESS: "0.0.0.0:8080"
   STORAGE_PATH: "/data/omniagent.db"
-  LLM_PROVIDER: "anthropic"
-  LLM_MODEL: "claude-sonnet-4-20250514"
+  OMNIAGENT_AGENT_PROVIDER: "anthropic"
+  OMNIAGENT_AGENT_MODEL: "claude-sonnet-5"
 
 tags:
   app: my-agent
@@ -525,7 +554,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.26'
 
       - name: Install OmniDeploy
         run: go install github.com/plexusone/omnideploy/cmd/omnideploy@latest

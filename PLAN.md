@@ -1,5 +1,6 @@
 # OmniAgent Extension Plan
 
+> **Last Updated**: 2026-07-30
 > **Current Release**: v0.9.0 - See [`docs/specs/v0.9.0/ROADMAP.md`](docs/specs/v0.9.0/ROADMAP.md)
 > **Historical Plans**: [`docs/releases/v0.6.0/PLAN.md`](docs/releases/v0.6.0/PLAN.md)
 
@@ -11,14 +12,30 @@ This project tracks functionality from [OpenClaw](https://github.com/openclaw/op
 
 | Date | OpenClaw Commit | Commits | Notes |
 |------|-----------------|---------|-------|
+| 2026-07-30 | `3e7ecb3aeaaf3a9dd4fa8c46c31b63c6f2031ccc` | 11,280 | Realtime bounded reads, agent edit fixes, memory compaction |
 | 2026-06-28 | `2001b15f5b92d653464cbd847c28c136bdb465a7` | 4,111 | Security hardening, UTF-16 safety, provider updates |
 | 2026-06-10 | `bd96e4d22dafe64f558fb7f3ba5977aa3a93aee6` | 7,162+ | Feature parity implementation complete |
 | 2026-05-21 | `03125c8e132db59152c1b7b512e2a98f001aa26b` | 17,951 | v0.9.0 sync analysis |
 | 2026-04-22 | `d4eb23652362a1b7d3fbcebd633a1c6f2a43c16f` | - | Initial gap analysis |
 
-### Latest Parity Implementation (2026-06-28)
+### Latest Parity Implementation (2026-07-30)
 
-See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.md) for the detailed implementation plan.
+See [`docs/specs/parity-2026-07-30/PLAN.md`](docs/specs/parity-2026-07-30/PLAN.md) for the detailed implementation plan.
+
+**Focus Areas:**
+
+| Priority | Items |
+|----------|-------|
+| P0 | Realtime bounded reads (SDP, audio frames, playback marks) |
+| P1 | Gateway SSRF prevention, hook prompt injection fencing |
+| P2 | Edit tool line ending fixes, agent fan-out stalls |
+| P3 | Memory compaction note preservation, session rollover |
+| P4 | Cron slot replay fixes, hook timezone handling |
+| P5 | Per-session tool overrides, MCP tool identity exposure |
+
+### Previous Parity Implementation (2026-06-28)
+
+See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.md) for details.
 
 **Completed:**
 
@@ -42,7 +59,7 @@ See [`docs/specs/parity-2026-06-28/PLAN.md`](docs/specs/parity-2026-06-28/PLAN.m
 | P1 | Compaction summaries, memory search modes |
 | P2 | Channel UTF-16 truncation integration |
 | P3 | Plugin auto-approval modes |
-| P4 | Cohere provider, GLM-5.2, Bedrock fixes |
+| P4 | Cohere provider, GLM-5.2, Bedrock streaming fixes |
 | P5 | CLI features (--message-file) |
 
 ### Previous Implementation (2026-06-10)
@@ -122,8 +139,8 @@ See [`docs/specs/v0.9.0/ROADMAP.md`](docs/specs/v0.9.0/ROADMAP.md) for detailed 
 ### CLI & UX
 
 - [ ] **Agent Management** - Multi-agent routing, agent CRUD
-- [ ] **Doctor Tool** - Diagnostics, auto-repair, health checks
-- [ ] **Onboarding** - Interactive setup wizard
+- [x] **Doctor Tool** - Diagnostics, auto-repair, health checks (v0.9.0)
+- [x] **Onboarding** - Interactive setup wizard (v0.9.0)
 - [ ] **TUI** - Terminal user interface
 - [ ] **Daemon Management** - launchd/systemd service management
 

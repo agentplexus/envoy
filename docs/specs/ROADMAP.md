@@ -1,594 +1,105 @@
-# OmniAgent Control UI Roadmap
-
-Feature roadmap for the OmniAgent web-based Control UI, inspired by OpenClaw's dashboard architecture.
-
-## Current Features (Implemented)
-
-- [x] Chat interface with message history
-- [x] Conversation sidebar with localStorage persistence
-- [x] Voice input (Web Speech API)
-- [x] Translation feature
-- [x] Chart rendering (ECharts + ChartIR)
-- [x] Dark theme support
-- [x] Stop button to cancel generation
-- [x] Phone number display for voice calls
-- [x] Model selection dropdown
-
-## v0.12.0 Additions
-
-The following features were added in v0.12.0:
-
-- [x] **Image Generation** - OpenAI-compatible image endpoints via omniimage (DALL-E, FLUX)
-- [x] **GitHub Skill** - Search issues, PRs, and code across repositories
-- [x] **Web Content Skill** - Extract and process content from URLs
-- [x] **Auto-Reply System** - Automatic message responses with configurable triggers
-- [x] **Setup Wizard** - Interactive CLI setup with `omniagent setup`
-- [x] **Doctor Command** - Diagnose configuration and connectivity with `omniagent doctor`
-- [x] **Sessions Command** - Manage conversation sessions via CLI
-
-## Phase 1: Tools & Skills Panel
-
-**Status:** Implemented (Core Features)
-
-Display registered agent tools and their capabilities.
-
-### Features
-
-- [x] Tools sidebar panel (collapsible)
-- [x] List all registered tools with icons
-- [x] Tool descriptions and parameter schemas
-- [x] Tool detail modal with parameter info
-- [x] Tools grouped by category
-- [x] Tool usage statistics (call count, last used)
-- [ ] Tool invocation history in chat
-
-### API Endpoints
-
-- [x] `GET /api/v1/tools` - List available tools
-- [ ] `GET /api/v1/tools/{name}` - Get tool details
-
-### UI Components
-
-- [x] Tools panel toggle button in header (gear icon)
-- [x] Collapsible tools list (right sidebar)
-- [x] Tool detail modal/popover
-- [ ] Tool call indicators in chat messages
-
-### Implementation Files
-
-- `api/openai/handler.go` - Added `ListTools` to `AgentHandler` interface
-- `api/openai/server.go` - Added `/api/v1/tools` endpoint
-- `openai/adapter.go` - Implemented `ListTools` method
-- `api/openai/web/index.html` - Added tools panel UI
-
-## Phase 2: Reasoning & Tool Call Streams
-
-**Status:** Implemented (Thinking Blocks)
-
-Show the agent's thinking process and tool calls during responses.
-
-### Features
-
-- [x] Collapsible "Thinking" sections in assistant messages
-- [x] Real-time thinking block display during streaming
-- [x] Animated "Thinking..." indicator while processing
-- [x] Parse `<thinking>` and `<think>` tags
-- [x] Tool call visualization with expand/collapse
-- [x] Tool arguments display (formatted JSON)
-- [ ] Tool result preview
-- [ ] Execution timeline
-
-### Implementation
-
-- [x] Parse `<thinking>` tags from responses (both streaming and completed)
-- [x] Render thinking blocks with collapsible UI
-- [x] Purple accent color for thinking blocks
-- [x] Detect tool_calls in streaming responses
-- [x] Render tool calls as expandable cards
-- [ ] Show tool results inline or in modal
-
-### UI Features
-
-- Thinking blocks display with brain icon
-- Real-time streaming inside thinking blocks
-- "Thinking..." animates while processing, changes to "Thought" when complete
-- Click to expand/collapse thinking content
-- Proper handling of mixed thinking + regular content
-
-## Phase 3: System Status Bar
-
-**Status:** Implemented
-
-Real-time system status and health monitoring.
-
-### Features
-
-- [x] Connection status indicator (connected/disconnected)
-- [x] Current model info display
-- [x] Token usage counter (current session)
-- [x] Response time metrics
-- [x] Health check polling (every 30s)
-- [x] Gateway version display
-
-### API Endpoints
-
-- [x] `GET /health` - Health check (already exists)
-- [x] `GET /api/v1/status` - Detailed status including version
-
-### UI Components
-
-- [x] Status bar at bottom of input area
-- [x] Green/red connection indicator dot
-- [x] Model name display (synced with model select)
-- [x] Token count with icon
-- [x] Response time display
-
-### Implementation
-
-- Health check polling every 30 seconds
-- Token estimation (~4 chars/token)
-- Response time tracked per message
-- Token count updates on:
-  - Sending messages
-  - Receiving responses
-  - Switching conversations
-  - Creating new conversations
-
-## Phase 4: Settings Panel
-
-**Status:** Implemented
-
-User-configurable agent settings from the UI.
-
-### Features
-
-- [x] Settings modal/drawer
-- [x] Temperature slider (0.0 - 2.0)
-- [x] Max tokens input
-- [x] System prompt editor
-- [x] API key configuration (masked input)
-- [x] Theme toggle (light/dark/system)
-- [x] Voice settings (language selection)
-- [ ] Voice continuous mode toggle
-
-### Persistence
-
-- [x] Store settings in localStorage
-- [ ] Sync to server via API (optional)
-
-### UI Components
-
-- [x] Settings sliders icon in header
-- [x] Modal with grouped sections
-- [x] Form validation
-- [x] Reset to defaults button
-- [x] Apply settings without reload
-
-### Implementation
-
-- Settings stored in `omniagent_settings` localStorage key
-- Default values: temperature=0.7, maxTokens=4096, theme=system
-- Theme applies immediately (light/dark/system with media query)
-- API calls include temperature, maxTokens, and optional apiKey
-- System prompt prepended to messages when set
-
-## Phase 5: Activity Log
-
-**Status:** Implemented
-
-Real-time event stream showing agent activity.
-
-### Features
-
-- [x] Expandable activity log panel (bottom drawer)
-- [x] Event types: chat, tool, error, system
-- [x] Timestamp and duration display
-- [x] Filter by event type
-- [x] Search within logs
-- [x] Export logs (JSON format)
-- [x] Clear log functionality
-
-### Event Types
-
-```
-CHAT    - User messages, assistant responses
-TOOL    - Tool loading events
-ERROR   - Connection failures, request errors
-SYSTEM  - App startup, settings changes, generation stops
-```
-
-### UI Components
-
-- [x] Toggle button in header (clipboard icon)
-- [x] Bottom drawer panel (collapsible)
-- [x] Filter buttons (All/Chat/Tools/System/Errors)
-- [x] Search input with real-time filtering
-- [x] Export and clear buttons
-- [x] Color-coded event types with badges
-
-### Implementation
-
-- Activity events stored in memory (max 500 events)
-- Relative timestamps ("Just now", "5m ago", "2h ago")
-- Duration tracking for response times
-- Events logged for:
-  - User message sent
-  - Assistant response received (with tokens and duration)
-  - Generation stopped
-  - Connection status changes
-  - Tools loaded
-  - Settings saved
-  - App initialization
-
-## Phase 6: Enhanced Session Management
-
-**Status:** Implemented
-
-Advanced conversation/session features.
-
-### Features
-
-- [x] Session metadata display (created, message count, tokens)
-- [x] Export conversation as markdown
-- [x] Export conversation as JSON
-- [x] Session archival (hide without delete)
-- [x] Session duplication (copy full conversation)
-- [x] Session forking (fork from message) - infrastructure ready
-- [x] Session search (across title, tags, and messages)
-- [x] Session tags/labels (add, remove, display)
-- [x] Session title editing
-
-### UI Components
-
-- [x] Session info modal (metadata, tags, export, actions)
-- [x] Search bar in sidebar
-- [x] Toggle archived conversations
-- [x] Tags display in conversation list
-- [x] Fork indicator for forked conversations
-- [x] Message count in conversation list
-
-### Implementation
-
-- Client-side localStorage persistence
-- Search filters title, tags, and message content
-- Archived sessions hidden by default (toggle to show)
-- Tags stored as array in conversation object
-- Export formats: Markdown (readable) and JSON (structured)
-- Duplicate creates full copy with "(Copy)" suffix
-- Fork ready for per-message branching UI
-
-## Phase 7: Cron/Scheduled Jobs
-
-**Status:** Implemented
-
-Schedule automated agent tasks.
-
-### Features
-
-- [x] List scheduled jobs
-- [x] Create/edit/delete jobs
-- [x] Cron expression builder (with presets)
-- [x] Run job manually (trigger)
-- [x] Enable/disable jobs
-- [x] Interval and one-time scheduling
-- [ ] Job execution history (future)
-
-### Action Types
-
-- **send_message** - Send a message to an agent session
-- **call_webhook** - Make HTTP request to a webhook URL
-- **call_tool** - Invoke a registered agent tool
-
-### API Endpoints
-
-- `GET /api/v1/cron/jobs` - List all scheduled jobs
-- `POST /api/v1/cron/jobs` - Create a new job
-- `GET /api/v1/cron/jobs/{id}` - Get job details
-- `PUT /api/v1/cron/jobs/{id}` - Update a job
-- `DELETE /api/v1/cron/jobs/{id}` - Delete a job
-- `POST /api/v1/cron/jobs/{id}/trigger` - Run job immediately
-- `POST /api/v1/cron/jobs/{id}/enable` - Enable a job
-- `POST /api/v1/cron/jobs/{id}/disable` - Disable a job
-
-### UI Components
-
-- [x] Cron toggle button in header (clock icon)
-- [x] Collapsible cron jobs panel (right sidebar)
-- [x] Job cards with status, schedule, actions
-- [x] Create/edit modal with:
-  - Schedule type tabs (Cron/Interval/Once)
-  - Cron expression presets
-  - Action type selector
-  - Dynamic action fields
-- [x] Quick actions (trigger, enable/disable, delete)
-
-### Implementation Files
-
-- `cron/executor.go` - Job action execution handler
-- `cron/tools.go` - Cron skill with AgentAware interface
-- `api/openai/handler.go` - Cron types and AgentHandler interface
-- `api/openai/server.go` - REST API endpoints
-- `openai/adapter.go` - AgentHandler implementation
-- `api/openai/web/index.html` - Web UI cron panel
-
-## Phase 8: Multi-Agent Support
-
-**Status:** Implemented
-
-Support for multiple agent configurations.
-
-### Features
-
-- [x] Agent switcher dropdown (via model selector)
-- [x] Agent configuration editor (create/edit modal)
-- [x] Per-agent tool assignments (allowed_tools, denied_tools)
-- [x] Agent-specific system prompts
-- [x] Agent cloning
-- [x] Agent registry with KVS persistence
-- [x] Multi-agent adapter for request routing
-- [x] REST API for agent management
-
-### API Endpoints
-
-- `GET /api/v1/agents` - List all configured agents
-- `POST /api/v1/agents` - Create a new agent
-- `GET /api/v1/agents/{id}` - Get agent details
-- `PUT /api/v1/agents/{id}` - Update an agent
-- `DELETE /api/v1/agents/{id}` - Delete an agent
-- `POST /api/v1/agents/{id}/clone` - Clone an agent
-
-### Configuration
-
-Agents can be configured via YAML:
-
-```yaml
-# Single agent (backward compatible)
-agent:
-  provider: anthropic
-  model: claude-sonnet-4
-  api_key: ${ANTHROPIC_API_KEY}
-
-# Multiple agents
-agents:
-  - id: default
-    name: General Assistant
-    provider: anthropic
-    model: claude-sonnet-4
-    system_prompt: "You are a helpful assistant."
-
-  - id: coder
-    name: Code Expert
-    provider: anthropic
-    model: claude-sonnet-4
-    system_prompt: "You are an expert programmer..."
-    allowed_tools: [read, write, edit, glob, grep]
-```
-
-### UI Components
-
-- [x] Agents toggle button in header (users icon)
-- [x] Collapsible agents panel (right sidebar)
-- [x] Agent cards with name, model, status
-- [x] Create/Edit modal with form fields
-- [x] Quick actions (switch, edit, clone, delete)
-
-### Implementation Files
-
-- `agent/registry/config.go` - AgentConfig type
-- `agent/registry/store.go` - KVS persistence
-- `agent/registry/registry.go` - Registry management
-- `agent/registry/registry_test.go` - Registry unit tests
-- `config/config.go` - Config enhancements
-- `openai/multi_adapter.go` - Multi-agent routing
-- `openai/multi_adapter_test.go` - Multi-agent adapter tests
-- `openai/cron_handler.go` - Shared cron handler (embedded by adapters)
-- `api/openai/handler.go` - Agent types and interface
-- `api/openai/server.go` - REST API endpoints
-- `api/openai/server_test.go` - API handler tests
-- `cmd/omniagent/commands/openai.go` - CLI integration
-- `cmd/omniagent/commands/gateway.go` - Gateway integration
-- `api/openai/web/index.html` - Web UI agents panel
-
-## Phase 9: Usage Analytics
-
-**Status:** Implemented
-
-Token usage tracking, cost estimation, and visualization.
-
-### Features
-
-- [x] Token usage tracking per request
-- [x] Cost estimation based on model pricing
-- [x] Latency metrics
-- [x] Time-series data aggregation (hourly/daily)
-- [x] Summary statistics (total requests, tokens, cost)
-- [x] Usage breakdown by model
-- [x] ECharts visualizations (tokens, cost, model distribution)
-- [x] Recent requests history table
-
-### API Endpoints
-
-- `GET /api/v1/usage` - Usage summary for time range
-- `GET /api/v1/usage/timeseries` - Time-bucketed usage data
-- `GET /api/v1/usage/records` - Recent usage records
-- `GET /api/v1/usage/chart/tokens` - Token chart (ChartIR format)
-- `GET /api/v1/usage/chart/cost` - Cost chart (ChartIR format)
-- `GET /api/v1/usage/chart/models` - Model distribution chart (ChartIR format)
-
-### Query Parameters
-
-- `since` - Start time (RFC3339 or relative: 1h, 24h, 7d, 30d)
-- `until` - End time (RFC3339, defaults to now)
-- `interval` - Bucket size (minute, hour, day)
-- `limit` - Max records for /records endpoint
-
-### Model Pricing
-
-Default pricing for cost estimation:
-
-| Model | Input $/1M tokens | Output $/1M tokens |
-|-------|-------------------|-------------------|
-| claude-sonnet-4* | 3.00 | 15.00 |
-| claude-opus-4* | 15.00 | 75.00 |
-| claude-haiku-4* | 0.25 | 1.25 |
-| gpt-4o* | 2.50 | 10.00 |
-| gpt-4o-mini* | 0.15 | 0.60 |
-| default | 1.00 | 2.00 |
-
-### UI Components
-
-- [x] Usage toggle button in header (chart icon)
-- [x] Usage analytics modal with:
-  - Time range selector (1h, 24h, 7d, 30d)
-  - Summary cards (requests, tokens, cost, latency)
-  - Token usage stacked bar chart
-  - Cost line chart with area fill
-  - Model distribution pie chart
-  - Model breakdown table
-  - Recent requests table
-
-### Implementation Files
-
-- `api/openai/usage.go` - Usage types, store, and chart generation
-- `api/openai/handler.go` - UsageHandler interface
-- `api/openai/server.go` - Usage API endpoints
-- `api/openai/streaming.go` - Usage tracking in chat handler
-- `api/openai/web/index.html` - Usage analytics UI
-
-### Dependencies
-
-- `github.com/grokify/echartify/chartir` - ECharts IR generation
-
-## Phase 10: Memory/Context Panel
-
-**Status:** Implemented
-
-Semantic memory for storing and retrieving information across conversations.
-
-### Features
-
-- [x] Memory panel (right sidebar)
-- [x] Collection selector
-- [x] Semantic search with query input
-- [x] Memory list with content, key, metadata
-- [x] Add memory modal
-- [x] Delete memory functionality
-- [x] Collection refresh
-
-### API Endpoints
-
-- `GET /api/v1/memories` - List memories in collection
-- `POST /api/v1/memories` - Store new memory
-- `GET /api/v1/memories/search` - Semantic search
-- `DELETE /api/v1/memories/{key}` - Delete memory
-- `GET /api/v1/memories/collections` - List collections
-
-### Query Parameters
-
-- `collection` - Collection name (default: "default")
-- `q` - Search query (for /search endpoint)
-- `limit` - Max results
-
-### UI Components
-
-- [x] Memory toggle button in header (lightbulb icon)
-- [x] Collection dropdown with refresh button
-- [x] Search input with Enter to search
-- [x] Memory cards with content, key, metadata, score
-- [x] Add memory modal with content, key, collection, metadata
-- [x] Delete confirmation
-
-### Integration
-
-The memory panel connects to the omnimemory library which provides:
-
-- Short-term memory (conversation context)
-- Long-term memory (persistent knowledge)
-- Vector embeddings for semantic search
-- Collection-based organization
-- Metadata support
-- KVS persistence
-
-### Implementation Files
-
-- `api/openai/handler.go` - MemoryHandler interface and types
-- `api/openai/server.go` - Memory API endpoints
-- `api/openai/web/index.html` - Memory panel UI
-- `skills/compiled/memory/memory.go` - Memory skill (omnimemory integration)
-
-## Technical Architecture
-
-### API Router Stack (Chi + Huma + ogen)
-
-The API server uses a hybrid architecture combining three routing technologies:
-
-```
-Chi Router (base)
-├── /openai/v1/chat/completions  → StreamingHandler → ogen (SSE streaming)
-├── /openai/v1/models            → ogen handler
-├── /openai/v1/models/{model}    → ogen handler
-├── /openai/v1/images/*          → Huma (image generation via omniimage)
-├── /api/v1/tools                → Huma (auto-generated OpenAPI)
-├── /api/v1/agents/*             → Huma
-├── /api/v1/cron/jobs/*          → Huma
-├── /api/v1/usage/*              → Huma
-├── /api/v1/memories/*           → Huma
-├── /api/health                  → Huma
-├── /api/openapi.json            → Merged spec (ogen input + Huma generated)
-├── /docs                        → Scalar UI
-└── /                            → Web UI (static)
-```
-
-#### Component Responsibilities
-
-- **Chi Router (github.com/go-chi/chi/v5)**: Base HTTP router with middleware support (RealIP, Recoverer). Provides clean path-based routing and compatibility with standard `http.Handler`.
-
-- **ogen (github.com/ogen-go/ogen)**: Handles OpenAI-compatible endpoints (`/openai/v1/chat/completions`, `/openai/v1/models`). Used for SSE streaming support and type-safe request/response handling generated from OpenAPI spec.
-
-- **Huma (github.com/danielgtaylor/huma/v2)**: Handles OmniAgent extension endpoints (tools, agents, cron, usage, memory, health). Provides automatic OpenAPI 3.1 schema generation from Go types with validation.
-
-- **Scalar (github.com/bdpiprava/scalar-go)**: Serves interactive API documentation at `/docs` with modern UI, dark mode, and search.
-
-#### OpenAPI Spec Merging
-
-The `/openapi.json` endpoint serves a merged OpenAPI specification that combines:
-
-1. **ogen input spec** (`openapi/openai-minimal.yaml`): OpenAI-compatible chat completion and models endpoints
-2. **Huma-generated spec**: Auto-generated from registered Huma operations (tools, agents, cron, usage, memory, health)
-
-This provides a complete, accurate API reference for all endpoints.
-
-#### Implementation Files
-
-- `api/openai/server.go` - Chi router setup, Huma integration, route mounting
-- `api/openai/operations/*.go` - Huma operation definitions (types, tools, agents, cron, usage, memory, health, images)
-- `api/openai/image_handler.go` - ImageHandler interface and omniimage integration
-- `api/openai/openapi_merge.go` - OpenAPI spec merging logic
-- `api/openai/docs.go` - Scalar documentation handler
-- `api/openai/streaming.go` - SSE streaming handler for chat completions
-- `api/openai/internal/ogen/` - Generated ogen code from OpenAPI spec
-
-### Frontend Stack
-
-- Vanilla JavaScript (current)
-- Tailwind CSS for styling
-- ECharts for visualization
-- Web Speech API for voice
-
-### Backend Integration
-
-- OpenAI-compatible API endpoints
-- Server-Sent Events (SSE) for streaming
-- WebSocket for real-time updates (future)
-
-### State Management
-
-- localStorage for persistence
-- In-memory state for session
-- Server sync for settings (optional)
-
-## References
-
-- [OpenClaw Control UI](https://docs.openclaw.ai/web/dashboard)
-- [OpenAI API Specification](https://platform.openai.com/docs/api-reference)
-- [ECharts Documentation](https://echarts.apache.org/)
+# OmniAgent Delivery — Deployment, Discord, and Gateway Hardening — Roadmap
+
+**Initiative:** `INIT-OMNIAGENT-001`
+**Repository:** `github.com/plexusone/omniagent`
+**Status:** Executing — 13 of 30 items completed
+
+> RMI IDs are stable and permanent. Commits implementing an item carry the trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member RMIs — a phase is complete only when all its required RMIs are complete.
+
+## Phase 1 — Cloud Deployment
+
+**Theme:** Ship OmniAgent as a Discord bot on AWS Lightsail via omnideploy from a public GHCR image.
+**Status:** In progress — 1 of 5 items completed
+
+- [x] `RMI-OMNIAGENT-001` Discord 2000-character message chunking in omnichat
+  - - Acceptance: replies over 2000 chars split into multiple messages; rune-based, breaks on paragraph/newline/space; shipped as omnichat v0.8.1 and linked into the omniagent binary
+- [x] `RMI-OMNIAGENT-002` Standalone multi-stage Dockerfile for omniagent
+  - - Acceptance: `docker build --platform linux/amd64` succeeds with no local replace mounts; runs `gateway run`; serves `/health`
+- [ ] `RMI-OMNIAGENT-003` Publish container image to GHCR (public)
+  - Depends on: `RMI-OMNIAGENT-002`
+- [ ] `RMI-OMNIAGENT-004` Lightsail deployment via omnideploy
+  - Depends on: `RMI-OMNIAGENT-003`
+  - - Acceptance: `omnideploy up --target lightsail --backend pulumi` provisions a running service with the Discord/agent/Serper env
+- [ ] `RMI-OMNIAGENT-005` Deployment smoke test on Lightsail
+  - Depends on: `RMI-OMNIAGENT-004`
+  - - Acceptance: `/health` green; a Discord message triggers a chunked reply; `web_search` (Serper) returns current results
+
+## Phase 2 — Deployment Hardening
+
+**Theme:** Make the deployment production-safe: secrets, durable storage, and CI-buildable images.
+**Status:** In progress — 1 of 5 items completed
+
+- [ ] `RMI-OMNIAGENT-006` SSM-backed secret injection in omnideploy Lightsail target
+  - - Acceptance: `SecretRef` (`ssm:`/`secretsmanager:`) resolved and injected; secrets never land in plaintext env or Pulumi state (schema exists; target does not yet consume `cfg.Secrets`)
+- [ ] `RMI-OMNIAGENT-007` Durable session/cron storage on Lightsail
+  - - Acceptance: session and cron state survive a redeploy (Lightsail Container Service has no volumes; SQLite at `STORAGE_PATH` is ephemeral)
+- [x] `RMI-OMNIAGENT-008` Single-replica gateway guard
+  - - Acceptance: gateway mode enforces or documents `replicas == 1` (one Discord WebSocket; extra replicas double-answer)
+- [x] `RMI-OMNIAGENT-009` Graceful shutdown on SIGINT/SIGTERM
+  - - Acceptance: signal handler cancels context and runs `router.DisconnectAll` on shutdown (implemented in `cmd/omniagent/commands/gateway.go`)
+- [ ] `RMI-OMNIAGENT-010` CI-buildable grokify-omniagent image
+  - - Acceptance: grokify-omniagent builds in CI without local `replace` mounts (vendor or publish the 11 replaced deps)
+
+## Phase 3 — Discord Channel Completeness
+
+**Theme:** Close the documented-but-unimplemented Discord gaps (work lands in omnichat/providers/discord).
+**Status:** Planned — 0 of 5 items completed
+
+- [ ] `RMI-OMNIAGENT-011` Discord media send
+  - - Acceptance: `Send` builds `discordgo.MessageSend` `Files`/`Embeds` from `OutgoingMessage.Media` (currently only `Content` is set)
+- [ ] `RMI-OMNIAGENT-012` Discord media receive
+  - - Acceptance: `convertIncoming` maps `m.Attachments` to `IncomingMessage.Media`
+- [ ] `RMI-OMNIAGENT-013` Discord slash commands
+  - - Acceptance: `ApplicationCommand` registration + `InteractionCreate` handler
+- [ ] `RMI-OMNIAGENT-014` Discord HTTP interactions with Ed25519 verification
+  - - Acceptance: webhook endpoint verifies `X-Signature-Ed25519`; usable as an alternative to gateway mode
+- [ ] `RMI-OMNIAGENT-015` guildID enforcement and message events
+  - - Acceptance: configured `guildID` is enforced (currently stored but unused); reaction/edit/delete events mapped
+
+## Phase 4 — Gateway Security and Observability
+
+**Theme:** Harden the gateway control plane and add production observability.
+**Status:** Complete — 5 of 5 items completed
+
+- [x] `RMI-OMNIAGENT-016` WebSocket origin checking
+  - - Acceptance: `CheckOrigin` enforces an allowlist (currently returns `true` with a `// TODO` in `gateway/gateway.go`)
+- [x] `RMI-OMNIAGENT-017` Gateway WebSocket authentication
+  - - Acceptance: real auth on `/ws` (the `handleAuth` handler currently accepts all requests via a `// TODO` stub)
+- [x] `RMI-OMNIAGENT-018` Per-sender rate limiting
+  - - Acceptance: message-processing path rate-limits per sender/channel
+- [x] `RMI-OMNIAGENT-019` Observability tracing hook
+  - - Acceptance: `ObservabilityHook` (omniobserve/llmops) applied to the agent in `gateway run`; slog/langfuse providers available (Opik provider is a follow-on)
+- [x] `RMI-OMNIAGENT-020` Prometheus metrics endpoint
+  - - Acceptance: `/metrics` exposes gateway/agent metrics for scraping
+
+## Phase 5 — Test Coverage
+
+**Theme:** Increase test coverage for critical low-coverage packages.
+**Status:** Planned — 0 of 5 items completed
+
+- [ ] `RMI-OMNIAGENT-021` Agent package test coverage (target: 50%+)
+  - - Acceptance: `agent` package coverage increases from 7% to 50%+; covers core Process flow, tool execution, session handling
+- [ ] `RMI-OMNIAGENT-022` OpenAI API server test coverage (target: 50%+)
+  - - Acceptance: `api/openai` package coverage increases from 15.6% to 50%+; covers streaming, models endpoint, tool listing
+- [ ] `RMI-OMNIAGENT-023` OpenAI adapter test coverage (target: 50%+)
+  - - Acceptance: `openai` adapter package coverage increases from 19.9% to 50%+; covers multi-agent routing, chat completion, cron handler
+- [ ] `RMI-OMNIAGENT-024` Voice package test coverage (target: 50%+)
+  - - Acceptance: `voice` package coverage increases from 22.6% to 50%+; covers gateway, processor, providers
+- [ ] `RMI-OMNIAGENT-025` Skills package test coverage (target: 50%+)
+  - - Acceptance: `skills` package coverage increases from 37.8% to 50%+; covers skill loading, execution, validation
+
+## Phase 6 — Context and Token Management
+
+**Theme:** Implement the deferred context window and token counting features.
+**Status:** In progress — 4 of 5 items completed
+
+- [x] `RMI-OMNIAGENT-026` Model-specific token counting
+  - - Acceptance: `ModelTokenCounter` uses tiktoken for OpenAI models, provider-specific counting for Anthropic/others; accurate to within 5% of actual usage
+- [ ] `RMI-OMNIAGENT-027` LLM-based conversation summarization
+  - - Acceptance: `WindowStrategySummarize` calls LLM to summarize older messages; configurable summarization prompt; summary replaces N oldest messages
+- [x] `RMI-OMNIAGENT-028` Autoreply template rendering
+  - - Acceptance: `autoreply` package template TODO implemented; supports variable substitution in auto-reply messages
+- [x] `RMI-OMNIAGENT-029` WebSocket origin allowlist
+  - - Acceptance: `CheckOrigin` in `gateway/gateway.go` enforces configurable allowlist; rejects requests from unlisted origins
+- [x] `RMI-OMNIAGENT-030` Gateway WebSocket authentication
+  - - Acceptance: `handleAuth` in `gateway/handlers.go` validates tokens/credentials; supports API key and JWT authentication
