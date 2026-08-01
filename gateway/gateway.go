@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,16 +28,23 @@ type Config struct {
 	Logger          *slog.Logger
 	Agent           AgentProcessor
 	WebhookHandlers map[string]http.Handler // Path -> Handler for webhook endpoints
+	AllowedOrigins  []string                // Allowed origins for WebSocket connections (empty allows all)
+	APIKeys         []string                // Valid API keys for authentication (empty disables auth)
+	RequireAuth     bool                    // If true, clients must authenticate before sending messages
+	RateLimit       *RateLimitConfig        // Per-sender rate limiting config (nil disables)
+	EnableMetrics   bool                    // If true, expose /metrics endpoint for Prometheus
 }
 
 // Gateway is the WebSocket control plane server.
 type Gateway struct {
-	config   Config
-	upgrader websocket.Upgrader
-	clients  map[string]*Client
-	mu       sync.RWMutex
-	logger   *slog.Logger
-	agent    AgentProcessor
+	config      Config
+	upgrader    websocket.Upgrader
+	clients     map[string]*Client
+	mu          sync.RWMutex
+	logger      *slog.Logger
+	agent       AgentProcessor
+	rateLimiter *RateLimiter
+	metrics     *Metrics
 
 	// Handlers
 	onMessage MessageHandler
@@ -63,18 +72,27 @@ func New(config Config) (*Gateway, error) {
 	}
 
 	gw := &Gateway{
-		config: config,
-		upgrader: websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				// TODO: Implement proper origin checking
-				return true
-			},
-		},
+		config:  config,
 		clients: make(map[string]*Client),
 		logger:  config.Logger,
 		agent:   config.Agent,
+	}
+
+	// Initialize rate limiter if configured
+	if config.RateLimit != nil {
+		gw.rateLimiter = NewRateLimiter(*config.RateLimit)
+	}
+
+	// Initialize metrics if enabled
+	if config.EnableMetrics {
+		gw.metrics = NewMetrics("omniagent")
+	}
+
+	// Configure WebSocket upgrader with origin checking
+	gw.upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin:     gw.checkOrigin,
 	}
 
 	// Set up default message handler
@@ -94,6 +112,12 @@ func (g *Gateway) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", g.handleWebSocket)
 	mux.HandleFunc("/health", g.handleHealth)
+
+	// Mount metrics endpoint if enabled
+	if g.metrics != nil {
+		mux.Handle("/metrics", g.metrics.Handler())
+		g.logger.Info("metrics endpoint enabled", "path", "/metrics")
+	}
 
 	// Mount webhook handlers
 	for path, handler := range g.config.WebhookHandlers {
@@ -197,4 +221,65 @@ func (g *Gateway) GetClient(id string) *Client {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	return g.clients[id]
+}
+
+// checkOrigin validates the WebSocket upgrade request origin.
+// If no allowed origins are configured, all origins are allowed.
+// Otherwise, the request origin must match one of the allowed origins.
+func (g *Gateway) checkOrigin(r *http.Request) bool {
+	// If no allowed origins configured, allow all (development mode)
+	if len(g.config.AllowedOrigins) == 0 {
+		return true
+	}
+
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		// No origin header - allow same-origin requests (no Origin header means same-origin)
+		return true
+	}
+
+	// Parse the origin
+	originURL, err := url.Parse(origin)
+	if err != nil {
+		g.logger.Warn("invalid origin header", "origin", origin, "error", err)
+		return false
+	}
+
+	// Check against allowed origins
+	for _, allowed := range g.config.AllowedOrigins {
+		// Support wildcard matching
+		if allowed == "*" {
+			return true
+		}
+
+		// Exact match
+		if strings.EqualFold(origin, allowed) {
+			return true
+		}
+
+		// Parse allowed origin for comparison
+		allowedURL, err := url.Parse(allowed)
+		if err != nil {
+			continue
+		}
+
+		// Match scheme and host (port included in host)
+		if strings.EqualFold(originURL.Scheme, allowedURL.Scheme) &&
+			strings.EqualFold(originURL.Host, allowedURL.Host) {
+			return true
+		}
+
+		// Support wildcard subdomain matching (e.g., "https://*.example.com")
+		if strings.HasPrefix(allowedURL.Host, "*.") {
+			baseDomain := strings.TrimPrefix(allowedURL.Host, "*.")
+			if strings.EqualFold(originURL.Scheme, allowedURL.Scheme) &&
+				(strings.EqualFold(originURL.Host, baseDomain) ||
+					strings.HasSuffix(strings.ToLower(originURL.Host), "."+strings.ToLower(baseDomain))) {
+				return true
+			}
+		}
+	}
+
+	g.logger.Warn("origin not allowed", "origin", origin, "allowed", g.config.AllowedOrigins)
+	return false
 }
