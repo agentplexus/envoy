@@ -92,6 +92,8 @@ func loadEnv(cfg *Config) {
 			cfg.Agent.APIKey = os.Getenv("OPENAI_API_KEY")
 		case "gemini":
 			cfg.Agent.APIKey = os.Getenv("GEMINI_API_KEY")
+		case "ollama":
+			// Ollama doesn't require an API key - it's a local provider
 		}
 	}
 

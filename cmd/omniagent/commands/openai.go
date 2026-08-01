@@ -131,8 +131,9 @@ func runOpenAIServer(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Require API key configuration
-	if cfg.Agent.APIKey == "" && len(cfg.Agents) == 0 {
+	// Require API key configuration for cloud providers (not for local providers like Ollama)
+	requiresAPIKey := cfg.Agent.Provider != "ollama"
+	if requiresAPIKey && cfg.Agent.APIKey == "" && len(cfg.Agents) == 0 {
 		return fmt.Errorf("agent API key not configured (set agent.api_key in config)")
 	}
 
