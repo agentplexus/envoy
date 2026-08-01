@@ -9,10 +9,12 @@
 package autoreply
 
 import (
+	"bytes"
 	"context"
 	"regexp"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 )
 
@@ -373,15 +375,51 @@ func (h *Handler) checkRateLimit(rule *Rule, msg *Message) bool {
 	return h.rateLimiter.allow(key, rule.RateLimit.MaxCount, rule.RateLimit.Window)
 }
 
+// TemplateData provides data available in response templates.
+type TemplateData struct {
+	// Message is the original message content.
+	Message string
+	// Sender is the sender ID.
+	Sender string
+	// Channel is the channel type.
+	Channel string
+	// Time is the message timestamp.
+	Time time.Time
+	// Metadata contains additional message data.
+	Metadata map[string]any
+}
+
 // buildResponse builds the response text for a matched rule.
-//
-//nolint:unparam // msg is reserved for template rendering support
 func (h *Handler) buildResponse(rule *Rule, msg *Message) string {
 	if rule.Response.Template != "" {
-		// TODO: Implement template rendering
-		return rule.Response.Text
+		return h.renderTemplate(rule.Response.Template, msg)
 	}
 	return rule.Response.Text
+}
+
+// renderTemplate renders a Go template with message data.
+func (h *Handler) renderTemplate(tmplStr string, msg *Message) string {
+	tmpl, err := template.New("response").Parse(tmplStr)
+	if err != nil {
+		// Fall back to raw template string on parse error
+		return tmplStr
+	}
+
+	data := TemplateData{
+		Message:  msg.Content,
+		Sender:   msg.SenderID,
+		Channel:  msg.Channel,
+		Time:     msg.Timestamp,
+		Metadata: msg.Metadata,
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		// Fall back to raw template string on execution error
+		return tmplStr
+	}
+
+	return buf.String()
 }
 
 // sortRules sorts rules by priority (lower = higher priority).
