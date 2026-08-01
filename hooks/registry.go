@@ -8,14 +8,23 @@ import (
 
 	"github.com/grokify/mogo/log/slogutil"
 	"github.com/plexusone/omnistorage-core/kvs"
+	"golang.org/x/sync/semaphore"
+)
+
+const (
+	// maxConcurrentDispatches limits concurrent async hook dispatches to prevent
+	// resource exhaustion. Excess dispatches are dropped with a warning.
+	maxConcurrentDispatches = 100
 )
 
 // Registry manages hook registrations and event dispatch.
 type Registry struct {
-	handlers map[EventType][]registeredHandler
-	hooks    []Hook
-	storage  kvs.Store
-	mu       sync.RWMutex
+	handlers  map[EventType][]registeredHandler
+	hooks     []Hook
+	storage   kvs.Store
+	mu        sync.RWMutex
+	asyncSem  *semaphore.Weighted // Limits concurrent async dispatches
+	asyncOnce sync.Once           // Ensures semaphore is initialized once
 }
 
 // registeredHandler wraps a handler with its name.
@@ -161,15 +170,34 @@ func (r *Registry) Dispatch(ctx context.Context, event Event) error {
 }
 
 // DispatchAsync dispatches an event asynchronously (fire-and-forget).
+// Concurrent async dispatches are bounded to prevent resource exhaustion.
+// If the concurrency limit is reached, the dispatch is dropped with a warning.
 // Errors are logged but not returned.
 func (r *Registry) DispatchAsync(ctx context.Context, event Event) {
+	// Initialize semaphore lazily (once)
+	r.asyncOnce.Do(func() {
+		r.asyncSem = semaphore.NewWeighted(maxConcurrentDispatches)
+	})
+
+	logger := slogutil.LoggerFromContext(ctx, slog.Default())
+
+	// Try to acquire a slot without blocking
+	if !r.asyncSem.TryAcquire(1) {
+		logger.Warn("async dispatch dropped: concurrency limit reached",
+			"event", event.Type,
+			"limit", maxConcurrentDispatches)
+		return
+	}
+
 	//nolint:gosec // G118: intentionally using background context for async dispatch to outlive request
 	go func() {
+		defer r.asyncSem.Release(1)
+
 		// Create a background context since the original may be cancelled
 		bgCtx := context.Background()
 
 		// Copy logger from original context if available
-		if logger := slogutil.LoggerFromContext(ctx, slog.Default()); logger != slog.Default() {
+		if logger != slog.Default() {
 			bgCtx = slogutil.ContextWithLogger(bgCtx, logger)
 		}
 

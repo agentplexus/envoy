@@ -437,3 +437,61 @@ func TestRegistryCloseNoHooks(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+func TestRegistryDispatchAsyncBounded(t *testing.T) {
+	r := NewRegistry()
+
+	var running int32
+	var maxRunning int32
+	var completed int32
+	done := make(chan struct{})
+
+	// Register a slow handler to test concurrency limiting
+	r.RegisterHandler(EventMessageReceived, "slow-handler", func(ctx context.Context, event Event) error {
+		current := atomic.AddInt32(&running, 1)
+		defer atomic.AddInt32(&running, -1)
+
+		// Track max concurrent
+		for {
+			old := atomic.LoadInt32(&maxRunning)
+			if current <= old || atomic.CompareAndSwapInt32(&maxRunning, old, current) {
+				break
+			}
+		}
+
+		// Simulate work
+		time.Sleep(10 * time.Millisecond)
+		atomic.AddInt32(&completed, 1)
+		return nil
+	})
+
+	// Dispatch many events asynchronously
+	numEvents := 200
+	for i := 0; i < numEvents; i++ {
+		r.DispatchAsync(context.Background(), NewEvent(EventMessageReceived, nil))
+	}
+
+	// Wait for some to complete
+	go func() {
+		for atomic.LoadInt32(&completed) < int32(maxConcurrentDispatches) {
+			time.Sleep(5 * time.Millisecond)
+		}
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for async dispatches")
+	}
+
+	// Max concurrent should not exceed limit
+	if max := atomic.LoadInt32(&maxRunning); max > maxConcurrentDispatches {
+		t.Errorf("max concurrent %d exceeded limit %d", max, maxConcurrentDispatches)
+	}
+
+	// Some events should have been dropped (200 - 100 = 100 dropped)
+	// We can't test exact count since timing varies, but completed should be <= limit
+	// Actually, some may complete and free slots, so we just verify the limit wasn't exceeded
+	t.Logf("max concurrent: %d, completed: %d", atomic.LoadInt32(&maxRunning), atomic.LoadInt32(&completed))
+}
