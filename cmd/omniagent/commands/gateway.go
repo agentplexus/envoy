@@ -263,6 +263,14 @@ func runGateway(cmd *cobra.Command, args []string) error {
 
 	// Register Discord if configured
 	if cfg.Channels.Discord.Enabled {
+		// Single-replica guard: Discord WebSocket connections are stateful and
+		// only one instance should connect. Running multiple replicas will cause
+		// duplicate message handling (double-answers).
+		if replicas := os.Getenv("OMNIAGENT_REPLICAS"); replicas != "" && replicas != "1" {
+			logger.Warn("Discord requires single-replica deployment; multiple replicas will cause double-answers",
+				"replicas", replicas)
+		}
+
 		dc, err := discord.New(discord.Config{
 			Token:   cfg.Channels.Discord.Token,
 			GuildID: cfg.Channels.Discord.GuildID,
