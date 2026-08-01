@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -23,13 +24,14 @@ import (
 
 // Server wraps the ogen-generated server with Chi router and Huma API.
 type Server struct {
-	handler        AgentHandler
-	ogenSrv        *ogen.Server
-	router         chi.Router
-	humaAPI        huma.API
-	config         Config
-	usageStore     *UsageStore
-	toolUsageStore *ToolUsageStore
+	handler           AgentHandler
+	ogenSrv           *ogen.Server
+	router            chi.Router
+	humaAPI           huma.API
+	config            Config
+	usageStore        *UsageStore
+	toolUsageStore    *ToolUsageStore
+	conversationStore *ConversationStore
 }
 
 // Config configures the server.
@@ -68,6 +70,10 @@ type Config struct {
 
 	// ImageHandler is an optional handler for image generation operations.
 	ImageHandler ImageHandler
+
+	// ConversationStore is an optional store for conversation persistence.
+	// If provided, conversations are synced to the server.
+	ConversationStore *ConversationStore
 }
 
 // Option configures the server.
@@ -169,11 +175,18 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 		logger = slog.Default()
 	}
 
+	// Create conversation store (use provided or create default)
+	convStore := cfg.ConversationStore
+	if convStore == nil {
+		convStore = NewConversationStore(ConversationStoreConfig{})
+	}
+
 	s := &Server{
-		handler:        handler,
-		config:         cfg,
-		usageStore:     NewUsageStore(10000),
-		toolUsageStore: NewToolUsageStore(10000),
+		handler:           handler,
+		config:            cfg,
+		usageStore:        NewUsageStore(10000),
+		toolUsageStore:    NewToolUsageStore(10000),
+		conversationStore: convStore,
 	}
 
 	// 1. Create Chi router with middleware
@@ -193,7 +206,7 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 		acl := auth.NewACL(cfg.Auth)
 
 		// Enable development mode if using localhost
-		if cfg.BaseURL == "http://localhost:8080" || cfg.BaseURL[:16] == "http://localhost" || cfg.BaseURL[:17] == "http://127.0.0.1:" {
+		if strings.HasPrefix(cfg.BaseURL, "http://localhost") || strings.HasPrefix(cfg.BaseURL, "http://127.0.0.1") {
 			sessions.SetDevelopmentMode(true)
 		}
 
@@ -313,6 +326,9 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 		logger.Info("image generation endpoints registered")
 	}
 
+	// Register conversation operations for web UI sync
+	operations.RegisterConversationOperations(api, s.conversationStore, cfg.APIPrefix)
+
 	// 7. Serve OpenAPI spec under /api/
 	r.Get(cfg.APIPrefix+"/openapi.json", s.handleOpenAPIJSON)
 	r.Get(cfg.APIPrefix+"/openapi.yaml", s.handleOpenAPIYAML)
@@ -366,12 +382,21 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 
 // handleOgenModels handles GET /openai/v1/models through ogen
 func (s *Server) handleOgenModels(w http.ResponseWriter, r *http.Request) {
-	s.ogenSrv.ServeHTTP(w, r)
+	// Rewrite path for ogen which expects /models (without prefix)
+	r2 := r.Clone(r.Context())
+	r2.URL.Path = "/models"
+	r2.RequestURI = "/models"
+	s.ogenSrv.ServeHTTP(w, r2)
 }
 
 // handleOgenModel handles GET /openai/v1/models/{model} through ogen
 func (s *Server) handleOgenModel(w http.ResponseWriter, r *http.Request) {
-	s.ogenSrv.ServeHTTP(w, r)
+	// Rewrite path for ogen which expects /models/{model} (without prefix)
+	model := chi.URLParam(r, "model")
+	r2 := r.Clone(r.Context())
+	r2.URL.Path = "/models/" + model
+	r2.RequestURI = "/models/" + model
+	s.ogenSrv.ServeHTTP(w, r2)
 }
 
 // HumaAPI returns the Huma API for external access to the OpenAPI spec.
