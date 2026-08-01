@@ -1,6 +1,7 @@
 package context
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/plexusone/omnillm/provider"
@@ -199,7 +200,10 @@ func TestWindow_ApplyRecent(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "F"},
 	}
 
-	result := window.Apply(messages)
+	result, err := window.Apply(messages)
+	if err != nil {
+		t.Errorf("Apply() unexpected error: %v", err)
+	}
 
 	if len(result) != 4 {
 		t.Errorf("Apply() returned %d messages, want 4", len(result))
@@ -491,9 +495,17 @@ func TestWindow_ApplySummarize(t *testing.T) {
 		{Role: provider.RoleUser, Content: "E"},
 	}
 
-	result := window.Apply(messages)
+	result, err := window.Apply(messages)
 
-	// Summarize falls back to recent for now
+	// Summarize returns CompactionError since it's not implemented
+	if err == nil {
+		t.Error("Apply() should return CompactionError for summarize strategy")
+	}
+	if !errors.Is(err, ErrCompactionFailed) {
+		t.Errorf("Apply() error = %v, want CompactionError", err)
+	}
+
+	// Still returns recent strategy result as fallback
 	if len(result) != 3 {
 		t.Errorf("Apply() returned %d messages, want 3", len(result))
 	}
@@ -525,7 +537,10 @@ func TestWindow_ApplyImportant(t *testing.T) {
 		{Role: provider.RoleUser, Content: "Q5"},
 	}
 
-	result := window.Apply(messages)
+	result, err := window.Apply(messages)
+	if err != nil {
+		t.Errorf("Apply() unexpected error: %v", err)
+	}
 
 	if len(result) > 6 {
 		t.Errorf("Apply() returned %d messages, want <= 6", len(result))
@@ -558,7 +573,10 @@ func TestWindow_ApplyImportant_SmallWindow(t *testing.T) {
 		{Role: provider.RoleUser, Content: "Q6"},
 	}
 
-	result := window.Apply(messages)
+	result, err := window.Apply(messages)
+	if err != nil {
+		t.Errorf("Apply() unexpected error: %v", err)
+	}
 
 	if len(result) > 4 {
 		t.Errorf("Apply() returned %d messages, want <= 4", len(result))
@@ -595,7 +613,10 @@ func TestWindow_NoTrimNeeded(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "B"},
 	}
 
-	result := window.Apply(messages)
+	result, err := window.Apply(messages)
+	if err != nil {
+		t.Errorf("Apply() unexpected error: %v", err)
+	}
 
 	if len(result) != 2 {
 		t.Errorf("Apply() returned %d messages, want 2", len(result))

@@ -60,18 +60,20 @@ func NewWindow(config WindowConfig) *Window {
 }
 
 // Apply applies the windowing strategy to messages.
-func (w *Window) Apply(messages []provider.Message) []provider.Message {
+// Returns the windowed messages and any error encountered.
+// For WindowStrategySummarize, a CompactionError is returned if summarization fails.
+func (w *Window) Apply(messages []provider.Message) ([]provider.Message, error) {
 	if len(messages) <= w.maxSize {
-		return messages
+		return messages, nil
 	}
 
 	switch w.strategy {
 	case WindowStrategySummarize:
 		return w.applySummarize(messages)
 	case WindowStrategyImportant:
-		return w.applyImportant(messages)
+		return w.applyImportant(messages), nil
 	default:
-		return w.applyRecent(messages)
+		return w.applyRecent(messages), nil
 	}
 }
 
@@ -104,12 +106,15 @@ func (w *Window) applyRecent(messages []provider.Message) []provider.Message {
 	return messages[startIdx:]
 }
 
-// applySummarize would summarize older messages.
-// This requires an LLM call, so we return a placeholder for now.
-func (w *Window) applySummarize(messages []provider.Message) []provider.Message {
+// applySummarize attempts to summarize older messages.
+// Returns CompactionError if summarization fails (e.g., no summarizer configured).
+func (w *Window) applySummarize(messages []provider.Message) ([]provider.Message, error) {
 	// TODO: Implement summarization with LLM call
-	// For now, fall back to recent strategy
-	return w.applyRecent(messages)
+	// For now, return a typed error instead of silently falling back
+	return w.applyRecent(messages), NewCompactionError(
+		"summarization not implemented",
+		nil,
+	)
 }
 
 // applyImportant keeps messages marked as important.
