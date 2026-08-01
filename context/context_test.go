@@ -661,3 +661,130 @@ func TestTokenBudget_AvailableNegative(t *testing.T) {
 		t.Errorf("Available() = %d, want 0 when reserved > total", budget.Available())
 	}
 }
+
+func TestNewModelTokenCounter_OpenAI(t *testing.T) {
+	counter := NewModelTokenCounter("gpt-4")
+
+	// Should have tiktoken encoding loaded
+	if counter.encoding == nil {
+		t.Skip("tiktoken encoding not available")
+	}
+
+	// Test accurate token counting
+	text := "Hello, world!"
+	tokens := counter.CountText(text)
+
+	// GPT-4 should tokenize "Hello, world!" into roughly 4 tokens
+	if tokens < 1 || tokens > 10 {
+		t.Errorf("CountText(%q) = %d, expected 1-10 tokens", text, tokens)
+	}
+}
+
+func TestNewModelTokenCounter_Anthropic(t *testing.T) {
+	counter := NewModelTokenCounter("claude-3-opus")
+
+	// Anthropic uses ~3.5 chars per token
+	text := "Hello, world!"
+	tokens := counter.CountText(text)
+
+	// 13 chars / 3.5 ≈ 4 tokens
+	if tokens < 2 || tokens > 8 {
+		t.Errorf("CountText(%q) = %d, expected 2-8 tokens for Anthropic", text, tokens)
+	}
+}
+
+func TestNewModelTokenCounter_Unknown(t *testing.T) {
+	counter := NewModelTokenCounter("unknown-model")
+
+	// Should use fallback (SimpleTokenCounter, ~4 chars per token)
+	text := "Hello, world!"
+	tokens := counter.CountText(text)
+
+	// 13 chars / 4 ≈ 4 tokens
+	if tokens < 2 || tokens > 6 {
+		t.Errorf("CountText(%q) = %d, expected 2-6 tokens for unknown model", text, tokens)
+	}
+}
+
+func TestIsOpenAIModel(t *testing.T) {
+	tests := []struct {
+		model string
+		want  bool
+	}{
+		{"gpt-4", true},
+		{"gpt-4o", true},
+		{"gpt-4-turbo", true},
+		{"gpt-3.5-turbo", true},
+		{"o1", true},
+		{"o1-preview", true},
+		{"o3", true},
+		{"text-davinci-003", true},
+		{"davinci", true},
+		{"claude-3-opus", false},
+		{"llama-3", false},
+		{"mistral-7b", false},
+	}
+
+	for _, tc := range tests {
+		got := isOpenAIModel(tc.model)
+		if got != tc.want {
+			t.Errorf("isOpenAIModel(%q) = %v, want %v", tc.model, got, tc.want)
+		}
+	}
+}
+
+func TestIsAnthropicModel(t *testing.T) {
+	tests := []struct {
+		model string
+		want  bool
+	}{
+		{"claude-3-opus", true},
+		{"claude-3-sonnet", true},
+		{"claude-2", true},
+		{"Claude-3-haiku", true},
+		{"gpt-4", false},
+		{"llama-3", false},
+	}
+
+	for _, tc := range tests {
+		got := isAnthropicModel(tc.model)
+		if got != tc.want {
+			t.Errorf("isAnthropicModel(%q) = %v, want %v", tc.model, got, tc.want)
+		}
+	}
+}
+
+func TestModelTokenCounter_EmptyText(t *testing.T) {
+	counter := NewModelTokenCounter("gpt-4")
+
+	tokens := counter.CountText("")
+	if tokens != 0 {
+		t.Errorf("CountText(\"\") = %d, want 0", tokens)
+	}
+}
+
+func TestModelTokenCounter_Message(t *testing.T) {
+	counter := NewModelTokenCounter("gpt-4")
+
+	msg := provider.Message{
+		Role:    provider.RoleUser,
+		Content: "Hello",
+		ToolCalls: []provider.ToolCall{
+			{
+				ID:   "call_1",
+				Type: "function",
+				Function: provider.ToolFunction{
+					Name:      "test",
+					Arguments: "{}",
+				},
+			},
+		},
+	}
+
+	tokens := counter.Count(msg)
+
+	// Should include content + overhead + tool call tokens
+	if tokens < 5 {
+		t.Errorf("Count() = %d, expected at least 5 tokens for message with tool call", tokens)
+	}
+}
