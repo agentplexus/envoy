@@ -8,7 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/grokify/gogithub"
+	"github.com/grokify/gogithub/clientv1"
 	"github.com/plexusone/omniskill/skill"
 )
 
@@ -19,7 +20,7 @@ const (
 
 // Skill implements compiled.Skill for GitHub operations.
 type Skill struct {
-	client *github.Client
+	client clientv1.Client
 	config Config
 }
 
@@ -61,17 +62,23 @@ func (s *Skill) Init(ctx context.Context) error {
 		token = os.Getenv("GH_TOKEN")
 	}
 
-	var opts []github.ClientOptionsFunc
-	if token != "" {
-		opts = append(opts, github.WithAuthToken(token))
-	}
-
-	if s.config.BaseURL != "" {
+	var (
+		client clientv1.Client
+		err    error
+	)
+	switch {
+	case s.config.BaseURL != "":
 		// GitHub Enterprise
-		opts = append(opts, github.WithEnterpriseURLs(s.config.BaseURL, s.config.BaseURL))
+		client, err = clientv1.NewClientWithOptions(ctx, clientv1.ClientOptions{
+			Token:     token,
+			BaseURL:   s.config.BaseURL,
+			UploadURL: s.config.BaseURL,
+		})
+	case token != "":
+		client, err = clientv1.NewClient(ctx, token)
+	default:
+		client, err = clientv1.NewClientWithHTTP(nil)
 	}
-
-	client, err := github.NewClient(opts...)
 	if err != nil {
 		return fmt.Errorf("create github client: %w", err)
 	}
@@ -390,11 +397,9 @@ func (s *Skill) handleListIssues(ctx context.Context, params map[string]any) (an
 	if perPage == 0 {
 		perPage = 30
 	}
-	opts := &github.IssueListByRepoOptions{
-		State: input.State,
-		ListOptions: github.ListOptions{
-			PerPage: perPage,
-		},
+	opts := &clientv1.ListIssuesOptions{
+		State:   input.State,
+		PerPage: perPage,
 	}
 	if input.Labels != "" {
 		opts.Labels = strings.Split(input.Labels, ",")
@@ -403,7 +408,9 @@ func (s *Skill) handleListIssues(ctx context.Context, params map[string]any) (an
 		opts.State = "open"
 	}
 
-	issues, _, err := s.client.Issues.ListByRepo(ctx, input.Owner, input.Repo, opts)
+	// ListIssues paginates through all matching issues internally; truncate
+	// to the requested page size to preserve the tool's per_page contract.
+	issues, err := s.client.ListIssues(ctx, input.Owner, input.Repo, opts)
 	if err != nil {
 		return nil, fmt.Errorf("list issues: %w", err)
 	}
@@ -411,10 +418,13 @@ func (s *Skill) handleListIssues(ctx context.Context, params map[string]any) (an
 	output := make([]map[string]any, 0, len(issues))
 	for _, issue := range issues {
 		// Skip pull requests (they appear in issues API)
-		if issue.PullRequestLinks != nil {
+		if issue.IsPullRequest {
 			continue
 		}
 		output = append(output, issueToMap(issue))
+		if len(output) >= perPage {
+			break
+		}
 	}
 
 	return map[string]any{
@@ -435,7 +445,7 @@ func (s *Skill) handleGetIssue(ctx context.Context, params map[string]any) (any,
 		return nil, err
 	}
 
-	issue, _, err := s.client.Issues.Get(ctx, input.Owner, input.Repo, input.Number)
+	issue, err := s.client.GetIssue(ctx, input.Owner, input.Repo, input.Number)
 	if err != nil {
 		return nil, fmt.Errorf("get issue: %w", err)
 	}
@@ -458,20 +468,12 @@ func (s *Skill) handleCreateIssue(ctx context.Context, params map[string]any) (a
 		return nil, err
 	}
 
-	req := &github.IssueRequest{
-		Title: &input.Title,
-	}
-	if input.Body != "" {
-		req.Body = &input.Body
-	}
-	if len(input.Labels) > 0 {
-		req.Labels = &input.Labels
-	}
-	if len(input.Assignees) > 0 {
-		req.Assignees = &input.Assignees
-	}
-
-	issue, _, err := s.client.Issues.Create(ctx, input.Owner, input.Repo, req)
+	issue, err := s.client.CreateIssue(ctx, input.Owner, input.Repo, &clientv1.CreateIssueInput{
+		Title:     input.Title,
+		Body:      input.Body,
+		Labels:    input.Labels,
+		Assignees: input.Assignees,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("create issue: %w", err)
 	}
@@ -498,7 +500,7 @@ func (s *Skill) handleUpdateIssue(ctx context.Context, params map[string]any) (a
 		return nil, err
 	}
 
-	req := &github.IssueRequest{}
+	req := &clientv1.UpdateIssueInput{}
 	if input.Title != "" {
 		req.Title = &input.Title
 	}
@@ -509,10 +511,10 @@ func (s *Skill) handleUpdateIssue(ctx context.Context, params map[string]any) (a
 		req.State = &input.State
 	}
 	if len(input.Labels) > 0 {
-		req.Labels = &input.Labels
+		req.Labels = input.Labels
 	}
 
-	issue, _, err := s.client.Issues.Edit(ctx, input.Owner, input.Repo, input.Number, req)
+	issue, err := s.client.UpdateIssue(ctx, input.Owner, input.Repo, input.Number, req)
 	if err != nil {
 		return nil, fmt.Errorf("update issue: %w", err)
 	}
@@ -536,17 +538,15 @@ func (s *Skill) handleAddIssueComment(ctx context.Context, params map[string]any
 		return nil, err
 	}
 
-	comment, _, err := s.client.Issues.CreateComment(ctx, input.Owner, input.Repo, input.Number, &github.IssueComment{
-		Body: &input.Body,
-	})
+	comment, err := s.client.CreateIssueComment(ctx, input.Owner, input.Repo, input.Number, input.Body)
 	if err != nil {
 		return nil, fmt.Errorf("create comment: %w", err)
 	}
 
 	return map[string]any{
 		"success":    true,
-		"comment_id": comment.GetID(),
-		"url":        comment.GetHTMLURL(),
+		"comment_id": comment.ID,
+		"url":        comment.HTMLURL,
 	}, nil
 }
 
@@ -569,21 +569,23 @@ func (s *Skill) handleListPullRequests(ctx context.Context, params map[string]an
 	if perPage == 0 {
 		perPage = 30
 	}
-	opts := &github.PullRequestListOptions{
+	opts := &clientv1.ListPullRequestsOptions{
 		State: input.State,
 		Base:  input.Base,
 		Head:  input.Head,
-		ListOptions: github.ListOptions{
-			PerPage: perPage,
-		},
 	}
 	if opts.State == "" {
 		opts.State = "open"
 	}
 
-	prs, _, err := s.client.PullRequests.List(ctx, input.Owner, input.Repo, opts)
+	// ListPullRequests paginates through all matches internally; truncate to
+	// the requested page size to preserve the tool's per_page contract.
+	prs, err := s.client.ListPullRequests(ctx, input.Owner, input.Repo, opts)
 	if err != nil {
 		return nil, fmt.Errorf("list pull requests: %w", err)
+	}
+	if len(prs) > perPage {
+		prs = prs[:perPage]
 	}
 
 	output := make([]map[string]any, len(prs))
@@ -609,7 +611,7 @@ func (s *Skill) handleGetPullRequest(ctx context.Context, params map[string]any)
 		return nil, err
 	}
 
-	pr, _, err := s.client.PullRequests.Get(ctx, input.Owner, input.Repo, input.Number)
+	pr, err := s.client.GetPullRequest(ctx, input.Owner, input.Repo, input.Number)
 	if err != nil {
 		return nil, fmt.Errorf("get pull request: %w", err)
 	}
@@ -631,17 +633,15 @@ func (s *Skill) handleAddPRComment(ctx context.Context, params map[string]any) (
 	}
 
 	// Use issues API for general comments (not review comments)
-	comment, _, err := s.client.Issues.CreateComment(ctx, input.Owner, input.Repo, input.Number, &github.IssueComment{
-		Body: &input.Body,
-	})
+	comment, err := s.client.CreateIssueComment(ctx, input.Owner, input.Repo, input.Number, input.Body)
 	if err != nil {
 		return nil, fmt.Errorf("create PR comment: %w", err)
 	}
 
 	return map[string]any{
 		"success":    true,
-		"comment_id": comment.GetID(),
-		"url":        comment.GetHTMLURL(),
+		"comment_id": comment.ID,
+		"url":        comment.HTMLURL,
 	}, nil
 }
 
@@ -660,31 +660,33 @@ func (s *Skill) handleSearchCode(ctx context.Context, params map[string]any) (an
 	if perPage == 0 {
 		perPage = 30
 	}
-	opts := &github.SearchOptions{
-		ListOptions: github.ListOptions{
-			PerPage: perPage,
-		},
+	opts := &clientv1.SearchOptions{
+		PerPage: perPage,
 	}
 
-	result, _, err := s.client.Search.Code(ctx, input.Query, opts)
+	result, err := s.client.SearchCode(ctx, input.Query, opts)
 	if err != nil {
 		return nil, fmt.Errorf("search code: %w", err)
 	}
 
-	output := make([]map[string]any, len(result.CodeResults))
-	for i, code := range result.CodeResults {
+	output := make([]map[string]any, len(result.Items))
+	for i, code := range result.Items {
+		repoFullName := ""
+		if code.Repository != nil {
+			repoFullName = code.Repository.FullName
+		}
 		output[i] = map[string]any{
-			"name":       code.GetName(),
-			"path":       code.GetPath(),
-			"sha":        code.GetSHA(),
-			"url":        code.GetHTMLURL(),
-			"repository": code.GetRepository().GetFullName(),
+			"name":       code.Name,
+			"path":       code.Path,
+			"sha":        code.SHA,
+			"url":        code.HTMLURL,
+			"repository": repoFullName,
 		}
 	}
 
 	return map[string]any{
 		"results":     output,
-		"total_count": result.GetTotal(),
+		"total_count": result.Total,
 	}, nil
 }
 
@@ -703,25 +705,23 @@ func (s *Skill) handleSearchIssues(ctx context.Context, params map[string]any) (
 	if perPage == 0 {
 		perPage = 30
 	}
-	opts := &github.SearchOptions{
-		ListOptions: github.ListOptions{
-			PerPage: perPage,
-		},
+	opts := &clientv1.SearchOptions{
+		PerPage: perPage,
 	}
 
-	result, _, err := s.client.Search.Issues(ctx, input.Query, opts)
+	result, err := s.client.SearchIssues(ctx, input.Query, opts)
 	if err != nil {
 		return nil, fmt.Errorf("search issues: %w", err)
 	}
 
-	output := make([]map[string]any, len(result.Issues))
-	for i, issue := range result.Issues {
+	output := make([]map[string]any, len(result.Items))
+	for i, issue := range result.Items {
 		output[i] = issueToMap(issue)
 	}
 
 	return map[string]any{
 		"results":     output,
-		"total_count": result.GetTotal(),
+		"total_count": result.Total,
 	}, nil
 }
 
@@ -735,78 +735,104 @@ func mapToStruct(m map[string]any, v any) error {
 	return json.Unmarshal(data, v)
 }
 
-func issueToMap(issue *github.Issue) map[string]any {
+func issueToMap(issue *gogithub.Issue) map[string]any {
 	labels := make([]string, len(issue.Labels))
 	for i, l := range issue.Labels {
-		labels[i] = l.GetName()
+		labels[i] = l.Name
 	}
 
 	assignees := make([]string, len(issue.Assignees))
 	for i, a := range issue.Assignees {
-		assignees[i] = a.GetLogin()
+		if a != nil {
+			assignees[i] = a.Login
+		}
+	}
+
+	user := ""
+	if issue.User != nil {
+		user = issue.User.Login
 	}
 
 	m := map[string]any{
-		"number":     issue.GetNumber(),
-		"title":      issue.GetTitle(),
-		"state":      issue.GetState(),
-		"url":        issue.GetHTMLURL(),
-		"user":       issue.GetUser().GetLogin(),
+		"number":     issue.Number,
+		"title":      issue.Title,
+		"state":      issue.State,
+		"url":        issue.HTMLURL,
+		"user":       user,
 		"labels":     labels,
 		"assignees":  assignees,
-		"created_at": issue.GetCreatedAt().Format("2006-01-02T15:04:05Z"),
-		"updated_at": issue.GetUpdatedAt().Format("2006-01-02T15:04:05Z"),
-		"comments":   issue.GetComments(),
+		"created_at": issue.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		"updated_at": issue.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		"comments":   issue.Comments,
 	}
 
-	if body := issue.GetBody(); body != "" {
+	if issue.Body != "" {
 		// Truncate body for list views
-		if len(body) > 500 {
-			m["body"] = body[:500] + "..."
+		if len(issue.Body) > 500 {
+			m["body"] = issue.Body[:500] + "..."
 		} else {
-			m["body"] = body
+			m["body"] = issue.Body
 		}
 	}
 
 	return m
 }
 
-func prToMap(pr *github.PullRequest) map[string]any {
+func prToMap(pr *gogithub.PullRequest) map[string]any {
 	labels := make([]string, len(pr.Labels))
 	for i, l := range pr.Labels {
-		labels[i] = l.GetName()
+		labels[i] = l.Name
 	}
 
 	assignees := make([]string, len(pr.Assignees))
 	for i, a := range pr.Assignees {
-		assignees[i] = a.GetLogin()
+		if a != nil {
+			assignees[i] = a.Login
+		}
+	}
+
+	user := ""
+	if pr.User != nil {
+		user = pr.User.Login
+	}
+	base := ""
+	if pr.Base != nil {
+		base = pr.Base.Ref
+	}
+	head := ""
+	if pr.Head != nil {
+		head = pr.Head.Ref
+	}
+	mergeable := false
+	if pr.Mergeable != nil {
+		mergeable = *pr.Mergeable
 	}
 
 	m := map[string]any{
-		"number":     pr.GetNumber(),
-		"title":      pr.GetTitle(),
-		"state":      pr.GetState(),
-		"url":        pr.GetHTMLURL(),
-		"user":       pr.GetUser().GetLogin(),
+		"number":     pr.Number,
+		"title":      pr.Title,
+		"state":      pr.State,
+		"url":        pr.HTMLURL,
+		"user":       user,
 		"labels":     labels,
 		"assignees":  assignees,
-		"base":       pr.GetBase().GetRef(),
-		"head":       pr.GetHead().GetRef(),
-		"draft":      pr.GetDraft(),
-		"mergeable":  pr.GetMergeable(),
-		"merged":     pr.GetMerged(),
-		"created_at": pr.GetCreatedAt().Format("2006-01-02T15:04:05Z"),
-		"updated_at": pr.GetUpdatedAt().Format("2006-01-02T15:04:05Z"),
-		"additions":  pr.GetAdditions(),
-		"deletions":  pr.GetDeletions(),
-		"commits":    pr.GetCommits(),
+		"base":       base,
+		"head":       head,
+		"draft":      pr.Draft,
+		"mergeable":  mergeable,
+		"merged":     pr.Merged,
+		"created_at": pr.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		"updated_at": pr.UpdatedAt.Format("2006-01-02T15:04:05Z"),
+		"additions":  pr.Additions,
+		"deletions":  pr.Deletions,
+		"commits":    pr.Commits,
 	}
 
-	if body := pr.GetBody(); body != "" {
-		if len(body) > 500 {
-			m["body"] = body[:500] + "..."
+	if pr.Body != "" {
+		if len(pr.Body) > 500 {
+			m["body"] = pr.Body[:500] + "..."
 		} else {
-			m["body"] = body
+			m["body"] = pr.Body
 		}
 	}
 
