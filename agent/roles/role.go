@@ -330,6 +330,16 @@ func (a *skillAdapter) Description() string {
 	return a.compiled.Description()
 }
 
+// Version reports the skill version. compiled.Skill is unversioned, so this
+// delegates when the underlying skill exposes a Version() string and otherwise
+// returns "" per the skill.Skill unversioned convention.
+func (a *skillAdapter) Version() string {
+	if v, ok := a.compiled.(interface{ Version() string }); ok {
+		return v.Version()
+	}
+	return ""
+}
+
 func (a *skillAdapter) Tools() []skill.Tool {
 	return a.compiled.Tools()
 }
