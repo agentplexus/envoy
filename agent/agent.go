@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/plexusone/omnillm"
 	"github.com/plexusone/omnillm/provider"
@@ -43,6 +44,7 @@ type Agent struct {
 	dispatcher     *hooks.Dispatcher
 	config         Config
 	logger         *slog.Logger
+	location       *time.Location // Resolved timezone for temporal context
 	mu             sync.RWMutex
 
 	// Profile-related fields
@@ -64,6 +66,7 @@ type Config struct {
 	Temperature       float64
 	MaxTokens         int
 	SystemPrompt      string
+	Timezone          string // IANA timezone for temporal context (empty = UTC)
 	Logger            *slog.Logger
 	ObservabilityHook omnillm.ObservabilityHook
 
@@ -104,6 +107,17 @@ func New(config Config, opts ...Option) (*Agent, error) {
 		return nil, fmt.Errorf("create llm client: %w", err)
 	}
 
+	// Resolve the timezone for temporal context once at construction so an
+	// invalid configuration fails fast rather than silently degrading.
+	location := time.UTC
+	if config.Timezone != "" {
+		location, err = time.LoadLocation(config.Timezone)
+		if err != nil {
+			client.Close()
+			return nil, fmt.Errorf("invalid timezone %q: %w", config.Timezone, err)
+		}
+	}
+
 	hookRegistry := hooks.NewRegistry()
 	a := &Agent{
 		client:     client,
@@ -112,6 +126,7 @@ func New(config Config, opts ...Option) (*Agent, error) {
 		dispatcher: hooks.NewDispatcher(hookRegistry),
 		config:     config,
 		logger:     config.Logger,
+		location:   location,
 	}
 
 	// Apply options
@@ -650,11 +665,37 @@ func (a *Agent) buildSystemPromptWithMemories(memories []*core.Memory) string {
 		basePrompt = a.injectMemoriesIntoPrompt(basePrompt, memories)
 	}
 
-	if len(a.skills) == 0 {
-		return basePrompt
+	if len(a.skills) > 0 {
+		basePrompt = skills.InjectIntoPrompt(basePrompt, a.skills, skills.DefaultInjectConfig())
 	}
 
-	return skills.InjectIntoPrompt(basePrompt, a.skills, skills.DefaultInjectConfig())
+	// Append temporal context last (volatile suffix): it is recomputed on
+	// every prompt build so long-running sessions never reason with a stale
+	// date, and keeping it after the stable content means it will not
+	// invalidate a cached prefix if prompt caching is added later.
+	temporal := temporalContext(time.Now(), a.timezone())
+	if basePrompt == "" {
+		return temporal
+	}
+	return basePrompt + "\n\n" + temporal
+}
+
+// timezone returns the agent's resolved timezone, defaulting to UTC when the
+// agent was constructed without one (e.g. zero-value Agent in tests).
+func (a *Agent) timezone() *time.Location {
+	if a.location == nil {
+		return time.UTC
+	}
+	return a.location
+}
+
+// temporalContext renders the date/timezone block appended to the system
+// prompt. It deliberately emits a coarse date stamp rather than a clock time,
+// which would be wrong minutes after the prompt was built.
+func temporalContext(now time.Time, loc *time.Location) string {
+	local := now.In(loc)
+	return fmt.Sprintf("## Temporal Context\n\nCurrent date: %s (%s)\nTimezone: %s\n\nThe date above is refreshed on every turn; prefer it over any dates mentioned earlier in the conversation.",
+		local.Format("2006-01-02"), local.Weekday(), loc.String())
 }
 
 // injectMemoriesIntoPrompt adds recalled memories to the system prompt.
