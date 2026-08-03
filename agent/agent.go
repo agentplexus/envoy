@@ -314,6 +314,10 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 		a.logger.Info("tool in request", "name", t.Function.Name, "type", t.Type, "params", string(paramsJSON))
 	}
 
+	// Assistant text emitted on tool-call turns, preserved so it is not
+	// lost from the final output when a tool call follows it.
+	var textSegments []string
+
 	// Process with potential tool calls (max 5 iterations to prevent infinite loops)
 	for i := 0; i < 5; i++ {
 		req := &provider.ChatCompletionRequest{
@@ -350,21 +354,36 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 
 		// Check if the model wants to call tools
 		if len(choice.Message.ToolCalls) == 0 {
+			// Join any assistant text preserved from earlier tool-call
+			// turns with the final response. Single-turn output without
+			// preserved segments is returned unchanged.
+			final := choice.Message.Content
+			if len(textSegments) > 0 {
+				final = joinAssistantSegments(append(textSegments, choice.Message.Content))
+			}
 			// Emit message sent event
 			a.dispatcher.EmitAsync(ctx, hooks.EventMessageSent, hooks.MessageEvent{
 				Role:    "assistant",
-				Content: choice.Message.Content,
+				Content: final,
 			})
 			// No tool calls, return the response
-			return choice.Message.Content, nil
+			return final, nil
 		}
 
 		// Execute tool calls
 		a.logger.Info("executing tool calls", "count", len(choice.Message.ToolCalls))
 
-		// Add assistant message with tool calls to conversation
+		// Preserve assistant text emitted alongside the tool calls so it
+		// survives into the final output instead of being discarded.
+		if strings.TrimSpace(choice.Message.Content) != "" {
+			textSegments = append(textSegments, choice.Message.Content)
+		}
+
+		// Add assistant message with tool calls to conversation, keeping
+		// its Content so session history stays faithful to the model output.
 		messages = append(messages, provider.Message{
 			Role:      provider.RoleAssistant,
+			Content:   choice.Message.Content,
 			ToolCalls: choice.Message.ToolCalls,
 		})
 
@@ -409,6 +428,25 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 	}
 
 	return "", fmt.Errorf("exceeded maximum tool call iterations")
+}
+
+// joinAssistantSegments joins assistant text segments emitted across
+// tool-call turns with a single blank line, normalizing newlines at each
+// boundary so segments that already end or begin with newlines do not
+// double-space. Blank segments are skipped.
+func joinAssistantSegments(segments []string) string {
+	result := ""
+	for _, seg := range segments {
+		if strings.TrimSpace(seg) == "" {
+			continue
+		}
+		if result == "" {
+			result = seg
+			continue
+		}
+		result = strings.TrimRight(result, "\n") + "\n\n" + strings.TrimLeft(seg, "\n")
+	}
+	return result
 }
 
 // ProcessWithMemory processes a message using conversation memory.
