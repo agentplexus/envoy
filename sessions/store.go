@@ -214,7 +214,10 @@ func (s *Store) ClearCache() {
 	s.mu.Unlock()
 }
 
-// Close closes the underlying backend.
+// Close releases the in-memory session cache and closes the underlying
+// backend. Releasing the cache ensures a closed store does not retain
+// references to cached sessions for as long as the Store value is reachable.
 func (s *Store) Close() error {
+	s.ClearCache()
 	return s.backend.Close()
 }

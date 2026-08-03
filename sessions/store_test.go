@@ -395,6 +395,42 @@ func TestStore_Close(t *testing.T) {
 	}
 }
 
+func TestStore_Close_ReleasesCache(t *testing.T) {
+	ctx := context.Background()
+	backend := memory.New()
+
+	store := NewStore(StoreConfig{
+		Backend: backend,
+		TTL:     time.Hour,
+	})
+
+	// Populate the cache
+	if _, err := store.Get(ctx, "close-cache-1"); err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if _, err := store.Get(ctx, "close-cache-2"); err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+
+	store.mu.RLock()
+	cached := len(store.cache)
+	store.mu.RUnlock()
+	if cached != 2 {
+		t.Fatalf("live store cache = %d sessions, want 2", cached)
+	}
+
+	if err := store.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
+	store.mu.RLock()
+	cached = len(store.cache)
+	store.mu.RUnlock()
+	if cached != 0 {
+		t.Errorf("closed store cache = %d sessions, want 0", cached)
+	}
+}
+
 func TestStore_DefaultTTL(t *testing.T) {
 	backend := memory.New()
 	defer backend.Close()
