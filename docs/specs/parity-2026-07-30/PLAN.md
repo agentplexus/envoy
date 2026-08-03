@@ -11,6 +11,31 @@ Sync OmniAgent with OpenClaw changes from `2001b15f` to `3e7ecb3a`.
 | Commits | 11,280 |
 | Date range | 2026-06-28 to 2026-07-30 |
 
+## Port Analysis (2026-08-03)
+
+A diff-level cross-check of every unmapped/in-flight commit against the OpenClaw
+source at `3e7ecb3a` and the plexusone Go targets is recorded in
+[`PORT-SPEC.md`](PORT-SPEC.md). Net verdict across 24 analyzed commits:
+**12 PORT / 12 N-A**.
+
+Key outcomes:
+
+- **N-A (no landing surface in omniagent):** `d9525663852` (RMI-060), `82af1bf7d40`
+  (RMI-063), `5496cff9653` (RMI-065), `9560e171855` (RMI-069), `3f918d4b3ca`
+  (RMI-062 — rider on 061), `e5cee36b46c`, `280c1627533`, `6b37d46b179`,
+  `ad1dc602594`, `750dc999038`, `29497b4e1e8`, `46ec7a43a8a`.
+- **Already satisfied:** `2899323fe3e` (plugin scans expose all calls),
+  `83aca8a59c7` (blank-search early return).
+- **New gaps the RMI set missed:** cron fail-closed authority (`cee6203f448`,
+  security), auth-failure escalating delay (`ea967be0df6`, security), pre-tool
+  assistant text drop (`c661061d4a7`, bug), session cache release on Close
+  (`c63fdc631f0`, bug), realtime readLoop silent event drop (bug), temporal
+  context in system prompt (`54e273e6953`), `agent_end` lifecycle event
+  (`8fefe62ba41`, enabling), sticky session model (`eee5e029e36`, blocked).
+
+Commit tables below are annotated with `[PORT]`, `[N-A]`, `[DONE]`, or
+`[RIDER]` per those findings; unannotated rows were completed under RMIs 050–059.
+
 ## Priority Categories
 
 ### P0: Security - Bounded Reads (Critical)
@@ -20,12 +45,12 @@ OpenClaw continues hardening against unbounded reads in realtime/streaming conte
 | Commit | Description | OmniAgent Module |
 |--------|-------------|------------------|
 | `039efadf592` | Bound realtime SDP answer reads | `api/openai/` |
-| `280c1627533` | Bound GPT-Live sideband startup frames | `api/openai/` |
+| `280c1627533` | Bound GPT-Live sideband startup frames [N-A — no sideband subsystem; 16 MiB read limit already caps payload] | `api/openai/` |
 | `3133abed325` | Bound pre-ready realtime audio | `api/openai/` |
 | `567d04076a5` | Bound realtime playback marks | `api/openai/` |
-| `6b37d46b179` | Bound GPT-Live delegation work | `api/openai/` |
-| `750dc999038` | Preserve playback acknowledgement order | `api/openai/` |
-| `ad1dc602594` | Scope realtime readiness state | `api/openai/` |
+| `6b37d46b179` | Bound GPT-Live delegation work [N-A — no delegation broker; analogous path already single-flight] | `api/openai/` |
+| `750dc999038` | Preserve playback acknowledgement order [N-A — no playback marks; adjacent readLoop silent-drop bug filed as PORT] | `api/openai/` |
+| `ad1dc602594` | Scope realtime readiness state [N-A — JS block-scoping hygiene, moot in Go] | `api/openai/` |
 
 **Action items:**
 
@@ -39,11 +64,11 @@ OpenClaw continues hardening against unbounded reads in realtime/streaming conte
 | Commit | Description | OmniAgent Module |
 |--------|-------------|------------------|
 | `e02bb90f181` | Cancel unread cron webhook bodies before SSRF release | `gateway/` |
-| `2899323fe3e` | Expose every executable call in plugin scans | `skills/` |
+| `2899323fe3e` | Expose every executable call in plugin scans [DONE — already satisfied: omniskill loader/markdown.go + clawhub/security.go collect all calls] | `skills/` |
 | `4823d7fe7b2` | Fence external hook job name in isolated-agent prompts | `hooks/` |
 | `54a6dba0d3d` | Validate hook delivery accounts | `gateway/` |
 | `814b9f6e36f` | Bound agent runner admission | `hooks/` |
-| `cee6203f448` | Deny all tools when scheduled authority names removed account | `cron/` |
+| `cee6203f448` | Deny all tools when scheduled authority names removed account [PORT — new security RMI; omniagent cron is currently fail-open] | `cron/` |
 
 **Action items:**
 
@@ -75,25 +100,25 @@ Critical fixes for the edit/patch tools and agent orchestration.
 | `c4b82609b70` | Compare shell tool names case-insensitively | `agent/tools/` |
 | `d30d22d33c1` | Prevent registry stalls during large fan-outs | `agent/` |
 | `b942db4d569` | Throw CompactionError when summarization fails | `agent/` |
-| `29497b4e1e8` | Keep subagent run ID mask from splitting UTF-16 surrogate pairs | `agent/` |
-| `46ec7a43a8a` | Prevent model runtime startup timeout | `agent/` |
-| `54e273e6953` | Keep date reasoning current in long-running sessions | `agent/` |
-| `c661061d4a7` | Keep streamed pre-tool assistant text in final output | `agent/` |
-| `8fefe62ba41` | Settle aborted runs through after-turn so agent_end fires | `agent/` |
+| `29497b4e1e8` | Keep subagent run ID mask from splitting UTF-16 surrogate pairs [N-A — UTF-16 slice defect cannot occur on Go UTF-8 strings; no run-ID masking exists] | `agent/` |
+| `46ec7a43a8a` | Prevent model runtime startup timeout [N-A — no model catalog/plugin-metadata subsystem; model is config-string passthrough] | `agent/` |
+| `54e273e6953` | Keep date reasoning current in long-running sessions [PORT — inject fresh temporal context per turn; omniagent injects no date at all] | `agent/` |
+| `c661061d4a7` | Keep streamed pre-tool assistant text in final output [PORT — live bug: run loop drops pre-tool Content at agent.go:365-369] | `agent/` |
+| `8fefe62ba41` | Settle aborted runs through after-turn so agent_end fires [PORT — enabling: requires introducing agent_end event + finalize step first] | `agent/` |
 
 ### P3: Memory & Session Fixes
 
 | Commit | Description | OmniAgent Module |
 |--------|-------------|------------------|
-| `d9525663852` | MEMORY.md compaction deletes user notes under promotion-style heading | `memory/` |
-| `e5cee36b46c` | Retry failed queued session targets | `sessions/` |
-| `c63fdc631f0` | Release closed SQLite entry caches | `sessions/` |
-| `73808753757` | Keep degraded status actionable | `memory/` |
-| `83aca8a59c7` | Return early for blank searches | `memory/` |
-| `cf927f7b1b1` | Keep rollbacks compatible after recall metadata upgrade | `memory/` |
-| `ef63df8afdb` | Preserve taint across transcript runtimes | `memory/` |
-| `a2ead0a9292` | Recover divergent dreaming journals | `memory/` |
-| `216f45af8ec` | Preserve Windows session ownership | `sessions/` |
+| `d9525663852` | MEMORY.md compaction deletes user notes under promotion-style heading [N-A — RMI-060 blocked: no MEMORY.md promotion/budget-compaction subsystem exists] | `memory/` |
+| `e5cee36b46c` | Retry failed queued session targets [N-A — sessions Save is synchronous; no queued-sync path to retry] | `sessions/` |
+| `c63fdc631f0` | Release closed SQLite entry caches [PORT — sessions/store.go Close() never calls ClearCache; S-size fix] | `sessions/` |
+| `73808753757` | Keep degraded status actionable [N-A — no memory health/degraded status concept] | `memory/` |
+| `83aca8a59c7` | Return early for blank searches [DONE — already satisfied: omniretrieve bm25.go:204 early-returns on empty query] | `memory/` |
+| `cf927f7b1b1` | Keep rollbacks compatible after recall metadata upgrade [N-A — no recall-metadata versioning subsystem] | `memory/` |
+| `ef63df8afdb` | Preserve taint across transcript runtimes [N-A — no taint/transcript-runtime concept] | `memory/` |
+| `a2ead0a9292` | Recover divergent dreaming journals [N-A — no dreaming/journal subsystem] | `memory/` |
+| `216f45af8ec` | Preserve Windows session ownership [N-A — sessions are KVS-backed, no file ownership] | `sessions/` |
 
 **Action:** Review `omniretrieve` memory compaction to preserve user notes.
 
@@ -101,31 +126,31 @@ Critical fixes for the edit/patch tools and agent orchestration.
 
 | Commit | Description | OmniAgent Module |
 |--------|-------------|------------------|
-| `9560e171855` | Add persistent hook session mode | `hooks/` |
-| `73b5e7aab49` | Save memory on automatic session rollover | `hooks/` |
-| `3f918d4b3ca` | Honor user timezone in session memory | `hooks/` |
-| `9e041cd3867` | Preserve multi-account agent delivery | `hooks/` |
-| `fc95d7190cb` | Route mapped wake events to configured sessions | `hooks/` |
-| `43945b836ab` | Retain manual reset memory admission | `hooks/` |
-| `215e49b1a2f` | Report eventless hooks as not ready | `hooks/` |
-| `819961a292d` | Avoid implicit hook delivery targets | `hooks/` |
-| `82af1bf7d40` | Stop replaying old schedule slots after cron job edited | `cron/` |
-| `a877fe1b32a` | Prevent stalled schedules, duplicate runs, lost heartbeats | `cron/` |
+| `9560e171855` | Add persistent hook session mode [N-A — RMI-069: no inbound hook→session gateway; cron path already implicitly persistent] | `hooks/` |
+| `73b5e7aab49` | Save memory on automatic session rollover [PORT — RMI-061; net-new: needs rollover trigger + session.rollover event + memory hook] | `hooks/` |
+| `3f918d4b3ca` | Honor user timezone in session memory [RIDER — folds into RMI-061 as an acceptance criterion] | `hooks/` |
+| `9e041cd3867` | Preserve multi-account agent delivery [N-A — no account-partitioned delivery] | `hooks/` |
+| `fc95d7190cb` | Route mapped wake events to configured sessions [N-A — no wake-event concept] | `hooks/` |
+| `43945b836ab` | Retain manual reset memory admission [N-A — no memory-admission gating] | `hooks/` |
+| `215e49b1a2f` | Report eventless hooks as not ready [N-A — Hook interface has no readiness/status surface] | `hooks/` |
+| `819961a292d` | Avoid implicit hook delivery targets [N-A — no delivery-target resolution model] | `hooks/` |
+| `82af1bf7d40` | Stop replaying old schedule slots after cron job edited [N-A — RMI-063: no restart catch-up state machine; UpdateJob recomputes from now] | `cron/` |
+| `a877fe1b32a` | Prevent stalled schedules, duplicate runs, lost heartbeats [PORT — RMI-064 narrowed to duplicate-run prevention; stall/heartbeat/lock parts N-A] | `cron/` |
 
 ### P5: New Features Worth Porting
 
 | Commit | Description | OmniAgent Module | Priority |
 |--------|-------------|------------------|----------|
-| `5496cff9653` | Include run time in cron failure alerts | `cron/` | Medium |
-| `42e23c11e0f` | Allow per-turn tool narrowing in prompt hooks | `hooks/` | Medium |
-| `a37a5a65753` | Add per-session tool overrides | `agent/` | Medium |
-| `eee5e029e36` | Persist last-used session model as agent default | `agent/` | Low |
-| `ea967be0df6` | Add loopback locality controls | `gateway/` | Low |
-| `adf3178ae6c` | Expose MCP tool identity in effective tools | `gateway/` | Medium |
-| `662abec7541` | Push session PR indicators to subscribed clients | `gateway/` | Low |
-| `4c4aa2ed126` | Manage audio/video attachments end to end | `gateway/` | Low |
-| `fb788b79cf7` | Retain recent project scopes per session | `memory/` | Low |
-| `14940edf15f` | Add Skill Workshop lifecycle hooks | `skills/` | Low |
+| `5496cff9653` | Include run time in cron failure alerts [N-A — RMI-065 blocked: no cron failure-alert subsystem to enrich] | `cron/` | Medium |
+| `42e23c11e0f` | Allow per-turn tool narrowing in prompt hooks [PORT — RMI-066; requires new synchronous hook stage] | `hooks/` | Medium |
+| `a37a5a65753` | Add per-session tool overrides [PORT — RMI-067; requires session-scoped tool resolution; sequence after 066] | `agent/` | Medium |
+| `eee5e029e36` | Persist last-used session model as agent default [PORT — blocked on missing per-session model selection + writable config] | `agent/` | Low |
+| `ea967be0df6` | Add loopback locality controls [PORT — auth-failure escalating-delay half only; pairing half N-A] | `gateway/` | Low |
+| `adf3178ae6c` | Expose MCP tool identity in effective tools [PORT — RMI-068; identity fields independent, deniedBySession depends on 067] | `gateway/` | Medium |
+| `662abec7541` | Push session PR indicators to subscribed clients [DEFERRED — low priority, no PR-status concept; not analyzed at diff level] | `gateway/` | Low |
+| `4c4aa2ed126` | Manage audio/video attachments end to end [DEFERRED — low priority, no attachment path; not analyzed at diff level] | `gateway/` | Low |
+| `fb788b79cf7` | Retain recent project scopes per session [N-A — no project-scope concept] | `memory/` | Low |
+| `14940edf15f` | Add Skill Workshop lifecycle hooks [N-A — no Skill Workshop concept] | `skills/` | Low |
 
 ### P6: Channel Fixes (Lower Priority)
 
@@ -191,32 +216,45 @@ These are iOS/macOS/Android native app fixes - not applicable to Go port.
    - Add CompactionError for failed summarization
    - UTF-16 surrogate pair safety in run ID masks
 
-### Phase 3: Memory & Hooks (P3 + P4)
+### Phase 3: Memory & Hooks (P3 + P4) — rescoped 2026-08-03
 
-**Estimated effort:** 2-3 days
+**Estimated effort:** 3-4 days (see PORT-SPEC.md)
 
-1. [ ] Fix memory compaction
-   - Preserve user notes under promotion-style headings
-   - Keep degraded status actionable
-   - Early return for blank searches
+1. [ ] ~~Fix memory compaction~~ — rescoped
+   - ~~Preserve user notes under promotion-style headings~~ [N-A — RMI-060 blocked: no MEMORY.md promotion subsystem]
+   - ~~Keep degraded status actionable~~ [N-A — no memory health status]
+   - Early return for blank searches [DONE — already satisfied]
+   - [ ] Release session cache on `Store.Close` (`c63fdc631f0`, S)
 
-2. [ ] Improve hook session handling
-   - Add persistent session mode
-   - Save memory on session rollover
-   - Honor user timezone
+2. [ ] Improve hook session handling — rescoped
+   - ~~Add persistent session mode~~ [N-A — RMI-069: no inbound hook gateway]
+   - [ ] Save memory on session rollover (RMI-061, L; prereq: rollover trigger + `session.rollover` event; builds on `agent_end` substrate)
+   - Honor user timezone [RIDER — acceptance criterion of RMI-061]
 
-3. [ ] Fix cron scheduling
-   - Stop replaying old slots after edit
-   - Prevent stalled schedules and duplicate runs
+3. [ ] Fix cron scheduling — rescoped
+   - ~~Stop replaying old slots after edit~~ [N-A — RMI-063: no catch-up state machine]
+   - [ ] Prevent duplicate concurrent runs (RMI-064 narrowed, M)
 
-### Phase 4: Features (P5)
+### Phase 4: Features (P5) — rescoped 2026-08-03
 
-**Estimated effort:** 2-3 days
+**Estimated effort:** 4-6 days (066/067 require new shared substrate)
 
-1. [ ] Add run time to cron failure alerts
-2. [ ] Add per-turn tool narrowing in hooks
-3. [ ] Add per-session tool overrides
-4. [ ] Expose MCP tool identity in effective tools
+1. ~~Add run time to cron failure alerts~~ [N-A — RMI-065 blocked: no failure-alert subsystem]
+2. [ ] Add per-turn tool narrowing in hooks (RMI-066, L — introduces synchronous hook stage)
+3. [ ] Add per-session tool overrides (RMI-067, L — introduces session-scoped tool resolution; after 066)
+4. [ ] Expose MCP tool identity in effective tools (RMI-068, M — identity fields independent; deniedBySession after 067)
+
+### Phase 5: Ported Gap Fixes (new 2026-08-03)
+
+Security and correctness gaps surfaced by the diff-level port analysis
+(PORT-SPEC.md) that the original triage missed:
+
+1. [ ] **[security]** Cron fail-closed on removed authorizing account (`cee6203f448`, L) — cron currently fail-open
+2. [ ] **[security]** Gateway auth-failure escalating delay (`ea967be0df6`, M)
+3. [ ] **[bug]** Preserve pre-tool assistant text in final output (`c661061d4a7`, M)
+4. [ ] **[bug]** Realtime readLoop silent event drop (omni-openai `client.go:306-308`, M)
+5. [ ] **[correctness]** Temporal context in system prompt (`54e273e6953`, M)
+6. [ ] **[enabling]** `agent_end` lifecycle event on all exit paths (`8fefe62ba41`, L)
 
 ---
 
