@@ -28,7 +28,7 @@ require (
 	github.com/pion/webrtc/v4 v4.2.18
 	github.com/pkoukk/tiktoken-go v0.1.8
 	github.com/plexusone/agentauth v0.2.0
-	github.com/plexusone/omni-livekit v0.4.0
+	github.com/plexusone/omni-livekit v0.5.0
 	github.com/plexusone/omnichat v0.8.1
 	github.com/plexusone/omniimage v0.1.0
 	github.com/plexusone/omnillm v0.17.0
@@ -36,7 +36,7 @@ require (
 	github.com/plexusone/omnimeet-core v0.1.0
 	github.com/plexusone/omnimemory v0.2.0
 	github.com/plexusone/omniobserve v0.12.0
-	github.com/plexusone/omnirole-facilitator v0.1.0
+	github.com/plexusone/omnirole-facilitator v0.1.1
 	github.com/plexusone/omniserp v0.9.0
 	github.com/plexusone/omniskill v0.11.0
 	github.com/plexusone/omnistorage-core v0.5.1
