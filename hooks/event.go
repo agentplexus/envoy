@@ -46,6 +46,17 @@ const (
 
 	// EventJobExecuted fires after a cron job runs.
 	EventJobExecuted EventType = "job.executed"
+
+	// EventAgentEnd fires exactly once when an agent run reaches any
+	// terminal state: normal completion, error, or abort (context
+	// cancellation). Aborted runs still settle through this event.
+	EventAgentEnd EventType = "agent.end"
+
+	// EventSessionRollover fires when a session automatically rolls over
+	// (idle timeout or daily boundary) — as opposed to a manual clear,
+	// which emits no rollover. It carries the ENDED session's transcript
+	// so hooks can persist it before the fresh session begins.
+	EventSessionRollover EventType = "session.rollover"
 )
 
 // Event represents an event in the hooks system.
@@ -96,4 +107,37 @@ type JobEvent struct {
 	JobID   string `json:"job_id"`
 	JobName string `json:"job_name"`
 	Success bool   `json:"success"`
+}
+
+// SessionRolloverEvent is the data for the session.rollover event: an
+// automatic session boundary. Transcript is a snapshot of the ended
+// conversation, taken before the session is reset, so handlers can persist
+// it without racing the reset.
+type SessionRolloverEvent struct {
+	SessionID string `json:"session_id"`
+
+	// Reason is the machine-readable rollover cause ("idle" or "daily").
+	Reason string `json:"reason"`
+
+	// Transcript holds the ended conversation as role/content pairs.
+	Transcript []MessageEvent `json:"transcript"`
+
+	// StartedAt is when the ended conversation began.
+	StartedAt time.Time `json:"started_at"`
+
+	// EndedAt is the ended conversation's last activity.
+	EndedAt time.Time `json:"ended_at"`
+}
+
+// AgentEndEvent is the data for the agent.end lifecycle event.
+// Classification: abort outranks error — a run cancelled by the caller
+// reports Aborted=true with an empty Error, even when the cancellation
+// surfaced as an error from a provider or tool call.
+type AgentEndEvent struct {
+	SessionID  string `json:"session_id,omitempty"`
+	Success    bool   `json:"success"`
+	Error      string `json:"error,omitempty"`
+	Aborted    bool   `json:"aborted"`
+	Response   string `json:"response,omitempty"`
+	DurationMs int64  `json:"duration_ms"`
 }
