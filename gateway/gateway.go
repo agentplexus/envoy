@@ -63,9 +63,23 @@ type Gateway struct {
 	authLimiter *authFailureLimiter
 	metrics     *Metrics
 
+	// extraMounts are additional HTTP handlers registered by embedders
+	// (e.g. team-mode auth/admin routes), applied to the mux in Run.
+	extraMounts map[string]http.Handler
+
+	// connectAuthorizer, when set, gates WebSocket upgrades: it runs before
+	// the upgrade and, on success, returns the authenticated user ID bound
+	// to the client. Used by team mode for cookie-authenticated sockets.
+	connectAuthorizer ConnectAuthorizer
+
 	// Handlers
 	onMessage MessageHandler
 }
+
+// ConnectAuthorizer authorizes a WebSocket upgrade request. It returns the
+// authenticated user ID and true to allow the upgrade, or false to reject it
+// (the caller responds 401 before upgrading).
+type ConnectAuthorizer func(r *http.Request) (userID string, ok bool)
 
 // MessageHandler handles incoming messages from clients.
 type MessageHandler func(ctx context.Context, client *Client, msg *Message) (*Message, error)
@@ -125,6 +139,21 @@ func (g *Gateway) OnMessage(handler MessageHandler) {
 	g.onMessage = handler
 }
 
+// Handle registers an additional HTTP handler at pattern, applied to the
+// server mux when Run starts. Patterns follow http.ServeMux rules; a
+// trailing slash (e.g. "/api/") mounts a subtree.
+func (g *Gateway) Handle(pattern string, handler http.Handler) {
+	if g.extraMounts == nil {
+		g.extraMounts = make(map[string]http.Handler)
+	}
+	g.extraMounts[pattern] = handler
+}
+
+// SetConnectAuthorizer installs a WebSocket upgrade authorizer (team mode).
+func (g *Gateway) SetConnectAuthorizer(a ConnectAuthorizer) {
+	g.connectAuthorizer = a
+}
+
 // Run starts the gateway server.
 func (g *Gateway) Run(ctx context.Context) error {
 	mux := http.NewServeMux()
@@ -141,6 +170,12 @@ func (g *Gateway) Run(ctx context.Context) error {
 	for path, handler := range g.config.WebhookHandlers {
 		g.logger.Info("mounting webhook handler", "path", path)
 		mux.Handle(path, handler)
+	}
+
+	// Mount embedder handlers (e.g. team-mode auth/admin routes).
+	for pattern, handler := range g.extraMounts {
+		g.logger.Info("mounting handler", "pattern", pattern)
+		mux.Handle(pattern, handler)
 	}
 
 	server := &http.Server{
@@ -173,6 +208,18 @@ func (g *Gateway) Run(ctx context.Context) error {
 
 // handleWebSocket handles WebSocket upgrade requests.
 func (g *Gateway) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	// Team mode gates the upgrade on a valid session cookie before
+	// upgrading, and binds the authenticated user to the client.
+	var userID string
+	if g.connectAuthorizer != nil {
+		var ok bool
+		userID, ok = g.connectAuthorizer(r)
+		if !ok {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+	}
+
 	conn, err := g.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		g.logger.Error("websocket upgrade failed", "error", err)
@@ -180,6 +227,10 @@ func (g *Gateway) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := newClient(conn, g)
+	if userID != "" {
+		client.SetMetadata("user_id", userID)
+		client.SetMetadata("authenticated", true)
+	}
 	g.registerClient(client)
 
 	go client.readPump()

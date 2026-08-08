@@ -9,6 +9,7 @@ type Config struct {
 	Agent         AgentConfig         `json:"agent" yaml:"agent"`
 	Agents        []AgentConfig       `json:"agents,omitempty" yaml:"agents,omitempty"` // Multi-agent configs
 	Sessions      SessionsConfig      `json:"sessions" yaml:"sessions"`
+	Team          TeamConfig          `json:"team" yaml:"team"`
 	Channels      ChannelsConfig      `json:"channels" yaml:"channels"`
 	Tools         ToolsConfig         `json:"tools" yaml:"tools"`
 	Skills        SkillsConfig        `json:"skills" yaml:"skills"`

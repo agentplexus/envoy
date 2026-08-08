@@ -62,6 +62,19 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Team (multi-user) mode: validate config, run the PostgreSQL
+	// migrations (schema + RLS policies), and build the auth/admin HTTP
+	// surface. Registered with the gateway mux after it is created.
+	var teamHTTP *gateway.TeamHTTP
+	if cfg.Team.Enabled {
+		th, cleanup, err := setupTeamMode(ctx, cfg, logger)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+		teamHTTP = th
+	}
+
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
@@ -402,6 +415,14 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	})
 	if err != nil {
 		return fmt.Errorf("create gateway: %w", err)
+	}
+
+	// Team mode: mount the auth/admin API and gate WebSocket upgrades on
+	// the session cookie.
+	if teamHTTP != nil {
+		gw.Handle("/api/", teamHTTP.Handler())
+		gw.SetConnectAuthorizer(teamHTTP.ConnectAuthorizer())
+		logger.Info("team mode: auth API mounted at /api/, WebSocket cookie-authenticated")
 	}
 
 	// Start gateway

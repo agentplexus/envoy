@@ -1,0 +1,30 @@
+# Local development config for team mode (magic-link auth).
+#
+# Bring up the dev PostgreSQL first:
+#   docker compose -f deploy/team/dev/docker-compose.dev.yaml up -d --wait
+#
+# Then run the gateway with this config:
+#   go run ./cmd/omniagent gateway run --config deploy/team/dev/config.dev.yaml
+#
+# No SMTP is configured, so magic links are LOGGED to the console instead of
+# emailed — copy the link from the log line "email (log mailer …)".
+
+gateway:
+  address: "127.0.0.1:8080"
+
+# An LLM provider is optional for exercising auth; set one to also chat.
+agent:
+  provider: openai
+  model: gpt-4o-mini
+  # api_key: sk-...    # or via OMNIAGENT_AGENT_API_KEY
+
+team:
+  enabled: true
+  base_url: http://127.0.0.1:8080
+  superadmin_email: root@example.com     # first login by this email = superadmin
+  agent_handle: omniagent
+  database:
+    app_dsn: "postgres://omniagent_app:app_dev_password@127.0.0.1:5433/omniagent_team?sslmode=disable"
+    migrate_dsn: "postgres://omniagent_owner:owner_dev_password@127.0.0.1:5433/omniagent_team?sslmode=disable"
+    app_role: omniagent_app
+  # smtp: (unset → magic links are logged, not emailed)

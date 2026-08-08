@@ -1,0 +1,280 @@
+package gateway
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/plexusone/omniagent/internal/pgtest"
+	"github.com/plexusone/omniagent/team"
+	"github.com/plexusone/omniagent/team/auth"
+	"github.com/plexusone/omniagent/team/mail"
+	"github.com/plexusone/omniagent/team/store"
+)
+
+// teamHTTPFixture wires a real auth stack over PostgreSQL behind an
+// httptest server, with a capturing mailer so tests can follow magic links.
+type teamHTTPFixture struct {
+	server *httptest.Server
+	mailer *captureMailer
+	client *http.Client
+}
+
+type captureMailer struct{ sent []mail.Message }
+
+func (m *captureMailer) Send(_ context.Context, msg mail.Message) error {
+	m.sent = append(m.sent, msg)
+	return nil
+}
+
+func (m *captureMailer) lastToken(t *testing.T) string {
+	t.Helper()
+	if len(m.sent) == 0 {
+		t.Fatal("no email captured")
+	}
+	body := m.sent[len(m.sent)-1].TextBody
+	i := strings.Index(body, "token=")
+	if i < 0 {
+		t.Fatalf("no token in %q", body)
+	}
+	tok := body[i+len("token="):]
+	if nl := strings.IndexAny(tok, "\r\n"); nl >= 0 {
+		tok = tok[:nl]
+	}
+	return strings.TrimSpace(tok)
+}
+
+func setupTeamHTTP(t *testing.T) *teamHTTPFixture {
+	t.Helper()
+	ownerDSN, appDSN := pgtest.DSNs(t)
+	ctx := context.Background()
+
+	cfg := store.Config{AppDSN: appDSN, MigrateDSN: ownerDSN}
+	if err := store.Migrate(ctx, cfg); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+	st, err := store.Open(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+
+	teamSvc, err := team.NewService(st, team.Config{SuperadminEmail: "root@example.com"})
+	if err != nil {
+		t.Fatalf("team.NewService: %v", err)
+	}
+	mailer := &captureMailer{}
+
+	// BaseURL is set to the httptest server below via a placeholder we
+	// rewrite after the server starts; auth only uses it to build links,
+	// and the test extracts the token from the email regardless of host.
+	authSvc, err := auth.NewService(st, teamSvc, mailer, auth.Config{BaseURL: "http://example.test"})
+	if err != nil {
+		t.Fatalf("auth.NewService: %v", err)
+	}
+
+	// Plain HTTP in tests → CookieSecure=false (unprefixed cookie).
+	h := NewTeamHTTP(authSvc, teamSvc, TeamHTTPConfig{CookieSecure: false})
+	// Speed up the anti-enumeration delay so tests are fast.
+	h.limiter.baseDelay = 0
+	h.limiter.maxDelay = 0
+
+	srv := httptest.NewServer(h.Handler())
+	t.Cleanup(srv.Close)
+
+	jar, _ := newJar()
+	return &teamHTTPFixture{
+		server: srv,
+		mailer: mailer,
+		client: &http.Client{
+			Jar: jar,
+			// Do not auto-follow the verify redirect; the test inspects it.
+			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		},
+	}
+}
+
+func newJar() (http.CookieJar, error) {
+	// net/http/cookiejar without public-suffix handling is fine for tests.
+	return cookieJar{m: map[string][]*http.Cookie{}}, nil
+}
+
+// cookieJar is a minimal same-host cookie jar sufficient for the test server.
+type cookieJar struct{ m map[string][]*http.Cookie }
+
+func (j cookieJar) SetCookies(u *url.URL, cs []*http.Cookie) { j.m[u.Host] = cs }
+func (j cookieJar) Cookies(u *url.URL) []*http.Cookie        { return j.m[u.Host] }
+
+func (f *teamHTTPFixture) post(t *testing.T, path, body string, csrf bool) *http.Response {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodPost, f.server.URL+path, strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if csrf {
+		req.Header.Set(csrfHeader, "1")
+	}
+	resp, err := f.client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resp
+}
+
+func (f *teamHTTPFixture) get(t *testing.T, path string) *http.Response {
+	t.Helper()
+	resp, err := f.client.Get(f.server.URL + path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resp
+}
+
+func TestTeamHTTP_MagicLinkLoginFlow(t *testing.T) {
+	f := setupTeamHTTP(t)
+
+	// Superadmin requests a link (allowed without an allowlist entry).
+	resp := f.post(t, "/api/auth/magic-link", `{"email":"root@example.com"}`, false)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("magic-link status = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Follow the verify link: sets a cookie and 303-redirects.
+	token := f.mailer.lastToken(t)
+	resp = f.get(t, "/api/auth/verify?token="+token)
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("verify status = %d, want 303", resp.StatusCode)
+	}
+	if loc := resp.Header.Get("Location"); strings.Contains(loc, "error") {
+		t.Fatalf("verify redirected to error: %s", loc)
+	}
+	resp.Body.Close()
+
+	// /api/auth/me now returns the superadmin.
+	resp = f.get(t, "/api/auth/me")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("me status = %d, want 200", resp.StatusCode)
+	}
+	var me struct {
+		Email      string `json:"email"`
+		Superadmin bool   `json:"superadmin"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&me)
+	resp.Body.Close()
+	if me.Email != "root@example.com" || !me.Superadmin {
+		t.Fatalf("me = %+v, want root superadmin", me)
+	}
+}
+
+func TestTeamHTTP_UniformResponseAndAuthGuards(t *testing.T) {
+	f := setupTeamHTTP(t)
+
+	// Non-allowlisted and allowlisted requests are indistinguishable (200).
+	r1 := f.post(t, "/api/auth/magic-link", `{"email":"stranger@example.com"}`, false)
+	r2 := f.post(t, "/api/auth/magic-link", `{"email":"root@example.com"}`, false)
+	if r1.StatusCode != http.StatusOK || r2.StatusCode != http.StatusOK {
+		t.Fatalf("magic-link statuses = %d/%d, want 200/200", r1.StatusCode, r2.StatusCode)
+	}
+	r1.Body.Close()
+	r2.Body.Close()
+
+	// Unauthenticated /me is 401.
+	resp := f.get(t, "/api/auth/me")
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("unauth me = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Unauthenticated allowlist is 401.
+	resp = f.get(t, "/api/admin/allowlist")
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("unauth allowlist = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Invalid verify token redirects with an error param, no cookie.
+	resp = f.get(t, "/api/auth/verify?token=bogus")
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(resp.Header.Get("Location"), "error") {
+		t.Fatalf("bad verify: status=%d loc=%s", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	resp.Body.Close()
+}
+
+func TestTeamHTTP_CSRFAndAdminRBAC(t *testing.T) {
+	f := setupTeamHTTP(t)
+
+	// Log in as superadmin.
+	f.post(t, "/api/auth/magic-link", `{"email":"root@example.com"}`, false).Body.Close()
+	f.get(t, "/api/auth/verify?token="+f.mailer.lastToken(t)).Body.Close()
+
+	// Allowlist POST without the CSRF header is rejected.
+	resp := f.post(t, "/api/admin/allowlist", `{"email":"kid@example.com"}`, false)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("allowlist add without CSRF = %d, want 403", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// With CSRF header it succeeds.
+	resp = f.post(t, "/api/admin/allowlist", `{"email":"kid@example.com"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("allowlist add with CSRF = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// It appears in the list.
+	resp = f.get(t, "/api/admin/allowlist")
+	var listResp struct {
+		Allowlist []struct {
+			Email string `json:"email"`
+		} `json:"allowlist"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&listResp)
+	resp.Body.Close()
+	if len(listResp.Allowlist) != 1 || listResp.Allowlist[0].Email != "kid@example.com" {
+		t.Fatalf("allowlist = %+v, want [kid@example.com]", listResp.Allowlist)
+	}
+
+	// The allowlisted kid can now log in — proving enforcement precedes issue.
+	f.post(t, "/api/auth/magic-link", `{"email":"kid@example.com"}`, false).Body.Close()
+	kidToken := f.mailer.lastToken(t)
+
+	// A second client (the kid) logs in and is NOT a superadmin.
+	jar, _ := newJar()
+	kid := &teamHTTPFixture{server: f.server, mailer: f.mailer, client: &http.Client{
+		Jar:           jar,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}}
+	kid.get(t, "/api/auth/verify?token="+kidToken).Body.Close()
+
+	// The kid cannot read the allowlist (member, not superadmin).
+	resp = kid.get(t, "/api/admin/allowlist")
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("kid allowlist read = %d, want 403", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// The kid can rename themselves (with CSRF).
+	resp = kid.post(t, "/api/users/me/username", `{"username":"kiddo"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("kid rename = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Logout clears the session.
+	resp = kid.post(t, "/api/auth/logout", ``, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("logout = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+	resp = kid.get(t, "/api/auth/me")
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("post-logout me = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+}

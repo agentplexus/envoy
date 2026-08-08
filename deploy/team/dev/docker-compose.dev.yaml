@@ -1,0 +1,25 @@
+# Development PostgreSQL for the team store's RLS test suite.
+#
+#   docker compose -f deploy/team/dev/docker-compose.dev.yaml up -d --wait
+#
+#   TEAM_TEST_OWNER_DSN="postgres://omniagent_owner:owner_dev_password@127.0.0.1:5433/omniagent_team?sslmode=disable" \
+#   TEAM_TEST_APP_DSN="postgres://omniagent_app:app_dev_password@127.0.0.1:5433/omniagent_team?sslmode=disable" \
+#   go test ./team/...
+#
+# Dev credentials only — never reuse in a deployment.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: omniagent_owner
+      POSTGRES_PASSWORD: owner_dev_password
+      POSTGRES_DB: omniagent_team
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omniagent_owner -d omniagent_team"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
