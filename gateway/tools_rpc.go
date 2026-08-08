@@ -7,12 +7,14 @@ package gateway
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/plexusone/omniagent/agent"
+	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniobserve/agentops/middleware"
 	"github.com/plexusone/omniobserve/observops"
 )
@@ -267,14 +269,34 @@ func (h *ToolsRPCHandler) errorResponse(w http.ResponseWriter, status int, messa
 // ToolsListHandler handles listing available tools.
 type ToolsListHandler struct {
 	registry *agent.ToolRegistry
+	sessions *sessions.Store
 	logger   *slog.Logger
 }
 
 // ToolInfo describes a tool for listing.
+// Tools sourced from an MCP server expose their originating identity;
+// non-MCP tools omit the MCP fields.
 type ToolInfo struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Parameters  any    `json:"parameters,omitempty"`
+
+	// Source is the tool's origin kind ("mcp", "skill"); empty for tools
+	// registered directly.
+	Source string `json:"source,omitempty"`
+
+	// MCPServer is the originating MCP server name (MCP tools only).
+	MCPServer string `json:"mcp_server,omitempty"`
+
+	// MCPToolName is the tool's original name on its MCP server, before
+	// any renaming applied at registration (MCP tools only).
+	MCPToolName string `json:"mcp_tool_name,omitempty"`
+
+	// DeniedBySession marks tools excluded for the requested session by
+	// its tool overrides. Only populated on session-scoped listings
+	// (?session_id=), where denied tools remain listed rather than hidden
+	// so a read-only inventory stays complete.
+	DeniedBySession bool `json:"denied_by_session,omitempty"`
 }
 
 // ToolsListResponse is the response format for tools.list RPC.
@@ -293,6 +315,13 @@ func NewToolsListHandler(registry *agent.ToolRegistry, logger *slog.Logger) *Too
 	}
 }
 
+// WithSessions enables session-scoped listings (?session_id=) by giving the
+// handler access to session tool overrides. Returns the handler for chaining.
+func (h *ToolsListHandler) WithSessions(store *sessions.Store) *ToolsListHandler {
+	h.sessions = store
+	return h
+}
+
 // ServeHTTP handles the HTTP request.
 func (h *ToolsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -304,14 +333,39 @@ func (h *ToolsListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Session-scoped listing: resolve the session's tool overrides so
+	// denied tools can be flagged (not hidden — the inventory stays
+	// complete for read-only callers).
+	var overrides *sessions.ToolOverrides
+	if sessionID := r.URL.Query().Get("session_id"); sessionID != "" && h.sessions != nil {
+		session, err := h.sessions.GetIfExists(r.Context(), sessionID)
+		switch {
+		case err == nil:
+			overrides = session.ToolOverrides
+		case errors.Is(err, sessions.ErrSessionNotFound):
+			// Unknown session: list without overrides.
+		default:
+			h.logger.Error("failed to load session for tools listing", "session_id", sessionID, "error", err)
+		}
+	}
+
 	tools := []ToolInfo{}
 	if h.registry != nil {
-		for _, t := range h.registry.GetTools() {
-			tools = append(tools, ToolInfo{
-				Name:        t.Function.Name,
-				Description: t.Function.Description,
-				Parameters:  t.Function.Parameters,
-			})
+		for _, d := range h.registry.Describe() {
+			info := ToolInfo{
+				Name:        d.Name,
+				Description: d.Description,
+				Parameters:  d.Parameters,
+				Source:      d.Source,
+			}
+			if d.Source == "mcp" {
+				info.MCPServer = d.SourceName
+				info.MCPToolName = d.SourceTool
+			}
+			if overrides.Denies(d.Name, d.Source, d.SourceName, d.SourceTool) {
+				info.DeniedBySession = true
+			}
+			tools = append(tools, info)
 		}
 	}
 

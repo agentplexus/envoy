@@ -12,11 +12,27 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/plexusone/omniagent/sessions"
 )
 
 // AgentProcessor processes messages through an AI agent.
 type AgentProcessor interface {
 	Process(ctx context.Context, sessionID, content string) (string, error)
+}
+
+// SessionToolConfigurator applies per-session tool overrides. Agents that
+// support session-scoped tool scoping implement it in addition to
+// AgentProcessor; the gateway feature is unavailable otherwise.
+type SessionToolConfigurator interface {
+	SetSessionToolOverrides(ctx context.Context, sessionID string, overrides *sessions.ToolOverrides) error
+}
+
+// SessionModelConfigurator applies per-session model selection. Agents that
+// support it implement this in addition to AgentProcessor; the gateway
+// feature is unavailable otherwise.
+type SessionModelConfigurator interface {
+	SetSessionModel(ctx context.Context, sessionID, model string, sticky bool) error
 }
 
 // Config configures the gateway server.

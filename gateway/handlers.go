@@ -3,7 +3,10 @@ package gateway
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"time"
+
+	"github.com/plexusone/omniagent/sessions"
 )
 
 // DefaultMessageHandler provides a basic message handler implementation.
@@ -27,9 +30,85 @@ func (h *DefaultMessageHandler) Handle(ctx context.Context, client *Client, msg 
 		return h.handleAuth(ctx, client, msg)
 	case MessageTypeSubscribe:
 		return h.handleSubscribe(ctx, client, msg)
+	case MessageTypeSessionTools:
+		return h.handleSessionTools(ctx, client, msg)
+	case MessageTypeSessionModel:
+		return h.handleSessionModel(ctx, client, msg)
 	default:
 		return NewErrorMessage(msg.ID, "unknown message type"), nil
 	}
+}
+
+// gateClient applies the shared rate-limit and authentication gates for
+// state-changing messages. It returns a non-nil error message when the
+// request must be rejected.
+func (h *DefaultMessageHandler) gateClient(client *Client, msg *Message) *Message {
+	if h.gateway.rateLimiter != nil && !h.gateway.rateLimiter.Allow(client.ID) {
+		h.gateway.logger.Warn("rate limit exceeded", "client_id", client.ID)
+		return &Message{
+			ID:   msg.ID,
+			Type: MessageTypeError,
+			Data: map[string]interface{}{
+				"error":   "rate_limit_exceeded",
+				"message": "Too many messages, please slow down",
+			},
+			Timestamp: time.Now(),
+		}
+	}
+
+	if h.gateway.config.RequireAuth {
+		authVal, _ := client.GetMetadata("authenticated")
+		authenticated, _ := authVal.(bool)
+		if !authenticated {
+			return &Message{
+				ID:   msg.ID,
+				Type: MessageTypeError,
+				Data: map[string]interface{}{
+					"error":   "authentication_required",
+					"message": "Please authenticate first",
+				},
+				Timestamp: time.Now(),
+			}
+		}
+	}
+
+	return nil
+}
+
+// handleSessionModel sets (or clears) the model override for the client's
+// session. Requires an agent implementing SessionModelConfigurator. Data:
+// {"model": "<name>", "sticky": bool} — empty model clears the override;
+// sticky also updates the agent default (in-process, until restart).
+func (h *DefaultMessageHandler) handleSessionModel(ctx context.Context, client *Client, msg *Message) (*Message, error) {
+	if reject := h.gateClient(client, msg); reject != nil {
+		return reject, nil
+	}
+
+	configurator, ok := h.gateway.agent.(SessionModelConfigurator)
+	if !ok {
+		return NewErrorMessage(msg.ID, "session model selection not supported"), nil
+	}
+
+	model, _ := msg.Data["model"].(string)
+	sticky, _ := msg.Data["sticky"].(bool)
+
+	if err := configurator.SetSessionModel(ctx, client.ID, model, sticky); err != nil {
+		return NewErrorMessage(msg.ID, "set session model: "+err.Error()), nil
+	}
+
+	h.gateway.logger.Info("session model updated",
+		"client_id", client.ID, "model", model, "sticky", sticky, "cleared", model == "")
+
+	return &Message{
+		ID:   msg.ID,
+		Type: MessageTypeResponse,
+		Data: map[string]interface{}{
+			"model":      model,
+			"sticky":     sticky,
+			"session_id": client.ID,
+		},
+		Timestamp: time.Now(),
+	}, nil
 }
 
 // handlePing handles ping messages.
@@ -166,6 +245,78 @@ func (h *DefaultMessageHandler) handleAuth(_ context.Context, client *Client, ms
 		Data: map[string]interface{}{
 			"authenticated": true,
 			"client_id":     client.ID,
+		},
+		Timestamp: time.Now(),
+	}, nil
+}
+
+// handleSessionTools sets (or clears) per-session tool overrides for the
+// client's session. Requires an agent implementing SessionToolConfigurator.
+func (h *DefaultMessageHandler) handleSessionTools(ctx context.Context, client *Client, msg *Message) (*Message, error) {
+	// Check rate limiting
+	if h.gateway.rateLimiter != nil && !h.gateway.rateLimiter.Allow(client.ID) {
+		h.gateway.logger.Warn("rate limit exceeded", "client_id", client.ID)
+		return &Message{
+			ID:   msg.ID,
+			Type: MessageTypeError,
+			Data: map[string]interface{}{
+				"error":   "rate_limit_exceeded",
+				"message": "Too many messages, please slow down",
+			},
+			Timestamp: time.Now(),
+		}, nil
+	}
+
+	// Check if authentication is required
+	if h.gateway.config.RequireAuth {
+		authVal, _ := client.GetMetadata("authenticated")
+		authenticated, _ := authVal.(bool)
+		if !authenticated {
+			return &Message{
+				ID:   msg.ID,
+				Type: MessageTypeError,
+				Data: map[string]interface{}{
+					"error":   "authentication_required",
+					"message": "Please authenticate before configuring tools",
+				},
+				Timestamp: time.Now(),
+			}, nil
+		}
+	}
+
+	configurator, ok := h.gateway.agent.(SessionToolConfigurator)
+	if !ok {
+		return NewErrorMessage(msg.ID, "session tool overrides not supported"), nil
+	}
+
+	// Parse overrides from message data. Absent or null data clears them.
+	var overrides *sessions.ToolOverrides
+	if raw, exists := msg.Data["tool_overrides"]; exists && raw != nil {
+		encoded, err := json.Marshal(raw)
+		if err != nil {
+			return NewErrorMessage(msg.ID, "invalid tool_overrides: "+err.Error()), nil
+		}
+		overrides = &sessions.ToolOverrides{}
+		if err := json.Unmarshal(encoded, overrides); err != nil {
+			return NewErrorMessage(msg.ID, "invalid tool_overrides: "+err.Error()), nil
+		}
+	}
+
+	// The chat path uses the client ID as the session ID; overrides target
+	// the same session.
+	if err := configurator.SetSessionToolOverrides(ctx, client.ID, overrides); err != nil {
+		return NewErrorMessage(msg.ID, "set tool overrides: "+err.Error()), nil
+	}
+
+	h.gateway.logger.Info("session tool overrides updated",
+		"client_id", client.ID, "cleared", overrides == nil)
+
+	return &Message{
+		ID:   msg.ID,
+		Type: MessageTypeResponse,
+		Data: map[string]interface{}{
+			"tool_overrides_set": overrides != nil,
+			"session_id":         client.ID,
 		},
 		Timestamp: time.Now(),
 	}, nil

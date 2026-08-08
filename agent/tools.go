@@ -86,6 +86,59 @@ func (r *ToolRegistry) GetTools() []provider.Tool {
 	return tools
 }
 
+// ToolIdentity is an optional interface a Tool can implement to expose its
+// provenance — where the tool came from (e.g. which MCP server).
+type ToolIdentity interface {
+	// ToolSource returns the origin kind, e.g. "mcp" or "skill".
+	ToolSource() string
+	// ToolSourceName returns the originating container: the MCP server or
+	// skill name the tool belongs to.
+	ToolSourceName() string
+	// ToolSourceToolName returns the tool's original name at its source,
+	// before any renaming or namespacing applied at registration.
+	ToolSourceToolName() string
+}
+
+// ToolDescriptor describes a registered tool, including provenance for
+// tools that implement ToolIdentity.
+type ToolDescriptor struct {
+	Name        string
+	Description string
+	Parameters  map[string]interface{}
+
+	// Source is the origin kind ("mcp", "skill", …); empty for tools
+	// registered directly without provenance.
+	Source string
+	// SourceName is the originating MCP server / skill name.
+	SourceName string
+	// SourceTool is the tool's original name at its source.
+	SourceTool string
+}
+
+// Describe returns descriptors for all registered tools, exposing MCP and
+// skill identity where available. Unlike GetTools (which builds provider
+// definitions for the LLM), this is the inventory surface for listings.
+func (r *ToolRegistry) Describe() []ToolDescriptor {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	descriptors := make([]ToolDescriptor, 0, len(r.tools))
+	for _, tool := range r.tools {
+		d := ToolDescriptor{
+			Name:        tool.Name(),
+			Description: tool.Description(),
+			Parameters:  tool.Parameters(),
+		}
+		if id, ok := tool.(ToolIdentity); ok {
+			d.Source = id.ToolSource()
+			d.SourceName = id.ToolSourceName()
+			d.SourceTool = id.ToolSourceToolName()
+		}
+		descriptors = append(descriptors, d)
+	}
+	return descriptors
+}
+
 // Execute runs a tool by name with the given arguments.
 func (r *ToolRegistry) Execute(ctx context.Context, name string, args json.RawMessage) (string, error) {
 	tool, ok := r.Get(name)

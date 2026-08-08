@@ -7,10 +7,12 @@ type MessageType string
 
 const (
 	// Client -> Gateway
-	MessageTypeChat      MessageType = "chat"
-	MessageTypePing      MessageType = "ping"
-	MessageTypeAuth      MessageType = "auth"
-	MessageTypeSubscribe MessageType = "subscribe"
+	MessageTypeChat         MessageType = "chat"
+	MessageTypePing         MessageType = "ping"
+	MessageTypeAuth         MessageType = "auth"
+	MessageTypeSubscribe    MessageType = "subscribe"
+	MessageTypeSessionTools MessageType = "session_tools"
+	MessageTypeSessionModel MessageType = "session_model"
 
 	// Gateway -> Client
 	MessageTypeResponse MessageType = "response"

@@ -12,11 +12,27 @@ import (
 
 // compiledToolWrapper wraps a skill.Tool to implement agent.Tool.
 type compiledToolWrapper struct {
-	tool      skill.Tool
-	skillName string
+	tool       skill.Tool
+	skillName  string
+	sourceType string // "skill" by default; "mcp" for MCP-backed skills
 }
 
 func (w *compiledToolWrapper) Name() string {
+	return w.tool.Name()
+}
+
+// ToolSource implements ToolIdentity.
+func (w *compiledToolWrapper) ToolSource() string {
+	return w.sourceType
+}
+
+// ToolSourceName implements ToolIdentity.
+func (w *compiledToolWrapper) ToolSourceName() string {
+	return w.skillName
+}
+
+// ToolSourceToolName implements ToolIdentity.
+func (w *compiledToolWrapper) ToolSourceToolName() string {
 	return w.tool.Name()
 }
 
@@ -70,11 +86,19 @@ func (a *Agent) RegisterCompiledSkill(skill compiled.Skill) error {
 		aa.SetAgent(a)
 	}
 
+	// Determine the source kind: skills backed by an external protocol
+	// (e.g. MCP) declare it via an optional SourceType method.
+	sourceType := "skill"
+	if st, ok := skill.(interface{ SourceType() string }); ok {
+		sourceType = st.SourceType()
+	}
+
 	// Register all tools from the skill
 	for _, tool := range skill.Tools() {
 		wrapper := &compiledToolWrapper{
-			tool:      tool,
-			skillName: skill.Name(),
+			tool:       tool,
+			skillName:  skill.Name(),
+			sourceType: sourceType,
 		}
 		a.tools.Register(wrapper)
 	}

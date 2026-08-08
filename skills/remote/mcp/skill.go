@@ -72,6 +72,12 @@ func (s *Skill) Name() string {
 	return s.config.Name
 }
 
+// SourceType identifies tools from this skill as MCP-backed, so tool
+// inventories can expose the originating server and tool identity.
+func (s *Skill) SourceType() string {
+	return "mcp"
+}
+
 // Description returns a human-readable description of the skill.
 func (s *Skill) Description() string {
 	return s.config.Description

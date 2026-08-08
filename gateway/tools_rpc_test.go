@@ -12,7 +12,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	kvsmemory "github.com/plexusone/omnistorage-core/kvs/backend/memory"
+
 	"github.com/plexusone/omniagent/agent"
+	"github.com/plexusone/omniagent/sessions"
 )
 
 // mockTool is a simple test tool.
@@ -32,6 +35,141 @@ func (t *mockTool) Parameters() map[string]interface{} {
 }
 func (t *mockTool) Execute(_ context.Context, _ json.RawMessage) (string, error) {
 	return t.result, t.err
+}
+
+// mockMCPTool is a mockTool that exposes MCP provenance via agent.ToolIdentity.
+type mockMCPTool struct {
+	mockTool
+	server   string
+	origName string
+}
+
+func (t *mockMCPTool) ToolSource() string         { return "mcp" }
+func (t *mockMCPTool) ToolSourceName() string     { return t.server }
+func (t *mockMCPTool) ToolSourceToolName() string { return t.origName }
+
+func TestToolsListHandler_MCPToolIdentity(t *testing.T) {
+	registry := agent.NewToolRegistry()
+	registry.Register(&mockTool{name: "plain"})
+	registry.Register(&mockMCPTool{
+		mockTool: mockTool{name: "search_issues"},
+		server:   "github",
+		origName: "search_issues",
+	})
+
+	handler := NewToolsListHandler(registry, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/tools/list", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status 200, got %d", w.Code)
+	}
+
+	var resp ToolsListResponse
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	byName := make(map[string]ToolInfo, len(resp.Tools))
+	for _, info := range resp.Tools {
+		byName[info.Name] = info
+	}
+
+	mcpInfo, ok := byName["search_issues"]
+	if !ok {
+		t.Fatal("MCP tool missing from listing")
+	}
+	if mcpInfo.Source != "mcp" {
+		t.Errorf("MCP tool source = %q, want \"mcp\"", mcpInfo.Source)
+	}
+	if mcpInfo.MCPServer != "github" {
+		t.Errorf("MCP tool server = %q, want \"github\"", mcpInfo.MCPServer)
+	}
+	if mcpInfo.MCPToolName != "search_issues" {
+		t.Errorf("MCP tool original name = %q, want \"search_issues\"", mcpInfo.MCPToolName)
+	}
+
+	plainInfo, ok := byName["plain"]
+	if !ok {
+		t.Fatal("plain tool missing from listing")
+	}
+	if plainInfo.Source != "" || plainInfo.MCPServer != "" || plainInfo.MCPToolName != "" {
+		t.Errorf("plain tool must omit identity fields, got %+v", plainInfo)
+	}
+}
+
+func TestToolsListHandler_DeniedBySession(t *testing.T) {
+	ctx := context.Background()
+
+	registry := agent.NewToolRegistry()
+	registry.Register(&mockTool{name: "web_search"})
+	registry.Register(&mockMCPTool{
+		mockTool: mockTool{name: "search_issues"},
+		server:   "github",
+		origName: "search_issues",
+	})
+
+	backend := kvsmemory.New()
+	defer backend.Close()
+	store := sessions.NewStore(sessions.StoreConfig{Backend: backend})
+
+	session, err := store.Get(ctx, "scoped")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	session.ToolOverrides = &sessions.ToolOverrides{
+		MCPServers: map[string]bool{"github": false},
+	}
+	if err := store.Save(ctx, session); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	handler := NewToolsListHandler(registry, nil).WithSessions(store)
+
+	listTools := func(url string) map[string]ToolInfo {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodGet, url, nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d", w.Code)
+		}
+		var resp ToolsListResponse
+		if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		byName := make(map[string]ToolInfo, len(resp.Tools))
+		for _, info := range resp.Tools {
+			byName[info.Name] = info
+		}
+		return byName
+	}
+
+	// Session-scoped: denied MCP tool stays listed but flagged.
+	scoped := listTools("/tools/list?session_id=scoped")
+	if len(scoped) != 2 {
+		t.Fatalf("scoped listing has %d tools, want 2 (denied tools stay listed)", len(scoped))
+	}
+	if !scoped["search_issues"].DeniedBySession {
+		t.Error("MCP tool from disabled server must be flagged denied_by_session")
+	}
+	if scoped["web_search"].DeniedBySession {
+		t.Error("unaffected tool must not be flagged")
+	}
+
+	// Unscoped: no flags.
+	unscoped := listTools("/tools/list")
+	if unscoped["search_issues"].DeniedBySession || unscoped["web_search"].DeniedBySession {
+		t.Error("unscoped listing must carry no session denial flags")
+	}
+
+	// Unknown session: listed without flags.
+	unknown := listTools("/tools/list?session_id=nope")
+	if unknown["search_issues"].DeniedBySession {
+		t.Error("unknown session must not flag tools")
+	}
 }
 
 func TestNewToolsRPCHandler(t *testing.T) {
