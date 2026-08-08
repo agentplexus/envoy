@@ -350,3 +350,153 @@ func TestScheduler_HandlerError(t *testing.T) {
 		t.Errorf("expected last error 'something went wrong', got %q", got.LastError)
 	}
 }
+
+func TestExecuteJob_NoDuplicateConcurrentRuns(t *testing.T) {
+	ctx := context.Background()
+	store := NewStore(StoreConfig{Backend: newListableMockStore()})
+
+	var invocations atomic.Int32
+	blockCh := make(chan struct{})
+	started := make(chan struct{}, 4)
+
+	scheduler := NewScheduler(SchedulerConfig{
+		Store: store,
+		Handler: func(ctx context.Context, job *Job) ExecutionResult {
+			invocations.Add(1)
+			started <- struct{}{}
+			<-blockCh
+			return ExecutionResult{Success: true, StartedAt: time.Now(), FinishedAt: time.Now()}
+		},
+	})
+
+	job := NewJob("job-dup", "Long Job",
+		Schedule{Interval: Duration(time.Millisecond)},
+		Action{Type: ActionTypeSendMessage, SessionID: "s1", Message: "Hello"},
+	)
+	if err := store.Save(ctx, job); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	// First launch runs and blocks in the handler.
+	done1 := make(chan struct{})
+	go func() {
+		scheduler.executeJob(ctx, job)
+		close(done1)
+	}()
+	<-started
+
+	// A second launch while the first is in flight must be skipped.
+	done2 := make(chan struct{})
+	go func() {
+		scheduler.executeJob(ctx, job)
+		close(done2)
+	}()
+	<-done2 // returns immediately without invoking the handler
+
+	if got := invocations.Load(); got != 1 {
+		t.Fatalf("expected 1 handler invocation while first run in flight, got %d", got)
+	}
+
+	// After the first run finishes, the job can run again.
+	close(blockCh)
+	<-done1
+
+	blockCh = make(chan struct{})
+	close(blockCh) // don't block the next run
+	scheduler.executeJob(ctx, job)
+
+	if got := invocations.Load(); got != 2 {
+		t.Fatalf("expected 2 handler invocations after first run completed, got %d", got)
+	}
+}
+
+func TestCheckSpecialJobs_IntervalJobNoOverlap(t *testing.T) {
+	ctx := context.Background()
+	store := NewStore(StoreConfig{Backend: newListableMockStore()})
+
+	var invocations atomic.Int32
+	blockCh := make(chan struct{})
+	started := make(chan struct{}, 8)
+
+	scheduler := NewScheduler(SchedulerConfig{
+		Store: store,
+		Handler: func(ctx context.Context, job *Job) ExecutionResult {
+			invocations.Add(1)
+			started <- struct{}{}
+			<-blockCh
+			return ExecutionResult{Success: true, StartedAt: time.Now(), FinishedAt: time.Now()}
+		},
+	})
+
+	// Interval far shorter than the run duration and past-due since creation.
+	job := NewJob("job-interval", "Overlapping Interval Job",
+		Schedule{Interval: Duration(time.Nanosecond)},
+		Action{Type: ActionTypeSendMessage, SessionID: "s1", Message: "Hello"},
+	)
+	job.CreatedAt = time.Now().Add(-time.Hour)
+	if err := store.Save(ctx, job); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	// Several ticks while the first run is still in flight.
+	scheduler.checkSpecialJobs(ctx)
+	<-started
+	scheduler.checkSpecialJobs(ctx)
+	scheduler.checkSpecialJobs(ctx)
+
+	// Give skipped goroutines a moment to run their guard check.
+	time.Sleep(50 * time.Millisecond)
+
+	if got := invocations.Load(); got != 1 {
+		t.Fatalf("expected 1 handler invocation despite repeated due ticks, got %d", got)
+	}
+
+	close(blockCh)
+}
+
+func TestCheckSpecialJobs_OnceJobFiresExactlyOnce(t *testing.T) {
+	ctx := context.Background()
+	store := NewStore(StoreConfig{Backend: newListableMockStore()})
+
+	var invocations atomic.Int32
+	done := make(chan struct{}, 4)
+
+	scheduler := NewScheduler(SchedulerConfig{
+		Store: store,
+		Handler: func(ctx context.Context, job *Job) ExecutionResult {
+			invocations.Add(1)
+			done <- struct{}{}
+			return ExecutionResult{Success: true, StartedAt: time.Now(), FinishedAt: time.Now()}
+		},
+	})
+
+	past := time.Now().Add(-time.Minute)
+	job := NewJob("job-once", "One Time Job",
+		Schedule{Once: &past},
+		Action{Type: ActionTypeSendMessage, SessionID: "s1", Message: "Hello"},
+	)
+	if err := store.Save(ctx, job); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	scheduler.checkSpecialJobs(ctx)
+	<-done
+
+	// Later ticks must not fire the job again: it was disabled before launch
+	// and stays disabled after execution.
+	scheduler.checkSpecialJobs(ctx)
+	scheduler.checkSpecialJobs(ctx)
+	time.Sleep(50 * time.Millisecond)
+
+	if got := invocations.Load(); got != 1 {
+		t.Fatalf("expected exactly 1 execution of a one-time job, got %d", got)
+	}
+
+	got, err := scheduler.GetJob(ctx, "job-once")
+	if err != nil {
+		t.Fatalf("GetJob failed: %v", err)
+	}
+	if got.Status != JobStatusDisabled {
+		t.Errorf("one-time job status after execution = %q, want %q", got.Status, JobStatusDisabled)
+	}
+}

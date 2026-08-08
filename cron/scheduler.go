@@ -19,7 +19,12 @@ type Scheduler struct {
 
 	// entryMap maps job IDs to cron entry IDs
 	entryMap map[string]cron.EntryID
-	mu       sync.RWMutex
+
+	// inFlight tracks job IDs with an execution currently running so the
+	// scheduler never starts a second concurrent run of the same job.
+	inFlight map[string]struct{}
+
+	mu sync.RWMutex
 
 	// stopCh signals the scheduler to stop
 	stopCh chan struct{}
@@ -54,6 +59,7 @@ func NewScheduler(config SchedulerConfig) *Scheduler {
 		cron:     cron.New(cron.WithLocation(loc), cron.WithSeconds()),
 		handler:  config.Handler,
 		entryMap: make(map[string]cron.EntryID),
+		inFlight: make(map[string]struct{}),
 		stopCh:   make(chan struct{}),
 	}
 }
@@ -183,13 +189,15 @@ func (s *Scheduler) checkSpecialJobs(ctx context.Context) {
 		// Check one-time jobs
 		if job.Schedule.Once != nil {
 			if now.After(*job.Schedule.Once) || now.Equal(*job.Schedule.Once) {
-				go s.executeJob(ctx, job)
-				// Disable one-time jobs after execution
+				// Disable before launching so a later tick cannot fire the
+				// job again while it runs, and so the shared Job value is
+				// not mutated concurrently with the execution goroutine.
 				job.Status = JobStatusDisabled
 				if err := s.store.Save(ctx, job); err != nil {
 					logger := slogutil.LoggerFromContext(ctx, slog.Default())
 					logger.Error("failed to disable one-time job", "job_id", job.ID, "error", err)
 				}
+				go s.executeJob(ctx, job)
 			}
 			continue
 		}
@@ -230,9 +238,37 @@ func (s *Scheduler) makeJobFunc(jobID string) func() {
 	}
 }
 
+// tryAcquire marks a job as in flight. It returns false when a previous run
+// of the same job has not finished yet.
+func (s *Scheduler) tryAcquire(jobID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.inFlight[jobID]; ok {
+		return false
+	}
+	s.inFlight[jobID] = struct{}{}
+	return true
+}
+
+// release clears a job's in-flight marker.
+func (s *Scheduler) release(jobID string) {
+	s.mu.Lock()
+	delete(s.inFlight, jobID)
+	s.mu.Unlock()
+}
+
 // executeJob runs a job and records the result.
+// A job whose previous execution is still in flight is skipped: interval
+// jobs whose runs outlast their interval (or the 1s tick) and overlapping
+// cron firings must not start a second concurrent execution.
 func (s *Scheduler) executeJob(ctx context.Context, job *Job) {
 	logger := slogutil.LoggerFromContext(ctx, slog.Default())
+
+	if !s.tryAcquire(job.ID) {
+		logger.Info("skipping job launch; previous run still in flight", "job_id", job.ID)
+		return
+	}
+	defer s.release(job.ID)
 
 	// Mark as running
 	job.Status = JobStatusRunning
@@ -260,11 +296,17 @@ func (s *Scheduler) executeJob(ctx context.Context, job *Job) {
 
 	if result.Success {
 		job.LastError = ""
-		job.Status = JobStatusEnabled
 	} else {
 		job.LastError = result.Error
-		job.Status = JobStatusEnabled // Stay enabled for retry
 		logger.Error("job execution failed", "job_id", job.ID, "error", result.Error)
+	}
+
+	if job.Schedule.Once != nil {
+		// One-time jobs stay disabled after their single execution;
+		// restoring Enabled here would make them fire again.
+		job.Status = JobStatusDisabled
+	} else {
+		job.Status = JobStatusEnabled // Stay enabled (including for retry on failure)
 	}
 
 	// Calculate next run time for cron jobs

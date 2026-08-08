@@ -41,12 +41,15 @@ func NewStore(config StoreConfig) *Store {
 
 // Get retrieves a job by ID.
 // Returns ErrJobNotFound if the job doesn't exist.
+// The returned Job is a private copy: callers may mutate it (and Save it
+// back) without racing other goroutines that read jobs from the store.
 func (s *Store) Get(ctx context.Context, id string) (*Job, error) {
 	// Check cache first
 	s.mu.RLock()
 	if job, ok := s.cache[id]; ok {
+		cloned := *job
 		s.mu.RUnlock()
-		return job, nil
+		return &cloned, nil
 	}
 	s.mu.RUnlock()
 
@@ -70,10 +73,13 @@ func (s *Store) Get(ctx context.Context, id string) (*Job, error) {
 	s.cache[id] = &job
 	s.mu.Unlock()
 
-	return &job, nil
+	cloned := job
+	return &cloned, nil
 }
 
 // Save persists a job to storage.
+// The cache stores a private copy of the job, so the caller keeps exclusive
+// ownership of the value it passed in and may continue mutating it.
 func (s *Store) Save(ctx context.Context, job *Job) error {
 	data, err := json.Marshal(job)
 	if err != nil {
@@ -86,9 +92,11 @@ func (s *Store) Save(ctx context.Context, job *Job) error {
 		return fmt.Errorf("set job: %w", err)
 	}
 
-	// Update cache
+	// Update cache with a copy so later writes by the caller do not race
+	// concurrent readers of the cached instance.
+	cloned := *job
 	s.mu.Lock()
-	s.cache[job.ID] = job
+	s.cache[job.ID] = &cloned
 	s.mu.Unlock()
 
 	return nil
@@ -116,11 +124,13 @@ func (s *Store) Delete(ctx context.Context, id string) error {
 func (s *Store) List(ctx context.Context) ([]*Job, error) {
 	listable, ok := s.backend.(kvs.ListableStore)
 	if !ok {
-		// Fall back to cached jobs if backend doesn't support listing
+		// Fall back to cached jobs if backend doesn't support listing.
+		// Return copies for the same ownership guarantee as Get.
 		s.mu.RLock()
 		jobs := make([]*Job, 0, len(s.cache))
 		for _, job := range s.cache {
-			jobs = append(jobs, job)
+			cloned := *job
+			jobs = append(jobs, &cloned)
 		}
 		s.mu.RUnlock()
 		return jobs, nil

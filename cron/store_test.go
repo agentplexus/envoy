@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,7 +11,10 @@ import (
 )
 
 // mockStore is a simple in-memory kvs.Store for testing.
+// It is safe for concurrent use so tests can exercise the scheduler's
+// background execution goroutines under the race detector.
 type mockStore struct {
+	mu   sync.RWMutex
 	data map[string][]byte
 }
 
@@ -21,6 +25,8 @@ func newMockStore() *mockStore {
 }
 
 func (m *mockStore) Get(_ context.Context, key string) ([]byte, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	v, ok := m.data[key]
 	if !ok {
 		return nil, kvs.ErrNotFound
@@ -29,11 +35,15 @@ func (m *mockStore) Get(_ context.Context, key string) ([]byte, error) {
 }
 
 func (m *mockStore) Set(_ context.Context, key string, value []byte, _ time.Duration) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.data[key] = value
 	return nil
 }
 
 func (m *mockStore) Delete(_ context.Context, key string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	delete(m.data, key)
 	return nil
 }
@@ -54,6 +64,8 @@ func newListableMockStore() *listableMockStore {
 }
 
 func (m *listableMockStore) List(_ context.Context, prefix string) ([]string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	var keys []string
 	for k := range m.data {
 		if len(k) >= len(prefix) && k[:len(prefix)] == prefix {
