@@ -4,12 +4,14 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/plexusone/omnillm"
 	"github.com/plexusone/omnillm/provider"
@@ -19,6 +21,7 @@ import (
 	"github.com/plexusone/omniagent/agent/profiles"
 	"github.com/plexusone/omniagent/agent/roles"
 	agentctx "github.com/plexusone/omniagent/context"
+	"github.com/plexusone/omniagent/cron"
 	"github.com/plexusone/omniagent/hooks"
 	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniagent/skills"
@@ -55,6 +58,13 @@ type Agent struct {
 
 	// Role-related fields
 	roleManager *roles.Manager // Role manager for persona-based behavior
+
+	// toolsAllowHooks are synchronous pre-turn hooks that can narrow the
+	// tool set submitted to the model for a single turn.
+	toolsAllowHooks []hooks.ToolsAllowFunc
+
+	// rolloverPolicy configures automatic session rollover (nil disables).
+	rolloverPolicy *sessions.RolloverPolicy
 }
 
 // Config configures the agent.
@@ -144,6 +154,11 @@ func New(config Config, opts ...Option) (*Agent, error) {
 		return nil, fmt.Errorf("init skill manager: %w", err)
 	}
 
+	// Persist rolled-over sessions to memory. Registered unconditionally;
+	// the handler no-ops when memory is not configured, and the event only
+	// fires when a rollover policy is set.
+	hookRegistry.RegisterHandler(hooks.EventSessionRollover, "session-memory", a.saveRolloverMemory)
+
 	return a, nil
 }
 
@@ -203,6 +218,11 @@ func (a *Agent) ProcessWithSession(ctx context.Context, sessionID, content strin
 		return "", fmt.Errorf("load session: %w", err)
 	}
 
+	// Apply automatic rollover before this turn: an idle or day-boundary
+	// session ends here (its context is persisted via the rollover event)
+	// and the turn continues on a fresh conversation.
+	a.maybeRolloverSession(ctx, session)
+
 	// Check if this is a new session (no messages yet)
 	isNewSession := len(session.GetMessages()) == 0
 
@@ -246,8 +266,17 @@ func (a *Agent) ProcessWithSession(ctx context.Context, sessionID, content strin
 }
 
 // processInternal is the core message processing logic.
-func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, content string) (string, error) {
-	a.logger.Info("processing message", "model", a.config.Model, "provider", a.config.Provider)
+func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, content string) (response string, err error) {
+	// Settle every run — normal completion, error, or abort — through the
+	// agent.end lifecycle event. The deferred emit guarantees the event
+	// fires exactly once on all terminal paths.
+	runStart := time.Now()
+	defer func() {
+		a.emitAgentEnd(ctx, session, response, err, time.Since(runStart))
+	}()
+
+	model := a.modelForSession(session)
+	a.logger.Info("processing message", "model", model, "provider", a.config.Provider)
 
 	// Emit message received event
 	a.dispatcher.EmitAsync(ctx, hooks.EventMessageReceived, hooks.MessageEvent{
@@ -321,12 +350,17 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 		}
 	}
 
-	// Add tools if available
-	tools := a.tools.GetTools()
+	// Add tools if available, scoped by the session's tool overrides.
+	tools := a.filterToolsForSession(session, a.tools.GetTools())
 	a.logger.Info("tools available for request", "count", len(tools))
 	for _, t := range tools {
 		paramsJSON, _ := json.Marshal(t.Function.Parameters)
 		a.logger.Info("tool in request", "name", t.Function.Name, "type", t.Type, "params", string(paramsJSON))
+	}
+
+	turnSessionID := ""
+	if session != nil {
+		turnSessionID = session.ID
 	}
 
 	// Assistant text emitted on tool-call turns, preserved so it is not
@@ -336,7 +370,7 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 	// Process with potential tool calls (max 5 iterations to prevent infinite loops)
 	for i := 0; i < 5; i++ {
 		req := &provider.ChatCompletionRequest{
-			Model:    a.config.Model,
+			Model:    model,
 			Messages: messages,
 		}
 
@@ -347,8 +381,12 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 			req.MaxTokens = &a.config.MaxTokens
 		}
 
-		if len(tools) > 0 {
-			req.Tools = tools
+		// Pre-turn hooks may narrow the tool set for this iteration only;
+		// the registry itself is never mutated, and the full set is offered
+		// again on the next iteration so a later turn can widen.
+		turnTools := a.narrowToolsForTurn(ctx, turnSessionID, content, i, tools)
+		if len(turnTools) > 0 {
+			req.Tools = turnTools
 		}
 
 		resp, err := a.client.CreateChatCompletion(ctx, req)
@@ -402,6 +440,13 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 			ToolCalls: choice.Message.ToolCalls,
 		})
 
+		// Tool executions carry the session's authorizing principal so
+		// tools that create durable work (e.g. cron jobs) can stamp it.
+		execCtx := ctx
+		if turnSessionID != "" {
+			execCtx = cron.ContextWithPrincipal(ctx, cron.SessionPrincipal(turnSessionID))
+		}
+
 		// Execute each tool and add results
 		for _, toolCall := range choice.Message.ToolCalls {
 			a.logger.Info("calling tool", "name", toolCall.Function.Name)
@@ -416,7 +461,7 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 				Params: toolParams,
 			})
 
-			result, err := a.tools.Execute(ctx, toolCall.Function.Name, []byte(toolCall.Function.Arguments))
+			result, err := a.tools.Execute(execCtx, toolCall.Function.Name, []byte(toolCall.Function.Arguments))
 			var errStr string
 			if err != nil {
 				a.logger.Error("tool execution failed", "name", toolCall.Function.Name, "error", err)
@@ -443,6 +488,355 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 	}
 
 	return "", fmt.Errorf("exceeded maximum tool call iterations")
+}
+
+// maybeRolloverSession applies the configured rollover policy to a loaded
+// session. When the policy triggers, the ended conversation is snapshotted
+// and emitted synchronously as a session.rollover event (so persistence
+// hooks complete before the fresh conversation begins), then the session's
+// messages are cleared in place under the same session ID. Manual clears
+// never pass through here and emit no rollover event.
+func (a *Agent) maybeRolloverSession(ctx context.Context, session *sessions.Session) {
+	if a.rolloverPolicy == nil || session == nil {
+		return
+	}
+
+	now := time.Now()
+	reason, ok := a.rolloverPolicy.ShouldRollover(session, now, a.timezone())
+	if !ok {
+		return
+	}
+
+	// Snapshot the ended conversation before resetting it.
+	messages := session.GetMessages()
+	transcript := make([]hooks.MessageEvent, 0, len(messages))
+	for _, m := range messages {
+		transcript = append(transcript, hooks.MessageEvent{
+			Role:    string(m.Role),
+			Content: m.Content,
+		})
+	}
+
+	event := hooks.SessionRolloverEvent{
+		SessionID:  session.ID,
+		Reason:     string(reason),
+		Transcript: transcript,
+		StartedAt:  session.CreatedAt,
+		EndedAt:    session.UpdatedAt,
+	}
+
+	// Synchronous emit: persistence handlers (e.g. the session-memory hook)
+	// finish before the turn proceeds. A handler failure is logged, never
+	// fails the turn — losing a memory write must not block the user.
+	if a.dispatcher != nil {
+		if err := a.dispatcher.EmitWithSession(ctx, hooks.EventSessionRollover, session.ID, event); err != nil {
+			a.logger.Error("session rollover hook failed", "session_id", session.ID, "error", err)
+		}
+	}
+
+	// Reset the conversation in place: same session ID, fresh messages.
+	// Session configuration (metadata, tool overrides) is retained.
+	session.Messages = []provider.Message{}
+	session.UpdatedAt = now
+
+	if a.sessions != nil {
+		if err := a.sessions.Save(ctx, session); err != nil {
+			a.logger.Error("failed to save rolled-over session", "session_id", session.ID, "error", err)
+		}
+	}
+
+	a.logger.Info("session rolled over",
+		"session_id", session.ID, "reason", reason, "messages_persisted", len(transcript))
+}
+
+// saveRolloverMemory persists a rolled-over session's conversation to
+// semantic memory. No-op when memory is not configured.
+func (a *Agent) saveRolloverMemory(ctx context.Context, e hooks.Event) error {
+	if a.memory == nil {
+		return nil
+	}
+	data, ok := e.Data.(hooks.SessionRolloverEvent)
+	if !ok {
+		return nil
+	}
+
+	content := formatRolloverMemory(data, a.timezone())
+	_, err := a.memory.Add(ctx, &core.AddRequest{
+		Context: core.Context{
+			TenantID:  a.config.TenantID,
+			SubjectID: data.SessionID,
+			AgentID:   a.config.AgentID,
+			SessionID: data.SessionID,
+		},
+		Type:    core.MemoryTypeObservation,
+		Content: content,
+		Metadata: map[string]any{
+			"source":     "session_rollover",
+			"reason":     data.Reason,
+			"session_id": data.SessionID,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("save rollover memory: %w", err)
+	}
+	return nil
+}
+
+// Bounds for rollover memory records, keeping single writes from growing
+// with unbounded conversation length.
+const (
+	rolloverMemoryMaxMessages = 20
+	rolloverMemoryMaxMsgChars = 500
+)
+
+// formatRolloverMemory renders a rolled-over conversation as one memory
+// record. The boundary date is formatted in the user's timezone, and the
+// transcript is capped to its most recent messages.
+func formatRolloverMemory(data hooks.SessionRolloverEvent, loc *time.Location) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "Session %s ended (%s) on %s.\n",
+		data.SessionID, data.Reason, data.EndedAt.In(loc).Format("2006-01-02"))
+
+	transcript := data.Transcript
+	if len(transcript) > rolloverMemoryMaxMessages {
+		fmt.Fprintf(&sb, "Conversation (last %d of %d messages):\n",
+			rolloverMemoryMaxMessages, len(transcript))
+		transcript = transcript[len(transcript)-rolloverMemoryMaxMessages:]
+	} else {
+		sb.WriteString("Conversation:\n")
+	}
+
+	for _, m := range transcript {
+		content := m.Content
+		if len(content) > rolloverMemoryMaxMsgChars {
+			// Cut on a rune boundary so multi-byte characters survive.
+			cut := rolloverMemoryMaxMsgChars
+			for cut > 0 && !utf8.RuneStart(content[cut]) {
+				cut--
+			}
+			content = content[:cut] + "…"
+		}
+		fmt.Fprintf(&sb, "%s: %s\n", m.Role, content)
+	}
+
+	return sb.String()
+}
+
+// filterToolsForSession applies the session's tool overrides to the tool
+// set: individually disabled tools, disabled MCP servers, and per-server
+// denied MCP tools are removed for this session only. The shared registry
+// is never mutated, so concurrent sessions with different overrides get
+// independent tool sets.
+func (a *Agent) filterToolsForSession(session *sessions.Session, tools []provider.Tool) []provider.Tool {
+	if session == nil || session.ToolOverrides.IsZero() || len(tools) == 0 {
+		return tools
+	}
+	ov := session.ToolOverrides
+
+	// MCP-scoped overrides need tool provenance from the registry.
+	byName := make(map[string]ToolDescriptor)
+	if len(ov.MCPServers) > 0 || len(ov.MCPToolsDeny) > 0 {
+		for _, d := range a.tools.Describe() {
+			byName[d.Name] = d
+		}
+	}
+
+	filtered := make([]provider.Tool, 0, len(tools))
+	for _, t := range tools {
+		d := byName[t.Function.Name]
+		if ov.Denies(t.Function.Name, d.Source, d.SourceName, d.SourceTool) {
+			continue
+		}
+		filtered = append(filtered, t)
+	}
+
+	if len(filtered) != len(tools) && a.logger != nil {
+		a.logger.Info("session tool overrides narrowed tools",
+			"session_id", session.ID, "before", len(tools), "after", len(filtered))
+	}
+	return filtered
+}
+
+// modelForSession resolves the model for a session's turns: the session's
+// override when set, otherwise the agent default (which SetSessionModel can
+// update when a sticky change is requested).
+func (a *Agent) modelForSession(session *sessions.Session) string {
+	if session != nil && session.Model != "" {
+		return session.Model
+	}
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.config.Model
+}
+
+// SetSessionModel sets (or clears, with an empty model) a session's model
+// override. When sticky is true, the model also becomes the agent's default
+// so new sessions inherit it — best-effort and in-process only: the change
+// is not persisted to the config file (configuration is load-only), so it
+// lasts until restart. Changes take effect on the session's next turn.
+func (a *Agent) SetSessionModel(ctx context.Context, sessionID, model string, sticky bool) error {
+	if a.sessions == nil {
+		return fmt.Errorf("session store not configured")
+	}
+
+	session, err := a.sessions.Get(ctx, sessionID)
+	if err != nil {
+		return fmt.Errorf("get session: %w", err)
+	}
+
+	session.Model = model
+	session.UpdatedAt = time.Now()
+	if err := a.sessions.Save(ctx, session); err != nil {
+		return fmt.Errorf("save session: %w", err)
+	}
+
+	if sticky && model != "" {
+		a.mu.Lock()
+		a.config.Model = model
+		a.mu.Unlock()
+		a.logger.Info("agent default model updated (sticky, in-process only — not persisted to config)",
+			"model", model, "session_id", sessionID)
+	}
+
+	return nil
+}
+
+// ResolvePrincipal verifies an authorizing principal at execution time.
+// Session principals ("session:<id>") resolve against the agent's session
+// store: the principal is valid only while its session still exists.
+// Everything else — unknown principal forms, no session store, expired or
+// deleted sessions — resolves false, keeping scheduled work fail-closed.
+// Authority therefore follows the creating session's lifetime: a job that
+// outlives its session is denied rather than run with orphaned authority.
+func (a *Agent) ResolvePrincipal(ctx context.Context, principal string) bool {
+	sessionID, ok := cron.SessionIDFromPrincipal(principal)
+	if !ok {
+		return false
+	}
+	if a.sessions == nil {
+		return false
+	}
+	if _, err := a.sessions.GetIfExists(ctx, sessionID); err != nil {
+		return false
+	}
+	return true
+}
+
+// SetSessionToolOverrides persists per-session tool overrides. The session
+// is created if it does not exist; passing nil clears the overrides.
+// Changes take effect on the session's next turn.
+func (a *Agent) SetSessionToolOverrides(ctx context.Context, sessionID string, overrides *sessions.ToolOverrides) error {
+	if a.sessions == nil {
+		return fmt.Errorf("session store not configured")
+	}
+
+	session, err := a.sessions.Get(ctx, sessionID)
+	if err != nil {
+		return fmt.Errorf("get session: %w", err)
+	}
+
+	session.ToolOverrides = overrides
+	session.UpdatedAt = time.Now()
+
+	if err := a.sessions.Save(ctx, session); err != nil {
+		return fmt.Errorf("save session: %w", err)
+	}
+	return nil
+}
+
+// narrowToolsForTurn applies the registered pre-turn hooks to the tool set
+// for one loop iteration. Hooks compose by intersection: each hook sees the
+// names surviving the previous one. A nil return leaves the set unchanged;
+// an empty return removes all optional tools for this turn.
+func (a *Agent) narrowToolsForTurn(ctx context.Context, sessionID, content string, iteration int, tools []provider.Tool) []provider.Tool {
+	if len(a.toolsAllowHooks) == 0 || len(tools) == 0 {
+		return tools
+	}
+
+	current := tools
+	for _, hook := range a.toolsAllowHooks {
+		names := make([]string, len(current))
+		for i, t := range current {
+			names[i] = t.Function.Name
+		}
+		allow := hook(ctx, hooks.PromptTurn{
+			SessionID: sessionID,
+			Content:   content,
+			Iteration: iteration,
+			Tools:     names,
+		})
+		if allow == nil {
+			continue
+		}
+		current = filterToolsByAllow(current, allow)
+		if len(current) == 0 {
+			break
+		}
+	}
+
+	if len(current) != len(tools) && a.logger != nil {
+		a.logger.Info("pre-turn hook narrowed tools",
+			"iteration", iteration, "before", len(tools), "after", len(current))
+	}
+	return current
+}
+
+// filterToolsByAllow returns the intersection of tools with the allow set,
+// preserving the original order. An empty allow set yields no tools.
+func filterToolsByAllow(tools []provider.Tool, allow []string) []provider.Tool {
+	allowed := make(map[string]struct{}, len(allow))
+	for _, name := range allow {
+		allowed[name] = struct{}{}
+	}
+
+	filtered := make([]provider.Tool, 0, len(tools))
+	for _, t := range tools {
+		if _, ok := allowed[t.Function.Name]; ok {
+			filtered = append(filtered, t)
+		}
+	}
+	return filtered
+}
+
+// emitAgentEnd emits the agent.end lifecycle event for a terminal run state.
+// Delivery uses a non-cancellable context so an aborted run still settles
+// through the event instead of having its emission suppressed by the abort.
+func (a *Agent) emitAgentEnd(ctx context.Context, session *sessions.Session, response string, runErr error, duration time.Duration) {
+	if a.dispatcher == nil {
+		return
+	}
+
+	success, errMsg, aborted := classifyAgentEnd(ctx.Err(), runErr)
+
+	sessionID := ""
+	if session != nil {
+		sessionID = session.ID
+	}
+
+	a.dispatcher.EmitAsyncWithSession(context.WithoutCancel(ctx), hooks.EventAgentEnd, sessionID, hooks.AgentEndEvent{
+		SessionID:  sessionID,
+		Success:    success,
+		Error:      errMsg,
+		Aborted:    aborted,
+		Response:   response,
+		DurationMs: duration.Milliseconds(),
+	})
+}
+
+// classifyAgentEnd derives the terminal classification for an agent run.
+// Abort outranks error: when a run fails because the caller cancelled it,
+// the event reports aborted with an empty error — a cancellation (or a
+// timeout surfaced while aborting) is not misreported as a failure cause.
+// A run that returned a result is a success even if the context was
+// cancelled just after completion.
+func classifyAgentEnd(ctxErr, runErr error) (success bool, errMsg string, aborted bool) {
+	if runErr == nil {
+		return true, "", false
+	}
+	if errors.Is(ctxErr, context.Canceled) || errors.Is(runErr, context.Canceled) {
+		return false, "", true
+	}
+	return false, runErr.Error(), false
 }
 
 // joinAssistantSegments joins assistant text segments emitted across

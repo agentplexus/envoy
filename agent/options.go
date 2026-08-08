@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
 
@@ -294,6 +295,62 @@ func WithHook(event hooks.EventType, handler hooks.HandlerFunc) Option {
 func WithNamedHook(event hooks.EventType, name string, handler hooks.HandlerFunc) Option {
 	return func(a *Agent) error {
 		a.hooks.RegisterHandler(event, name, handler)
+		return nil
+	}
+}
+
+// WithSessionRollover enables automatic session rollover. When a session
+// exceeds the policy's idle timeout or crosses a calendar-day boundary, its
+// conversation ends: a session.rollover event carrying the ended transcript
+// fires (the built-in session-memory hook persists it to semantic memory
+// when memory is configured), and the turn continues on a fresh
+// conversation under the same session ID. Manual session clears are
+// unaffected and emit no rollover.
+//
+// The day boundary resolves in policy.Location when set, otherwise the
+// agent's configured Timezone (default UTC).
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithSessionRollover(sessions.RolloverPolicy{
+//	        IdleTimeout: 4 * time.Hour,
+//	        Daily:       true,
+//	    }),
+//	)
+func WithSessionRollover(policy sessions.RolloverPolicy) Option {
+	return func(a *Agent) error {
+		if policy.IdleTimeout <= 0 && !policy.Daily {
+			return fmt.Errorf("session rollover policy must set IdleTimeout or Daily")
+		}
+		a.rolloverPolicy = &policy
+		return nil
+	}
+}
+
+// WithToolsAllowHook registers a synchronous pre-turn hook that can narrow
+// the tools submitted to the model for a single turn. The hook runs before
+// every model call: returning nil leaves the tool set unchanged, an empty
+// slice removes all optional tools for that turn, and a list of names
+// narrows the set to its intersection with the available tools. The tool
+// registry itself is never mutated.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithToolsAllowHook(func(ctx context.Context, turn hooks.PromptTurn) []string {
+//	        if turn.Iteration > 2 {
+//	            return []string{} // stop offering tools after 3 iterations
+//	        }
+//	        return nil
+//	    }),
+//	)
+func WithToolsAllowHook(fn hooks.ToolsAllowFunc) Option {
+	return func(a *Agent) error {
+		if fn == nil {
+			return fmt.Errorf("tools allow hook must not be nil")
+		}
+		a.toolsAllowHooks = append(a.toolsAllowHooks, fn)
 		return nil
 	}
 }
