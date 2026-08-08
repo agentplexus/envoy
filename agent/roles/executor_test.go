@@ -14,10 +14,16 @@ import (
 )
 
 func TestDelegationExecutor_Execute(t *testing.T) {
+	// proceed gates the sub-agent's completion so the task is observably
+	// still running when the status assertion below runs: without this,
+	// the background task can complete before Execute() even returns,
+	// making a direct "want running" assertion inherently flaky.
+	proceed := make(chan struct{})
 	factory := NewMapRoleFactory(map[string]func(context.Context) (SubAgent, error){
 		"test-role": func(context.Context) (SubAgent, error) {
 			return &FuncSubAgent{
 				ProcessFunc: func(ctx context.Context, input map[string]any) (map[string]any, error) {
+					<-proceed
 					return map[string]any{"result": "success"}, nil
 				},
 			}, nil
@@ -40,9 +46,11 @@ func TestDelegationExecutor_Execute(t *testing.T) {
 		t.Fatalf("Execute() error = %v", err)
 	}
 
-	if req.Status != role.DelegationStatusRunning {
-		t.Errorf("Status = %v, want %v", req.Status, role.DelegationStatusRunning)
+	if status, _ := executor.Status(req.TaskID); status != role.DelegationStatusRunning {
+		t.Errorf("Status = %v, want %v", status, role.DelegationStatusRunning)
 	}
+
+	close(proceed)
 
 	// Wait for completion
 	result, err := executor.WaitFor(context.Background(), "task-1")

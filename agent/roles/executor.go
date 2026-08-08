@@ -253,6 +253,23 @@ func (e *DelegationExecutor) GetResult(taskID string) (*role.DelegationResult, b
 	return result, ok
 }
 
+// Status returns the current status of a task, synchronized with the
+// executor's internal state. Reading DelegationRequest.Status directly
+// races with the background goroutine that updates it; callers that need
+// a task's live status should use this instead.
+func (e *DelegationExecutor) Status(taskID string) (role.DelegationStatus, bool) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	if result, ok := e.results[taskID]; ok {
+		return result.Status, true
+	}
+	if task, ok := e.active[taskID]; ok {
+		return task.request.Status, true
+	}
+	return "", false
+}
+
 // ActiveTasks returns the number of currently executing tasks.
 func (e *DelegationExecutor) ActiveTasks() int {
 	e.mu.Lock()
