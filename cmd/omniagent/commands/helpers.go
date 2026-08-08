@@ -25,6 +25,7 @@ func registerAgentsFromConfig(ctx context.Context, cfg *config.Config, agentRegi
 			Temperature:  agentCfg.Temperature,
 			MaxTokens:    agentCfg.MaxTokens,
 			SystemPrompt: agentCfg.SystemPrompt,
+			Timezone:     agentCfg.Timezone,
 			AllowedTools: agentCfg.AllowedTools,
 			DeniedTools:  agentCfg.DeniedTools,
 			Enabled:      agentCfg.Enabled,

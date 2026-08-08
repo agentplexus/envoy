@@ -206,6 +206,9 @@ func (r *Registry) Create(ctx context.Context, cfg *AgentConfig) error {
 		if cfg.APIKey == "" {
 			cfg.APIKey = r.defaults.APIKey
 		}
+		if cfg.Timezone == "" {
+			cfg.Timezone = r.defaults.Timezone
+		}
 	}
 
 	// Set timestamps

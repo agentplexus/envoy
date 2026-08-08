@@ -37,6 +37,9 @@ type AgentConfig struct {
 	// SystemPrompt is the system message for the agent.
 	SystemPrompt string `json:"system_prompt,omitempty" yaml:"system_prompt,omitempty"`
 
+	// Timezone is the IANA timezone for temporal context (empty = UTC).
+	Timezone string `json:"timezone,omitempty" yaml:"timezone,omitempty"`
+
 	// AllowedTools limits which tools this agent can use (empty = all).
 	AllowedTools []string `json:"allowed_tools,omitempty" yaml:"allowed_tools,omitempty"`
 

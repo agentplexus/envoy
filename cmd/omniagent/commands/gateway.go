@@ -129,6 +129,7 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			Temperature:  regCfg.Temperature,
 			MaxTokens:    regCfg.MaxTokens,
 			SystemPrompt: regCfg.SystemPrompt,
+			Timezone:     regCfg.Timezone,
 			Logger:       logger,
 		}
 		// Only set hook if non-nil to avoid interface{type, nil} gotcha
@@ -184,6 +185,7 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			Model:    cfg.Agent.Model,
 			APIKey:   cfg.Agent.APIKey,
 			BaseURL:  cfg.Agent.BaseURL,
+			Timezone: cfg.Agent.Timezone,
 		},
 	})
 	defer agentRegistry.Close()
@@ -215,6 +217,7 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			Temperature:  cfg.Agent.Temperature,
 			MaxTokens:    cfg.Agent.MaxTokens,
 			SystemPrompt: cfg.Agent.SystemPrompt,
+			Timezone:     cfg.Agent.Timezone,
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		}

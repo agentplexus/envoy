@@ -86,6 +86,7 @@ type AgentConfig struct {
 	Temperature  float64  `json:"temperature" yaml:"temperature"`
 	MaxTokens    int      `json:"max_tokens" yaml:"max_tokens"`
 	SystemPrompt string   `json:"system_prompt" yaml:"system_prompt"`
+	Timezone     string   `json:"timezone,omitempty" yaml:"timezone,omitempty"` // IANA timezone for temporal context (empty = UTC)
 	AllowedTools []string `json:"allowed_tools,omitempty" yaml:"allowed_tools,omitempty"`
 	DeniedTools  []string `json:"denied_tools,omitempty" yaml:"denied_tools,omitempty"`
 	Enabled      *bool    `json:"enabled,omitempty" yaml:"enabled,omitempty"`
