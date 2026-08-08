@@ -21,7 +21,7 @@ require (
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/moby/moby/api v1.55.0
 	github.com/moby/moby/client v0.5.1
-	github.com/modelcontextprotocol/go-sdk v1.6.1
+	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/ogen-go/ogen v1.23.0
 	github.com/pion/webrtc/v4 v4.2.18
 	github.com/pkoukk/tiktoken-go v0.1.8
