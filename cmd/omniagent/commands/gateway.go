@@ -16,6 +16,7 @@ import (
 	"github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omniagent/agent/registry"
 	"github.com/plexusone/omniagent/gateway"
+	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniagent/voice"
 	"github.com/plexusone/omnichat/provider"
 	"github.com/plexusone/omnichat/providers/discord"
@@ -101,6 +102,23 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Session rollover option from config, shared by all agents.
+	var rolloverOpt agent.Option
+	if cfg.Sessions.Rollover.Enabled {
+		policy := sessions.RolloverPolicy{
+			IdleTimeout: cfg.Sessions.Rollover.IdleTimeout.Duration(),
+			Daily:       cfg.Sessions.Rollover.Daily,
+		}
+		if tz := cfg.Sessions.Rollover.Timezone; tz != "" {
+			loc, err := time.LoadLocation(tz)
+			if err != nil {
+				return fmt.Errorf("invalid sessions.rollover.timezone %q: %w", tz, err)
+			}
+			policy.Location = loc
+		}
+		rolloverOpt = agent.WithSessionRollover(policy)
+	}
+
 	// Create agent factory for registry
 	agentFactory := func(regCfg *registry.AgentConfig) (*agent.Agent, error) {
 		agentConfig := agent.Config{
@@ -118,7 +136,12 @@ func runGateway(cmd *cobra.Command, args []string) error {
 			agentConfig.ObservabilityHook = observabilityHook
 		}
 
-		ag, err := agent.New(agentConfig, getAgentOptions()...)
+		agentOpts := getAgentOptions()
+		if rolloverOpt != nil {
+			agentOpts = append(agentOpts, rolloverOpt)
+		}
+
+		ag, err := agent.New(agentConfig, agentOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("create agent: %w", err)
 		}

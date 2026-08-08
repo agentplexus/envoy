@@ -8,6 +8,7 @@ type Config struct {
 	Gateway       GatewayConfig       `json:"gateway" yaml:"gateway"`
 	Agent         AgentConfig         `json:"agent" yaml:"agent"`
 	Agents        []AgentConfig       `json:"agents,omitempty" yaml:"agents,omitempty"` // Multi-agent configs
+	Sessions      SessionsConfig      `json:"sessions" yaml:"sessions"`
 	Channels      ChannelsConfig      `json:"channels" yaml:"channels"`
 	Tools         ToolsConfig         `json:"tools" yaml:"tools"`
 	Skills        SkillsConfig        `json:"skills" yaml:"skills"`
@@ -45,6 +46,32 @@ type GatewayConfig struct {
 	ReadTimeout  time.Duration `json:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout time.Duration `json:"write_timeout" yaml:"write_timeout"`
 	PingInterval time.Duration `json:"ping_interval" yaml:"ping_interval"`
+}
+
+// SessionsConfig configures session behavior.
+type SessionsConfig struct {
+	// Rollover configures automatic session rollover.
+	Rollover RolloverConfig `json:"rollover" yaml:"rollover"`
+}
+
+// RolloverConfig configures automatic session rollover: when triggered, a
+// session's conversation ends (persisted to memory when memory is enabled)
+// and continues fresh under the same session ID.
+type RolloverConfig struct {
+	// Enabled turns automatic rollover on. At least one of IdleTimeout or
+	// Daily must be set when enabled.
+	Enabled bool `json:"enabled" yaml:"enabled"`
+
+	// IdleTimeout rolls a session over when it has been inactive longer
+	// than this duration (e.g. "4h"). Zero disables idle rollover.
+	IdleTimeout Duration `json:"idle_timeout" yaml:"idle_timeout"`
+
+	// Daily rolls a session over when a calendar-day boundary is crossed.
+	Daily bool `json:"daily" yaml:"daily"`
+
+	// Timezone resolves the day boundary (IANA name). Empty falls back to
+	// the agent's timezone, then UTC.
+	Timezone string `json:"timezone" yaml:"timezone"`
 }
 
 // AgentConfig configures the AI agent.

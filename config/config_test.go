@@ -94,6 +94,48 @@ channels:
 	}
 }
 
+func TestLoadYAML_TimezoneAndRollover(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+
+	content := `
+agent:
+  provider: openai
+  model: gpt-4
+  timezone: America/Los_Angeles
+sessions:
+  rollover:
+    enabled: true
+    idle_timeout: 4h
+    daily: true
+    timezone: Europe/Berlin
+`
+	if err := os.WriteFile(cfgPath, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgPath)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+
+	if cfg.Agent.Timezone != "America/Los_Angeles" {
+		t.Errorf("Agent.Timezone = %q, want America/Los_Angeles", cfg.Agent.Timezone)
+	}
+	if !cfg.Sessions.Rollover.Enabled {
+		t.Error("Sessions.Rollover.Enabled should be true")
+	}
+	if cfg.Sessions.Rollover.IdleTimeout.Duration() != 4*time.Hour {
+		t.Errorf("Sessions.Rollover.IdleTimeout = %v, want 4h", cfg.Sessions.Rollover.IdleTimeout)
+	}
+	if !cfg.Sessions.Rollover.Daily {
+		t.Error("Sessions.Rollover.Daily should be true")
+	}
+	if cfg.Sessions.Rollover.Timezone != "Europe/Berlin" {
+		t.Errorf("Sessions.Rollover.Timezone = %q, want Europe/Berlin", cfg.Sessions.Rollover.Timezone)
+	}
+}
+
 func TestLoadJSON(t *testing.T) {
 	// Clear env vars that could override config values
 	envVars := []string{
