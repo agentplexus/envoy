@@ -16,6 +16,14 @@ type Session struct {
 	CreatedAt time.Time          `json:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at"`
 	Metadata  map[string]any     `json:"metadata,omitempty"`
+
+	// ToolOverrides scopes the tool set for this session's turns.
+	// Nil means no overrides. Changes take effect on the next turn.
+	ToolOverrides *ToolOverrides `json:"tool_overrides,omitempty"`
+
+	// Model overrides the agent's default model for this session's turns.
+	// Empty uses the agent default. Changes take effect on the next turn.
+	Model string `json:"model,omitempty"`
 }
 
 // NewSession creates a new session with the given ID.

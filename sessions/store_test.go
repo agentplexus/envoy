@@ -395,6 +395,58 @@ func TestStore_Close(t *testing.T) {
 	}
 }
 
+func TestStore_ToolOverridesRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	backend := memory.New()
+	defer backend.Close()
+
+	store := NewStore(StoreConfig{Backend: backend, TTL: time.Hour})
+
+	session := NewSession("overrides-rt")
+	session.ToolOverrides = &ToolOverrides{
+		Tools:        map[string]bool{"web_search": false},
+		MCPServers:   map[string]bool{"github": false},
+		MCPToolsDeny: map[string][]string{"jira": {"delete_issue"}},
+	}
+	if err := store.Save(ctx, session); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	// Force a reload from the backend, not the cache.
+	store.ClearCache()
+
+	got, err := store.GetIfExists(ctx, "overrides-rt")
+	if err != nil {
+		t.Fatalf("GetIfExists: %v", err)
+	}
+	ov := got.ToolOverrides
+	if ov == nil {
+		t.Fatal("ToolOverrides did not survive the round trip")
+	}
+	if enabled, ok := ov.Tools["web_search"]; !ok || enabled {
+		t.Errorf("Tools = %v, want web_search disabled", ov.Tools)
+	}
+	if enabled, ok := ov.MCPServers["github"]; !ok || enabled {
+		t.Errorf("MCPServers = %v, want github disabled", ov.MCPServers)
+	}
+	if deny := ov.MCPToolsDeny["jira"]; len(deny) != 1 || deny[0] != "delete_issue" {
+		t.Errorf("MCPToolsDeny = %v, want jira: [delete_issue]", ov.MCPToolsDeny)
+	}
+}
+
+func TestToolOverrides_IsZero(t *testing.T) {
+	var nilOv *ToolOverrides
+	if !nilOv.IsZero() {
+		t.Error("nil overrides must be zero")
+	}
+	if !(&ToolOverrides{}).IsZero() {
+		t.Error("empty overrides must be zero")
+	}
+	if (&ToolOverrides{Tools: map[string]bool{"x": false}}).IsZero() {
+		t.Error("populated overrides must not be zero")
+	}
+}
+
 func TestStore_Close_ReleasesCache(t *testing.T) {
 	ctx := context.Background()
 	backend := memory.New()
