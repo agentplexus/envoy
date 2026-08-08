@@ -60,6 +60,7 @@ type Gateway struct {
 	logger      *slog.Logger
 	agent       AgentProcessor
 	rateLimiter *RateLimiter
+	authLimiter *authFailureLimiter
 	metrics     *Metrics
 
 	// Handlers
@@ -88,10 +89,11 @@ func New(config Config) (*Gateway, error) {
 	}
 
 	gw := &Gateway{
-		config:  config,
-		clients: make(map[string]*Client),
-		logger:  config.Logger,
-		agent:   config.Agent,
+		config:      config,
+		clients:     make(map[string]*Client),
+		logger:      config.Logger,
+		agent:       config.Agent,
+		authLimiter: newAuthFailureLimiter(),
 	}
 
 	// Initialize rate limiter if configured

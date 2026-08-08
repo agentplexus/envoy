@@ -180,7 +180,7 @@ func (h *DefaultMessageHandler) handleChat(ctx context.Context, client *Client, 
 }
 
 // handleAuth handles authentication messages.
-func (h *DefaultMessageHandler) handleAuth(_ context.Context, client *Client, msg *Message) (*Message, error) {
+func (h *DefaultMessageHandler) handleAuth(ctx context.Context, client *Client, msg *Message) (*Message, error) {
 	// If no API keys configured and auth not required, accept all
 	if len(h.gateway.config.APIKeys) == 0 && !h.gateway.config.RequireAuth {
 		client.SetMetadata("authenticated", true)
@@ -224,7 +224,14 @@ func (h *DefaultMessageHandler) handleAuth(_ context.Context, client *Client, ms
 	}
 
 	if !authenticated {
-		h.gateway.logger.Warn("authentication failed", "client_id", client.ID)
+		h.gateway.logger.Warn("authentication failed", "client_id", client.ID, "remote_ip", client.RemoteIP())
+		// Apply the escalating failure delay after the credential comparison
+		// so correct credentials are never delayed. No source is locked out
+		// (loopback included) — repeated failures only pay a bounded,
+		// escalating delay.
+		if err := h.gateway.authLimiter.recordFailureAndDelay(ctx, client.RemoteIP()); err != nil {
+			return nil, err
+		}
 		return &Message{
 			ID:   msg.ID,
 			Type: MessageTypeError,
@@ -236,6 +243,8 @@ func (h *DefaultMessageHandler) handleAuth(_ context.Context, client *Client, ms
 		}, nil
 	}
 
+	// Successful authentication resets the penalty state for this source.
+	h.gateway.authLimiter.reset(client.RemoteIP())
 	client.SetMetadata("authenticated", true)
 	h.gateway.logger.Info("client authenticated", "client_id", client.ID)
 

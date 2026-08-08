@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"sync"
 	"time"
 
@@ -29,6 +30,7 @@ type Client struct {
 	ID       string
 	conn     *websocket.Conn
 	gateway  *Gateway
+	remoteIP string // Source IP of the connection, used to key auth penalties
 	send     chan *Message
 	done     chan struct{}
 	once     sync.Once
@@ -42,10 +44,38 @@ func newClient(conn *websocket.Conn, gateway *Gateway) *Client {
 		ID:       uuid.New().String(),
 		conn:     conn,
 		gateway:  gateway,
+		remoteIP: connRemoteIP(conn),
 		send:     make(chan *Message, 256),
 		done:     make(chan struct{}),
 		metadata: make(map[string]interface{}),
 	}
+}
+
+// connRemoteIP extracts the source IP from a WebSocket connection's remote
+// address, without the port so reconnects key to the same penalty state.
+func connRemoteIP(conn *websocket.Conn) string {
+	if conn == nil {
+		return ""
+	}
+	addr := conn.RemoteAddr()
+	if addr == nil {
+		return ""
+	}
+	host, _, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return addr.String()
+	}
+	return host
+}
+
+// RemoteIP returns the client's source IP. Falls back to the client ID when
+// the connection carries no address (e.g. in tests), so penalty keying still
+// distinguishes callers.
+func (c *Client) RemoteIP() string {
+	if c.remoteIP == "" {
+		return c.ID
+	}
+	return c.remoteIP
 }
 
 // Send queues a message to be sent to the client.
