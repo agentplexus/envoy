@@ -57,6 +57,15 @@ type Job struct {
 	// Action defines what the job does when it runs.
 	Action Action `json:"action"`
 
+	// OwnerPrincipal identifies the account/session under whose authority
+	// the job executes. It is stamped by host code at creation time — never
+	// from caller-supplied tool parameters, so it cannot be spoofed through
+	// the cron tool surface. When set, the executor verifies the principal
+	// is still configured before running agent/tool actions and denies all
+	// tools (fail closed) when it is not. Empty on jobs created before
+	// authority tracking existed; those execute unchecked (legacy behavior).
+	OwnerPrincipal string `json:"owner_principal,omitempty"`
+
 	// Status is the current state of the job.
 	Status JobStatus `json:"status"`
 

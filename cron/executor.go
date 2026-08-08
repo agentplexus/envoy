@@ -29,10 +29,16 @@ type ToolExecutor interface {
 	Execute(ctx context.Context, name string, args json.RawMessage) (string, error)
 }
 
+// PrincipalResolver reports whether an authorizing principal is still
+// configured (e.g. an account, API key, or session owner that exists).
+// The executor uses it to fail closed when a job's creator was removed.
+type PrincipalResolver func(ctx context.Context, principal string) bool
+
 // Executor implements ExecutionHandler to perform job actions.
 type Executor struct {
-	agent      AgentInterface
-	httpClient *http.Client
+	agent             AgentInterface
+	httpClient        *http.Client
+	principalResolver PrincipalResolver
 }
 
 // ExecutorConfig configures the executor.
@@ -44,6 +50,11 @@ type ExecutorConfig struct {
 	// HTTPClient is the client for webhook calls.
 	// If nil, a default client with 30s timeout is used.
 	HTTPClient *http.Client
+
+	// PrincipalResolver verifies a job's OwnerPrincipal before agent/tool
+	// actions run. Jobs that name a principal are denied all tools (fail
+	// closed) when this is nil or when it reports the principal unknown.
+	PrincipalResolver PrincipalResolver
 }
 
 // NewExecutor creates a new executor.
@@ -56,8 +67,9 @@ func NewExecutor(config ExecutorConfig) *Executor {
 	}
 
 	return &Executor{
-		agent:      config.Agent,
-		httpClient: client,
+		agent:             config.Agent,
+		httpClient:        client,
+		principalResolver: config.PrincipalResolver,
 	}
 }
 
@@ -83,6 +95,19 @@ func (e *Executor) executeAction(ctx context.Context, job *Job) ExecutionResult 
 		"action_type", job.Action.Type,
 	)
 
+	// Authority gate for actions that reach the agent or its tools: a job
+	// executing under a named principal must have that principal still
+	// configured. Denial is total — no tool or agent call is attempted.
+	if job.Action.Type == ActionTypeSendMessage || job.Action.Type == ActionTypeCallTool {
+		if reason := e.authorityDenial(ctx, job); reason != "" {
+			logger.Error("denying scheduled execution", "job_id", job.ID, "reason", reason)
+			return ExecutionResult{
+				Success: false,
+				Error:   reason,
+			}
+		}
+	}
+
 	switch job.Action.Type {
 	case ActionTypeSendMessage:
 		return e.executeSendMessage(ctx, job)
@@ -96,6 +121,25 @@ func (e *Executor) executeAction(ctx context.Context, job *Job) ExecutionResult 
 			Error:   fmt.Sprintf("unknown action type: %s", job.Action.Type),
 		}
 	}
+}
+
+// authorityDenial applies the fail-closed authority check for a job.
+// It returns a non-empty denial reason when execution must be blocked:
+// a job that names an authorizing principal is denied all tools when the
+// principal cannot be verified (no resolver) or is no longer configured
+// (removed account). A job with no principal predates authority tracking
+// and keeps its legacy unchecked behavior.
+func (e *Executor) authorityDenial(ctx context.Context, job *Job) string {
+	if job.OwnerPrincipal == "" {
+		return ""
+	}
+	if e.principalResolver == nil {
+		return fmt.Sprintf("job names authorizing principal %q but no principal resolver is configured; denying all tools (fail closed)", job.OwnerPrincipal)
+	}
+	if !e.principalResolver(ctx, job.OwnerPrincipal) {
+		return fmt.Sprintf("authorizing principal %q is no longer configured; denying all tools (fail closed)", job.OwnerPrincipal)
+	}
+	return ""
 }
 
 // executeSendMessage sends a message to a session via the agent.

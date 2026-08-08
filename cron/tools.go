@@ -59,10 +59,18 @@ func (s *Skill) Init(ctx context.Context) error {
 		return fmt.Errorf("storage not configured")
 	}
 
-	// Create executor with agent
-	executor := NewExecutor(ExecutorConfig{
+	// Create executor with agent. Agents that can verify authorizing
+	// principals (e.g. session-backed) wire in as the resolver, enabling
+	// the fail-closed authority gate for principal-bearing jobs.
+	execCfg := ExecutorConfig{
 		Agent: s.agent,
-	})
+	}
+	if resolver, ok := s.agent.(interface {
+		ResolvePrincipal(ctx context.Context, principal string) bool
+	}); ok {
+		execCfg.PrincipalResolver = resolver.ResolvePrincipal
+	}
+	executor := NewExecutor(execCfg)
 
 	s.scheduler = NewScheduler(SchedulerConfig{
 		Store:   s.store,
@@ -224,6 +232,10 @@ func (s *Skill) handleCreate(ctx context.Context, params map[string]any) (any, e
 
 	job := NewJob(uuid.New().String(), name, schedule, action)
 	job.Description = description
+	// Stamp the authorizing principal from the execution context (set by
+	// the host, never from tool parameters). Jobs created without a
+	// principal keep legacy unchecked behavior.
+	job.OwnerPrincipal = PrincipalFromContext(ctx)
 
 	if err := s.scheduler.AddJob(ctx, job); err != nil {
 		return nil, fmt.Errorf("add job: %w", err)

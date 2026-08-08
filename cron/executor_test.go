@@ -32,9 +32,11 @@ func (m *mockAgent) Tools() ToolExecutor {
 type mockToolExecutor struct {
 	executeResult string
 	executeError  error
+	executeCalls  int
 }
 
 func (m *mockToolExecutor) Execute(ctx context.Context, name string, args json.RawMessage) (string, error) {
+	m.executeCalls++
 	if m.executeError != nil {
 		return "", m.executeError
 	}
@@ -366,5 +368,116 @@ func TestExecutor_Execute_TimingFields(t *testing.T) {
 
 	if result.Duration < 0 {
 		t.Error("expected non-negative duration")
+	}
+}
+
+func principalJob(actionType ActionType, principal string) *Job {
+	job := &Job{
+		ID:             "authority-job",
+		Name:           "Authority Test",
+		OwnerPrincipal: principal,
+	}
+	switch actionType {
+	case ActionTypeCallTool:
+		job.Action = Action{Type: ActionTypeCallTool, ToolName: "exec"}
+	case ActionTypeSendMessage:
+		job.Action = Action{Type: ActionTypeSendMessage, SessionID: "s1", Message: "hi"}
+	case ActionTypeCallWebhook:
+		job.Action = Action{Type: ActionTypeCallWebhook}
+	}
+	return job
+}
+
+func TestExecutor_Authority_RemovedPrincipalDeniesAllTools(t *testing.T) {
+	tools := &mockToolExecutor{executeResult: "ran"}
+	agent := &mockAgent{tools: tools}
+	executor := NewExecutor(ExecutorConfig{
+		Agent: agent,
+		PrincipalResolver: func(ctx context.Context, principal string) bool {
+			return false // the account was removed
+		},
+	})
+
+	result := executor.Execute(context.Background(), principalJob(ActionTypeCallTool, "removed-account"))
+
+	if result.Success {
+		t.Fatal("expected fail-closed denial for removed principal")
+	}
+	if tools.executeCalls != 0 {
+		t.Fatalf("tool was invoked %d times despite denial", tools.executeCalls)
+	}
+	if result.Error == "" {
+		t.Error("denial must carry an explicit reason")
+	}
+}
+
+func TestExecutor_Authority_NoResolverFailsClosed(t *testing.T) {
+	tools := &mockToolExecutor{executeResult: "ran"}
+	agent := &mockAgent{tools: tools}
+	executor := NewExecutor(ExecutorConfig{Agent: agent}) // no resolver
+
+	result := executor.Execute(context.Background(), principalJob(ActionTypeCallTool, "some-account"))
+
+	if result.Success {
+		t.Fatal("a principal-bearing job must be denied when no resolver can verify it")
+	}
+	if tools.executeCalls != 0 {
+		t.Fatalf("tool was invoked %d times despite denial", tools.executeCalls)
+	}
+}
+
+func TestExecutor_Authority_ConfiguredPrincipalExecutes(t *testing.T) {
+	tools := &mockToolExecutor{executeResult: "ran"}
+	agent := &mockAgent{tools: tools}
+	executor := NewExecutor(ExecutorConfig{
+		Agent: agent,
+		PrincipalResolver: func(ctx context.Context, principal string) bool {
+			return principal == "alive-account"
+		},
+	})
+
+	result := executor.Execute(context.Background(), principalJob(ActionTypeCallTool, "alive-account"))
+
+	if !result.Success {
+		t.Fatalf("configured principal must execute normally, got error: %s", result.Error)
+	}
+	if tools.executeCalls != 1 {
+		t.Fatalf("expected exactly 1 tool invocation, got %d", tools.executeCalls)
+	}
+}
+
+func TestExecutor_Authority_LegacyJobWithoutPrincipalExecutes(t *testing.T) {
+	tools := &mockToolExecutor{executeResult: "ran"}
+	agent := &mockAgent{tools: tools}
+	executor := NewExecutor(ExecutorConfig{
+		Agent: agent,
+		PrincipalResolver: func(ctx context.Context, principal string) bool {
+			return false // resolver would deny anything it is asked about
+		},
+	})
+
+	result := executor.Execute(context.Background(), principalJob(ActionTypeCallTool, ""))
+
+	if !result.Success {
+		t.Fatalf("legacy job without principal must keep working, got error: %s", result.Error)
+	}
+	if tools.executeCalls != 1 {
+		t.Fatalf("expected exactly 1 tool invocation, got %d", tools.executeCalls)
+	}
+}
+
+func TestExecutor_Authority_SendMessageDenied(t *testing.T) {
+	agent := &mockAgent{processResponse: "should never be returned"}
+	executor := NewExecutor(ExecutorConfig{
+		Agent: agent,
+		PrincipalResolver: func(ctx context.Context, principal string) bool {
+			return false
+		},
+	})
+
+	result := executor.Execute(context.Background(), principalJob(ActionTypeSendMessage, "removed-account"))
+
+	if result.Success {
+		t.Fatal("send_message under a removed principal must be denied")
 	}
 }
