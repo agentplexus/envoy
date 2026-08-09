@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-003`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Planned — 0 of 29 items completed
+**Status:** Phases 1–2 completed — 11 of 29 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the
 > trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member
@@ -12,39 +12,39 @@
 ## Phase 1 — Identity & Data Foundation
 
 **Theme:** PostgreSQL + Ent + Row-Level Security as the multi-user system of record.
-**Status:** Planned — 0 of 5 items completed
+**Status:** Completed — 5 of 5 items completed
 
-- [ ] `RMI-OMNIAGENT-100` Ent schemas + versioned migrations + RLS policies
+- [x] `RMI-OMNIAGENT-100` Ent schemas + versioned migrations + RLS policies
   - Acceptance: all eight tables migrate from empty; `ENABLE ROW LEVEL SECURITY` binds every policy for the non-owner app role (FORCE intentionally omitted — it would break the owner-bypass `SECURITY DEFINER` membership helpers, TRD §3); policies match TRD §3; migrations embedded and idempotent
-- [ ] `RMI-OMNIAGENT-101` Dialect-aware store (`AsUser` transaction helper)
+- [x] `RMI-OMNIAGENT-101` Dialect-aware store (`AsUser` transaction helper)
   - Depends on: `RMI-OMNIAGENT-100`
   - Acceptance: dialect selected (postgres\|sqlite) from DSN; on postgres every query path flows through per-request `SET LOCAL` GUCs with advisory-locked migrations-on-start; on sqlite `AsUser`/`AsSystem` pass through (single user) and RLS steps are skipped; raw DB unexported in both
-- [ ] `RMI-OMNIAGENT-102` Team service: users, roles, allowlist
+- [x] `RMI-OMNIAGENT-102` Team service: users, roles, allowlist
   - Depends on: `RMI-OMNIAGENT-101`
   - Acceptance: rename/display-name, allowlist CRUD superadmin-only at app layer AND by policy
-- [ ] `RMI-OMNIAGENT-103` Superadmin bootstrap + rename
+- [x] `RMI-OMNIAGENT-103` Superadmin bootstrap + rename
   - Acceptance: configured email becomes superadmin on first login; later config change does not demote; username change persists and is unique
-- [ ] `RMI-OMNIAGENT-104` Config (modes/auth axes) + RLS isolation test suite
+- [x] `RMI-OMNIAGENT-104` Config (modes/auth axes) + RLS isolation test suite
   - Acceptance: `team.*` config validated; `auth.enabled` independent of `team.enabled` (team implies auth); dialect inferred from DSN; SQL tests prove cross-user isolation per table (postgres)
 
 ## Phase 2 — Magic Link Authentication
 
 **Theme:** Passwordless, allowlist-closed login with server-side cookie sessions.
-**Status:** Planned — 0 of 5 items completed
+**Status:** Completed — 5 of 5 items completed
 
-- [ ] `RMI-OMNIAGENT-105` SMTP delivery + magic-link template
+- [x] `RMI-OMNIAGENT-105` SMTP delivery + magic-link template
   - Acceptance: operator SMTP config sends a working link; failures surfaced without leaking outcome to the requester
-- [ ] `RMI-OMNIAGENT-106` Magic-link issue/verify
+- [x] `RMI-OMNIAGENT-106` Magic-link issue/verify
   - Depends on: `RMI-OMNIAGENT-105`
   - Acceptance: hashed-at-rest, 15-min TTL, single-use; first login creates the user; uniform responses (no enumeration)
-- [ ] `RMI-OMNIAGENT-107` Cookie session management
+- [x] `RMI-OMNIAGENT-107` Cookie session management
   - Depends on: `RMI-OMNIAGENT-106`
   - Acceptance: `__Host-` HttpOnly/Secure/Lax cookie; hashed server-side rows; sliding 30-day expiry; logout revokes
-- [ ] `RMI-OMNIAGENT-108` Allowlist enforcement + admin API
+- [x] `RMI-OMNIAGENT-108` Allowlist enforcement + admin API
   - Acceptance: non-allowlisted email never yields a token row; superadmin CRUD endpoints
-- [ ] `RMI-OMNIAGENT-109` Auth middleware + cookie WS upgrade + rate limiting
+- [x] `RMI-OMNIAGENT-109` Auth middleware + cookie WS upgrade + rate limiting
   - Depends on: `RMI-OMNIAGENT-107`
-  - Acceptance: CSRF header on mutations; WS authenticates pre-upgrade and binds user; magic-link endpoints pay the escalating delay under abuse; legacy API-key mode untouched when team mode off
+  - Acceptance: CSRF header on mutations (`X-OmniAgent-CSRF`); WS authenticates pre-upgrade and binds user; magic-link request endpoint pays the escalating delay keyed by both client IP and email (max of the two, not summed); legacy API-key mode untouched when team mode off
 
 ## Phase 3 — Private & Group Chats
 
@@ -75,13 +75,13 @@
 ## Phase 4 — Embedded Web UI
 
 **Theme:** One capability-driven go:embed SPA serving both personal and team modes; Caddy does TLS only (team).
-**Status:** Planned — 0 of 5 items completed
+**Status:** In progress — 1 of 5 items completed
 
 > Capability-driven (TRD §1a/§6): the same SPA reads `GET /api/capabilities`.
 > Login (116) shows only when `authRequired`; group chat (118) and admin (119)
 > only when `multiUser`. Personal mode = chat list + history (117) alone.
 
-- [ ] `RMI-OMNIAGENT-115` UI scaffold + embedded serving + capabilities endpoint
+- [x] `RMI-OMNIAGENT-115` UI scaffold + embedded serving + capabilities endpoint
   - Acceptance: `web/dist` embedded; served at `/` whenever the web UI is enabled (personal or team); `GET /api/capabilities` returns the active mode's flags; team-only routes gated on `team.enabled`; no external assets (CSP-clean)
 - [ ] `RMI-OMNIAGENT-116` Login UI (magic link)
   - Depends on: `RMI-OMNIAGENT-115`
