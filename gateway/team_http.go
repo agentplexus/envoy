@@ -121,9 +121,16 @@ func (h *TeamHTTP) handleMagicLink(w http.ResponseWriter, r *http.Request) {
 	}
 	ip := clientIP(r)
 
-	// Escalating delay per source throttles enumeration/spam. Applied
-	// before the (uniform) response; loopback is delayed but never locked.
-	_ = h.limiter.recordFailureAndDelay(r.Context(), "magic:"+ip) //nolint:errcheck // delay is best-effort; ctx cancel just skips it
+	// Escalating delay per source throttles enumeration/spam, keyed by both
+	// client IP and email (TRD §4.1): IP alone misses a distributed probe
+	// against one target address, email alone misses a single-source spray
+	// across many addresses. Applied before the (uniform) response;
+	// loopback is delayed but never locked.
+	keys := []string{"magic:ip:" + ip}
+	if email := strings.ToLower(strings.TrimSpace(req.Email)); email != "" {
+		keys = append(keys, "magic:email:"+email)
+	}
+	_ = h.limiter.recordFailureAndDelayAll(r.Context(), keys...) //nolint:errcheck // delay is best-effort; ctx cancel just skips it
 
 	err := h.auth.RequestMagicLink(r.Context(), req.Email, ip)
 	if errors.Is(err, team.ErrInvalidEmail) {

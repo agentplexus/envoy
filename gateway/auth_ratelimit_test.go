@@ -109,6 +109,36 @@ func TestAuthFailureLimiter_ResetOnSuccess(t *testing.T) {
 	}
 }
 
+func TestAuthFailureLimiter_RecordFailureAndDelayAll(t *testing.T) {
+	l := newAuthFailureLimiter() // real clock: verifying concurrency needs real timing
+	l.baseDelay = 5 * time.Millisecond
+	l.maxDelay = 50 * time.Millisecond
+	ctx := context.Background()
+
+	// Escalate the IP key alone so its delay (10ms) exceeds the email key's
+	// base delay (5ms): the combined wait must be the max, not the sum.
+	if err := l.recordFailureAndDelay(ctx, "magic:ip:1.2.3.4"); err != nil {
+		t.Fatalf("recordFailureAndDelay: %v", err)
+	}
+
+	start := time.Now()
+	if err := l.recordFailureAndDelayAll(ctx, "magic:ip:1.2.3.4", "magic:email:a@example.com"); err != nil {
+		t.Fatalf("recordFailureAndDelayAll: %v", err)
+	}
+	elapsed := time.Since(start)
+
+	ipDelay, _, _ := l.penaltyState("magic:ip:1.2.3.4")
+	emailDelay, _, _ := l.penaltyState("magic:email:a@example.com")
+	if ipDelay <= emailDelay {
+		t.Fatalf("test setup: ip delay %v should exceed email delay %v", ipDelay, emailDelay)
+	}
+	// Sequential waits would take ipDelay+emailDelay; concurrent waits take
+	// ~ipDelay. Allow generous slack for scheduler jitter.
+	if elapsed > ipDelay+20*time.Millisecond {
+		t.Errorf("recordFailureAndDelayAll took %v, want ~%v (max, not sum)", elapsed, ipDelay)
+	}
+}
+
 func TestAuthFailureLimiter_ContextCancelled(t *testing.T) {
 	l := newAuthFailureLimiter() // real clock: the wait is real
 	l.baseDelay = 5 * time.Second

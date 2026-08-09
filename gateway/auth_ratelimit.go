@@ -95,6 +95,30 @@ func (l *authFailureLimiter) recordFailureAndDelay(ctx context.Context, key stri
 	}
 }
 
+// recordFailureAndDelayAll registers a failure under each key and waits for
+// the longest of their delays concurrently (not summed), or ctx to be done.
+// Used where one request must be throttled by more than one dimension (e.g.
+// magic-link requests, by client IP and by email) without paying each
+// dimension's delay back-to-back.
+func (l *authFailureLimiter) recordFailureAndDelayAll(ctx context.Context, keys ...string) error {
+	var wg sync.WaitGroup
+	errs := make([]error, len(keys))
+	wg.Add(len(keys))
+	for i, k := range keys {
+		go func(i int, k string) {
+			defer wg.Done()
+			errs[i] = l.recordFailureAndDelay(ctx, k)
+		}(i, k)
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // reset clears the penalty state for key after a successful authentication.
 func (l *authFailureLimiter) reset(key string) {
 	l.mu.Lock()
