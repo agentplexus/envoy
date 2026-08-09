@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
@@ -52,7 +53,11 @@ func (Agent) Edges() []ent.Edge {
 			Field("created_by").
 			Unique().
 			Required(),
-		edge.To("skills", AgentSkill.Type),
-		edge.To("roles", AgentRole.Type),
+		// Skills and roles are owned by the agent: deleting an agent must
+		// not be blocked by its own config/membership rows.
+		edge.To("skills", AgentSkill.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("roles", AgentRole.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }

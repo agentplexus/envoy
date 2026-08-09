@@ -56,7 +56,7 @@ var (
 				Symbol:     "agent_roles_agents_roles",
 				Columns:    []*schema.Column{AgentRolesColumns[3]},
 				RefColumns: []*schema.Column{AgentsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "agent_roles_users_agent_roles",
@@ -94,7 +94,7 @@ var (
 				Symbol:     "agent_skills_agents_skills",
 				Columns:    []*schema.Column{AgentSkillsColumns[2]},
 				RefColumns: []*schema.Column{AgentsColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
