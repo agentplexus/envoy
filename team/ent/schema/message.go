@@ -16,10 +16,21 @@ type Message struct {
 	ent.Schema
 }
 
+// newMessageID returns a time-ordered (UUIDv7) ID so keyset pagination by
+// (created_at, id) stays correctly ordered even when two messages land in
+// the same clock tick — created_at's storage precision varies by dialect.
+func newMessageID() uuid.UUID {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return uuid.New()
+	}
+	return id
+}
+
 // Fields of the Message.
 func (Message) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New),
+		field.UUID("id", uuid.UUID{}).Default(newMessageID),
 		field.UUID("chat_id", uuid.UUID{}),
 		field.Enum("author_type").Values("user", "agent"),
 		field.UUID("author_user_id", uuid.UUID{}).Optional().Nillable(),
