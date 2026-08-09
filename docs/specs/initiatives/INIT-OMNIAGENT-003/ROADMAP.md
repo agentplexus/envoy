@@ -15,7 +15,7 @@
 **Status:** Planned — 0 of 5 items completed
 
 - [ ] `RMI-OMNIAGENT-100` Ent schemas + versioned migrations + RLS policies
-  - Acceptance: all eight tables migrate from empty; RLS enabled with FORCE; policies match TRD §3; migrations embedded and idempotent
+  - Acceptance: all eight tables migrate from empty; `ENABLE ROW LEVEL SECURITY` binds every policy for the non-owner app role (FORCE intentionally omitted — it would break the owner-bypass `SECURITY DEFINER` membership helpers, TRD §3); policies match TRD §3; migrations embedded and idempotent
 - [ ] `RMI-OMNIAGENT-101` Dialect-aware store (`AsUser` transaction helper)
   - Depends on: `RMI-OMNIAGENT-100`
   - Acceptance: dialect selected (postgres\|sqlite) from DSN; on postgres every query path flows through per-request `SET LOCAL` GUCs with advisory-locked migrations-on-start; on sqlite `AsUser`/`AsSystem` pass through (single user) and RLS steps are skipped; raw DB unexported in both
