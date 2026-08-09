@@ -18,6 +18,7 @@ import (
 	"github.com/plexusone/omniagent/gateway"
 	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniagent/voice"
+	"github.com/plexusone/omniagent/web"
 	"github.com/plexusone/omnichat/provider"
 	"github.com/plexusone/omnichat/providers/discord"
 	"github.com/plexusone/omnichat/providers/telegram"
@@ -73,6 +74,19 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		}
 		defer cleanup()
 		teamHTTP = th
+	}
+
+	// Embedded web UI: capability-driven SPA + GET /api/capabilities,
+	// registered whenever the web UI is enabled (personal opt-in, or
+	// implied by team mode). Team-only routes stay gated on cfg.Team.Enabled
+	// above, via teamHTTP.
+	var webHTTP *gateway.WebHTTP
+	if cfg.WebUIEnabled() {
+		webHTTP = gateway.NewWebHTTP(gateway.WebHTTPConfig{
+			Capabilities: cfg.Capabilities(),
+			Assets:       web.Assets,
+			Logger:       logger,
+		})
 	}
 
 	sigCh := make(chan os.Signal, 1)
@@ -253,6 +267,18 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		logger.Warn("no API key configured, agent disabled (messages will be echoed)")
 	}
 
+	// Personal-mode chat: single implicit user, private chat with the
+	// agent. Team mode gets its own chat surface later; skip here.
+	var personalChatHTTP *gateway.PersonalChatHTTP
+	if !cfg.Team.Enabled && cfg.WebUIEnabled() {
+		pch, cleanup, err := setupPersonalChat(ctx, cfg, agentInstance, logger)
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+		personalChatHTTP = pch
+	}
+
 	// Initialize voice processor if enabled
 	var voiceProcessor *voice.Processor
 	if cfg.Voice.Enabled {
@@ -423,6 +449,22 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		gw.Handle("/api/", teamHTTP.Handler())
 		gw.SetConnectAuthorizer(teamHTTP.ConnectAuthorizer())
 		logger.Info("team mode: auth API mounted at /api/, WebSocket cookie-authenticated")
+	}
+
+	// Web UI: capabilities is an exact pattern so it keeps resolving even
+	// when team mode also claims the "/api/" subtree above — ServeMux
+	// prefers the longer, more specific pattern.
+	if webHTTP != nil {
+		gw.Handle("/api/capabilities", webHTTP.CapabilitiesHandler())
+		gw.Handle("/", webHTTP.AssetsHandler())
+		logger.Info("web UI enabled: SPA served at /, capabilities at /api/capabilities")
+	}
+
+	// Personal-mode chat API.
+	if personalChatHTTP != nil {
+		gw.Handle("/api/chat", personalChatHTTP.ChatHandler())
+		gw.Handle("/api/chat/messages", personalChatHTTP.SendHandler())
+		logger.Info("personal chat API mounted at /api/chat")
 	}
 
 	// Start gateway
