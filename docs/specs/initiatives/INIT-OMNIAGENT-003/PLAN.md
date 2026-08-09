@@ -57,23 +57,33 @@ token row.
 
 ## Phase 3 — Private & Group Chats
 
+> **Depends on INIT-OMNIAGENT-005** (Virtual Agents, Roles & Registry): chats
+> attach to an `agent_id` and chat creation is gated by `Can(CapCreateChat)`.
+> RMI-110 provides the chat/membership base; INIT-005 **RMI-308** then adds
+> `chats.agent_id` + the `Can()` gate; RMIs 111–114 build on the agent-anchored
+> model. INIT-005 Phases 1–3 must land before this phase completes (TRD §10).
+
 | RMI | Work |
 |-----|------|
-| RMI-OMNIAGENT-110 | `team/chats`: private auto-chat at first login; group create/invite/leave/remove (owner/superadmin rules); membership queries |
+| RMI-OMNIAGENT-110 | `team/chats`: DM (private) with an agent created on demand for permitted users (one per user per agent); group create/invite/leave/remove (chat owner/superadmin rules; invitees join as conversants with no agent-config rights); membership queries |
 | RMI-OMNIAGENT-111 | Message persistence + keyset-paginated history API (`/api/chats/{id}/messages`); length cap; RLS-scoped |
 | RMI-OMNIAGENT-112 | Gateway chat rooms: membership-validated subscribe; commit-then-broadcast fan-out to connected members; room GC on disconnect |
-| RMI-OMNIAGENT-113 | Mention policy + agent turn: `@<handle>` detection (group) vs always-respond (private); agent session key `chat:<id>`; agent reply persisted as `author_type=agent` then broadcast; no self-replies |
-| RMI-OMNIAGENT-114 | Scoping integration: `TenantID=team`, `SubjectID=chat:<id>` for memory; per-chat tool/model overrides restricted to owner/superadmin in groups; rollover works per chat |
+| RMI-OMNIAGENT-113 | Mention policy + agent turn: `@<agent-slug>` detection (group) vs always-respond (private); chat runs on the bound agent's runtime instance (persona + enabled skills + agent secrets, INIT-005 §6); agent session key `chat:<id>`; agent reply persisted as `author_type=agent` then broadcast; no self-replies |
+| RMI-OMNIAGENT-114 | Scoping integration: `TenantID=team`, `SubjectID=chat:<id>` for memory; skills/model/persona are agent config (owner/maintainer-managed via INIT-005), not per-chat overrides mutable by chat members; rollover works per chat |
 
-**Verification gate:** two-member group chat over two WS connections: plain
-message reaches both with no agent reply; `@omniagent` message produces exactly
-one agent reply visible to both; private chats remain isolated.
+**Verification gate:** two-member group chat (bound to a listed agent) over two
+WS connections: plain message reaches both with no agent reply; `@<agent-slug>`
+message produces exactly one agent reply visible to both; a conversant gets 403
+on any agent config/skill/secret operation; private DMs remain isolated.
 
 ## Phase 4 — Embedded Web UI (v1 slice)
 
+> Capability-driven: 116 (login) renders only when `authRequired`; 118 (group)
+> and 119 (admin) only when `multiUser`. Personal mode shows 117 (chat) alone.
+
 | RMI | Work |
 |-----|------|
-| RMI-OMNIAGENT-115 | `web/` scaffold (no external runtime deps; build to `web/dist`), `go:embed` + gateway mux serving `/` with API/WS passthrough; team-mode-only registration |
+| RMI-OMNIAGENT-115 | `web/` scaffold (no external runtime deps; build to `web/dist`), `go:embed` + gateway mux serving `/` with API/WS passthrough; `GET /api/capabilities` (`{multiUser, authRequired, groupChats, admin, catalog}`); registers whenever the web UI is enabled (personal or team), team-only routes gated on `team.enabled` |
 | RMI-OMNIAGENT-116 | Login UI: request magic link, verify landing, logged-in shell, logout |
 | RMI-OMNIAGENT-117 | Private chat UI: history (keyset scroll-back), send, live agent replies over WS |
 | RMI-OMNIAGENT-118 | Group chat UI: create, invite, member list, leave; @-mention autocomplete for the agent handle |

@@ -55,20 +55,35 @@ magic_link_tokens id · email · token_hash (sha256, unique) · expires_at
 auth_sessions    id · user_id fk · token_hash (sha256, unique) · created_at
                  last_seen_at · expires_at · user_agent · created_ip
 
-chats            id (uuid pk) · type (private|group) · name (null for private)
-                 created_by fk users · created_at
-                 -- partial unique index: one private chat per user
-                 UNIQUE (created_by) WHERE type = 'private'
+chats            id (uuid pk) · agent_id fk agents · type (private|group)
+                 name (null for private) · created_by fk users · created_at
+                 -- partial unique index: one DM (private chat) per user per agent
+                 UNIQUE (created_by, agent_id) WHERE type = 'private'
 
 chat_members     chat_id fk · user_id fk · role (owner|member) · joined_at
                  PRIMARY KEY (chat_id, user_id)
+                 -- chat roles govern membership only; they are orthogonal to
+                 -- agent_roles (owner/maintainer) and confer no config rights
 
 messages         id (uuid pk) · chat_id fk · author_type (user|agent)
                  author_user_id (fk, null when agent) · content (text)
                  created_at · idx (chat_id, created_at)
 ```
 
+> **Rescope (INIT-OMNIAGENT-005 dependency):** the `agents`, `agent_roles`, and
+> `agent_skills` tables that `chats.agent_id` references are defined and migrated
+> by [INIT-OMNIAGENT-005](../INIT-OMNIAGENT-005/TRD.md) (Virtual Agents, Roles &
+> Registry). Phase 3 here consumes that model; it does not define agents. See §5
+> for how a chat binds to its agent, and §10 for the sequencing constraint.
+
 ## 3. Row-Level Security
+
+> **Team mode only.** This entire section applies to the PostgreSQL dialect. In
+> personal mode (SQLite, one implicit user) there is nothing to isolate: the
+> `0001–0003_*.sql` policy/function/grant migrations are skipped, the two-role
+> owner/app split collapses to a single connection, and `store.AsUser` /
+> `AsSystem` become pass-throughs binding the sole user. The service-layer
+> authorization checks (the primary gate) still run in both modes.
 
 **Connection model (two roles, as built):** migrations run as the **owner**
 role (`MigrateDSN`); the app connects as the **non-owner** `omniagent_app`
@@ -99,7 +114,7 @@ create users/identities/sessions, or author `agent` messages.
 | `users` | own row; superadmin: all | own display fields; superadmin: all |
 | `allowlist` | superadmin | superadmin |
 | `auth_sessions` | own | own (logout); superadmin: revoke any |
-| `chats` | member of chat | create; owner/superadmin: update/delete |
+| `chats` | member of chat | create (INSERT gated at the app layer by `Can(actor, agent_id, CapCreateChat)`; RLS backstop requires the creator be a permitted starter of the bound agent); owner/superadmin: update/delete |
 | `chat_members` | member of same chat | chat owner invites/removes; self-leave |
 | `messages` | member of chat | member of chat inserts (author = self) |
 | `magic_link_tokens` | *no app-role access* — touched only by the auth layer via SECURITY DEFINER functions or a separate narrowly-granted role |
@@ -159,23 +174,39 @@ non-team/programmatic use behind the existing config.
 
 ## 5. Chats & Agent Participation
 
-- **Private chat:** auto-created at first login (`type=private`, sole member).
-  Every member message triggers the agent (current behavior).
-- **Group chat:** any member creates (`type=group`, becomes `owner`); invites
-  by username/email (must be existing members of the team); members can leave;
-  owner or superadmin can remove members.
+Every chat binds to exactly one **agent** (`chats.agent_id`, defined by
+INIT-OMNIAGENT-005). "The agent" below means that chat's bound agent, not a
+single deployment-wide agent. Which agents a user may start a chat with — and
+therefore which agents they can DM or open a group around — is governed by the
+INIT-005 registry via `Can(actor, agent, CapCreateChat)` (listed agents: any
+allowlisted user; private agents: the agent's owner/maintainers and people they
+invite). Per-agent roles (owner/maintainer) are orthogonal to chat membership:
+being a chat member never confers the right to configure the bound agent.
+
+- **Private chat (DM with an agent):** created on demand when a permitted user
+  first opens a DM with an agent (`type=private`, sole member), not blanket at
+  first login. At most one DM per (user, agent). Every member message triggers
+  the agent (current single-agent behavior, now per bound agent).
+- **Group chat:** any user permitted to start a chat with the agent creates one
+  (`type=group`, becomes chat `owner`); invites by username/email (must be
+  existing members of the team); invited members join as **conversants** — they
+  can talk but hold no configuration rights over the agent. Members can leave;
+  the chat owner or superadmin can remove members.
 - **Fan-out:** the gateway maintains chat-scoped rooms. On message insert
   (transaction committed), the server broadcasts to connected members of that
   chat. Subscription requests are validated against `chat_members`.
-- **Mention policy:** the agent has a handle (`team.agent_handle`, default
-  `omniagent`). In group chats the agent processes a message only when it
-  matches `(^|\s)@<handle>\b` (case-insensitive). In private chats it always
-  processes. The agent never responds to its own messages.
-- **Agent session:** one per chat, key `chat:<id>` — group members share
-  context by design. `TenantID = team`, `SubjectID/SessionID = chat:<id>` for
-  memory scoping. Existing per-session features (tool overrides, model
-  override, rollover) apply per chat; mutation of a group chat's overrides is
-  owner/superadmin-only.
+- **Mention policy:** the agent's handle is its slug (INIT-005 `agents.slug`);
+  no global `team.agent_handle`. In group chats the agent processes a message
+  only when it matches `(^|\s)@<slug>\b` (case-insensitive). In private chats it
+  always processes. The agent never responds to its own messages.
+- **Agent session & runtime:** one session per chat, key `chat:<id>` — group
+  members share context by design. `TenantID = team`, `SubjectID/SessionID =
+  chat:<id>` for memory scoping. The chat's turns run on the bound agent's
+  runtime instance (persona + enabled skills + agent-scoped secrets), per
+  INIT-005 §6 — the deployment no longer runs one implicit agent. Skills, model,
+  and persona are **agent** configuration (owner/maintainer-managed via INIT-005),
+  not per-chat overrides mutable by chat members. Chat-scoped session features
+  that remain per chat (rollover, memory) apply per chat.
 - **Ordering/limits:** message length capped (config, default 32 KiB); history
   API paginates by `(created_at, id)` keyset.
 
@@ -249,7 +280,30 @@ volumes: caddy_data, pg_data, omniagent_data   # omniagent_data = KVS sqlite
   timestamps); superadmin actions loggable via existing hooks (`agent_end`,
   `session.*` events unaffected).
 
-## 10. Open Questions
+## 10. Cross-Initiative Sequencing (INIT-005)
+
+Phase 3 (Private & Group Chats) depends on
+[INIT-OMNIAGENT-005](../INIT-OMNIAGENT-005/PRD.md) (Virtual Agents, Roles &
+Registry), which owns the `agents`/`agent_roles`/`agent_skills` model,
+`Can(...)` authorization, and per-agent runtime binding that `chats.agent_id`
+and start-chat authz rest on. Phases 1–2 (identity, magic-link auth) and Phase 4
+(web UI) and Phase 6 (deployment) carry no such dependency. Concretely:
+
+- **INIT-003 RMI-110** (chat/membership service) provides the base that INIT-005
+  **RMI-308** extends by adding `chats.agent_id` and the `Can(CapCreateChat)`
+  gate — so RMI-110 lands first, then RMI-308, then the remaining Phase 3 RMIs
+  (111–114) build on the agent-anchored model.
+- INIT-005 Phases 1–3 (agent entity → per-agent roles → registry + start-chat
+  authz) must be delivered before INIT-003 Phase 3 completes.
+- Dependencies are modeled at **RMI granularity** in VisionStudio, where the
+  graph stays acyclic: INIT-005 `RMI-308 requires RMI-110` (agent_id integration
+  builds on the chat base), and INIT-003 `RMI-113 requires RMI-308` +
+  `RMI-113 requires RMI-309` (agent turns need `chats.agent_id` and the per-agent
+  runtime). No initiative-level `requires` edge is used: the two initiatives
+  interleave at different phases, so projecting the relationship up to initiative
+  granularity would falsely imply a cycle.
+
+## 11. Open Questions
 
 1. Should the superadmin be able to *read* group chats they are not a member
    of? v1: **no** — superadmin power is administrative (membership), not

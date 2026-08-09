@@ -48,11 +48,17 @@
 
 ## Phase 3 — Private & Group Chats
 
-**Theme:** Persistent chats with membership fan-out and @-mention agent policy.
+**Theme:** Agent-anchored chats with membership fan-out and @-mention agent policy.
 **Status:** Planned — 0 of 5 items completed
 
+> **Cross-initiative dependency:** rescoped onto `INIT-OMNIAGENT-005` (Virtual
+> Agents, Roles & Registry) — a chat attaches to an `agent_id` and creation is
+> gated by `Can(CapCreateChat)`. INIT-005 **RMI-308** adds `chats.agent_id` +
+> the `Can()` gate on top of RMI-110; INIT-005 Phases 1–3 must land before this
+> phase completes.
+
 - [ ] `RMI-OMNIAGENT-110` Chat + membership service
-  - Acceptance: private auto-chat at first login; group create/invite/leave/remove with owner/superadmin rules
+  - Acceptance: DM (private) with an agent created on demand for permitted users, one per user per agent; group create/invite/leave/remove with chat owner/superadmin rules; invitees join as conversants with no agent-config rights
 - [ ] `RMI-OMNIAGENT-111` Message persistence + history API
   - Depends on: `RMI-OMNIAGENT-110`
   - Acceptance: keyset pagination; length cap; RLS-scoped reads/writes
