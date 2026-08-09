@@ -268,15 +268,18 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	}
 
 	// Personal-mode chat: single implicit user, private chat with the
-	// agent. Team mode gets its own chat surface later; skip here.
+	// agent, plus single-account login when auth.enabled=true. Team mode
+	// gets its own chat surface later; skip here.
 	var personalChatHTTP *gateway.PersonalChatHTTP
+	var personalAuthHTTP *gateway.TeamHTTP
 	if !cfg.Team.Enabled && cfg.WebUIEnabled() {
-		pch, cleanup, err := setupPersonalChat(ctx, cfg, agentInstance, logger)
+		pch, pah, cleanup, err := setupPersonalMode(ctx, cfg, agentInstance, logger)
 		if err != nil {
 			return err
 		}
 		defer cleanup()
 		personalChatHTTP = pch
+		personalAuthHTTP = pah
 	}
 
 	// Initialize voice processor if enabled
@@ -460,10 +463,27 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		logger.Info("web UI enabled: SPA served at /, capabilities at /api/capabilities")
 	}
 
-	// Personal-mode chat API.
+	// Personal single-account auth: exact-pattern "/api/auth/..." and
+	// "/api/users/..." routes so they keep resolving alongside the other
+	// exact /api/* patterns above — ServeMux prefers the longer, more
+	// specific pattern (same trick as team mode's "/api/" subtree).
+	if personalAuthHTTP != nil {
+		gw.Handle("/api/auth/", personalAuthHTTP.Handler())
+		gw.Handle("/api/users/", personalAuthHTTP.Handler())
+		logger.Info("personal single-account auth mounted at /api/auth/")
+	}
+
+	// Personal-mode chat API, gated on a valid session cookie when
+	// single-account auth is enabled.
 	if personalChatHTTP != nil {
-		gw.Handle("/api/chat", personalChatHTTP.ChatHandler())
-		gw.Handle("/api/chat/messages", personalChatHTTP.SendHandler())
+		chatHandler := personalChatHTTP.ChatHandler()
+		sendHandler := personalChatHTTP.SendHandler()
+		if personalAuthHTTP != nil {
+			chatHandler = personalAuthHTTP.RequireAuth(chatHandler)
+			sendHandler = personalAuthHTTP.RequireAuth(sendHandler)
+		}
+		gw.Handle("/api/chat", chatHandler)
+		gw.Handle("/api/chat/messages", sendHandler)
 		logger.Info("personal chat API mounted at /api/chat")
 	}
 

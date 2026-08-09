@@ -19,6 +19,7 @@ import (
 // teamHTTPFixture wires a real auth stack over PostgreSQL behind an
 // httptest server, with a capturing mailer so tests can follow magic links.
 type teamHTTPFixture struct {
+	h      *TeamHTTP
 	server *httptest.Server
 	mailer *captureMailer
 	client *http.Client
@@ -50,6 +51,14 @@ func (m *captureMailer) lastToken(t *testing.T) string {
 
 func setupTeamHTTP(t *testing.T) *teamHTTPFixture {
 	t.Helper()
+	return setupTeamHTTPMode(t, false)
+}
+
+// setupTeamHTTPMode is setupTeamHTTP with control over TeamHTTPConfig.Personal,
+// so personal single-account mode (admin allowlist route excluded) can reuse
+// the same fixture and helpers.
+func setupTeamHTTPMode(t *testing.T, personal bool) *teamHTTPFixture {
+	t.Helper()
 	ownerDSN, appDSN := pgtest.DSNs(t)
 	ctx := context.Background()
 
@@ -78,7 +87,7 @@ func setupTeamHTTP(t *testing.T) *teamHTTPFixture {
 	}
 
 	// Plain HTTP in tests → CookieSecure=false (unprefixed cookie).
-	h := NewTeamHTTP(authSvc, teamSvc, TeamHTTPConfig{CookieSecure: false})
+	h := NewTeamHTTP(authSvc, teamSvc, TeamHTTPConfig{CookieSecure: false, Personal: personal})
 	// Speed up the anti-enumeration delay so tests are fast.
 	h.limiter.baseDelay = 0
 	h.limiter.maxDelay = 0
@@ -88,6 +97,7 @@ func setupTeamHTTP(t *testing.T) *teamHTTPFixture {
 
 	jar, _ := newJar()
 	return &teamHTTPFixture{
+		h:      h,
 		server: srv,
 		mailer: mailer,
 		client: &http.Client{
@@ -277,4 +287,64 @@ func TestTeamHTTP_CSRFAndAdminRBAC(t *testing.T) {
 		t.Fatalf("post-logout me = %d, want 401", resp.StatusCode)
 	}
 	resp.Body.Close()
+}
+
+// TestTeamHTTP_PersonalModeHidesAdminAllowlist confirms that Personal:true
+// (personal single-account auth, TRD §4) never registers the allowlist
+// admin route at all — not merely denies it — since the personal SQLite
+// store has no row-level security and a second allowlisted account would
+// see the sole account's data with no isolation.
+func TestTeamHTTP_PersonalModeHidesAdminAllowlist(t *testing.T) {
+	f := setupTeamHTTPMode(t, true)
+
+	// Log in as the sole (superadmin) account.
+	f.post(t, "/api/auth/magic-link", `{"email":"root@example.com"}`, false).Body.Close()
+	f.get(t, "/api/auth/verify?token="+f.mailer.lastToken(t)).Body.Close()
+
+	resp := f.get(t, "/api/admin/allowlist")
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("personal-mode allowlist route = %d, want 404 (not registered)", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// The rest of the auth surface (login, me, rename, logout) still works.
+	resp = f.get(t, "/api/auth/me")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("me = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+// TestTeamHTTP_RequireAuth exercises the exported RequireAuth wrapper used
+// to gate HTTP surfaces outside this package (the personal-mode chat API)
+// behind the same session-cookie logic, without a route of its own.
+func TestTeamHTTP_RequireAuth(t *testing.T) {
+	f := setupTeamHTTPMode(t, true)
+
+	var called bool
+	f.h.mux.Handle("/api/probe", f.h.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	})))
+
+	resp := f.get(t, "/api/probe")
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("unauthenticated probe = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+	if called {
+		t.Fatal("handler ran without authentication")
+	}
+
+	f.post(t, "/api/auth/magic-link", `{"email":"root@example.com"}`, false).Body.Close()
+	f.get(t, "/api/auth/verify?token="+f.mailer.lastToken(t)).Body.Close()
+
+	resp = f.get(t, "/api/probe")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("authenticated probe = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+	if !called {
+		t.Fatal("handler did not run after authentication")
+	}
 }

@@ -52,25 +52,10 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		return nil, nil, fmt.Errorf("team service: %w", err)
 	}
 
-	// Mailer: real SMTP when configured, otherwise a log mailer so the
-	// magic-link flow works out of the box (the link is logged).
-	var mailer mail.Mailer
-	if tc.SMTP.Host != "" {
-		mailer, err = mail.NewSMTPMailer(mail.SMTPConfig{
-			Host:     tc.SMTP.Host,
-			Port:     tc.SMTP.Port,
-			Username: tc.SMTP.Username,
-			Password: tc.SMTP.Password,
-			From:     tc.SMTP.From,
-		})
-		if err != nil {
-			cleanup()
-			return nil, nil, fmt.Errorf("smtp mailer: %w", err)
-		}
-		logger.Info("team mode: SMTP mailer configured", "host", tc.SMTP.Host)
-	} else {
-		mailer = mail.NewLogMailer(logger)
-		logger.Warn("team mode: no SMTP configured — magic links will be LOGGED, not emailed (dev only)")
+	mailer, err := buildMailer(tc.SMTP, "team mode", logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
 	}
 
 	// Cookies are Secure over https; plain-HTTP dev drops the __Host- prefix.
@@ -96,4 +81,26 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	logger.Info("team mode enabled: database migrated (schema + RLS)",
 		"superadmin_email", tc.SuperadminEmail, "cookie_secure", secure)
 	return teamHTTP, cleanup, nil
+}
+
+// buildMailer returns a real SMTP mailer when configured, otherwise a log
+// mailer so the magic-link flow works out of the box (the link is logged
+// instead of emailed — dev only). label identifies the caller in log lines.
+func buildMailer(smtp config.TeamSMTPConfig, label string, logger *slog.Logger) (mail.Mailer, error) {
+	if smtp.Host == "" {
+		logger.Warn(label + ": no SMTP configured — magic links will be LOGGED, not emailed (dev only)")
+		return mail.NewLogMailer(logger), nil
+	}
+	mailer, err := mail.NewSMTPMailer(mail.SMTPConfig{
+		Host:     smtp.Host,
+		Port:     smtp.Port,
+		Username: smtp.Username,
+		Password: smtp.Password,
+		From:     smtp.From,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("smtp mailer: %w", err)
+	}
+	logger.Info(label+": SMTP mailer configured", "host", smtp.Host)
+	return mailer, nil
 }

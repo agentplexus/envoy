@@ -33,6 +33,14 @@ type TeamHTTPConfig struct {
 	// BaseURL is the origin verify redirects land on.
 	BaseURL string
 	Logger  *slog.Logger
+
+	// Personal, when true, serves personal single-account auth
+	// (auth.enabled=true, team.enabled=false — TRD §4) instead of full
+	// team mode: the admin allowlist endpoint is not registered. It must
+	// stay unreachable in this mode because the personal SQLite store has
+	// no row-level security — a second allowlisted account would see the
+	// sole account's data with no isolation.
+	Personal bool
 }
 
 // TeamHTTP serves the team auth and admin API.
@@ -90,6 +98,14 @@ func (h *TeamHTTP) ConnectAuthorizer() ConnectAuthorizer {
 	}
 }
 
+// RequireAuth wraps next, requiring a valid session cookie before it runs
+// (401 otherwise). It lets HTTP surfaces outside this package (e.g. the
+// personal-mode chat API) gate themselves on the same cookie/session logic
+// without duplicating it.
+func (h *TeamHTTP) RequireAuth(next http.Handler) http.Handler {
+	return h.requireAuth(func(w http.ResponseWriter, r *http.Request) { next.ServeHTTP(w, r) })
+}
+
 func (h *TeamHTTP) routes() {
 	h.mux = http.NewServeMux()
 	// Auth
@@ -99,8 +115,11 @@ func (h *TeamHTTP) routes() {
 	h.mux.HandleFunc("/api/auth/me", h.requireAuth(h.handleMe)) // GET
 	// Self-service
 	h.mux.HandleFunc("/api/users/me/username", h.requireCSRF(h.requireAuth(h.handleRename)))
-	// Admin (superadmin only)
-	h.mux.HandleFunc("/api/admin/allowlist", h.handleAllowlist)
+	// Admin (superadmin only) — excluded in personal mode, see
+	// TeamHTTPConfig.Personal.
+	if !h.cfg.Personal {
+		h.mux.HandleFunc("/api/admin/allowlist", h.handleAllowlist)
+	}
 }
 
 // ---- Auth endpoints ------------------------------------------------------
