@@ -305,7 +305,7 @@ require (
 	modernc.org/libc v1.75.2 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.0 // indirect
-	modernc.org/sqlite v1.56.0 // indirect
+	modernc.org/sqlite v1.56.0
 	rsc.io/qr v0.2.0 // indirect
 )
 
