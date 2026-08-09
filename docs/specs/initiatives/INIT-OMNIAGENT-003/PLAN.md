@@ -10,33 +10,52 @@
 ```
 team/                    # importable service layer (no HTTP/WS types)
 ├── ent/                 # Ent schemas + generated code (users, chats, …)
-├── store/               # DB open, migrations, RLS transaction scoping
+├── store/               # DB open (postgres|sqlite), migrations, dialect-guarded RLS scoping
 ├── auth/                # magic link, cookie sessions, (v2: oidc/github)
 ├── mail/                # SMTP delivery + templates
 ├── chats/               # chat/membership/message service, mention policy
 └── team.go              # Service facade wired from config
 
 gateway/                 # thin adapters over team.Service
-├── team_http.go         # /api/auth/*, /api/chats/*, /api/admin/* + CSRF
+├── team_http.go         # /api/capabilities, /api/auth/*, /api/chats/*, /api/admin/* + CSRF
 ├── team_ws.go           # cookie-auth upgrade, chat rooms, fan-out
 web/                     # SPA source; web/dist embedded via go:embed
 deploy/team/             # docker-compose.yaml, Caddyfile, backup script, docs
-config/                  # TeamConfig section
+config/                  # TeamConfig + auth/mode axes
 ```
 
 Existing packages are extended, not forked: the agent core, sessions KVS,
-hooks, and single-operator gateway behavior stay intact behind
-`team.enabled=false` (default).
+hooks, and single-operator gateway behavior stay intact when the web UI is
+disabled (default).
+
+## Deployment Modes (cross-cutting, TRD §1a)
+
+The personal/team split is delivered **within** existing RMIs, not as a separate
+phase, so the two profiles share one code path from the start:
+
+- **Store (RMI-101):** `team/store` selects the Ent dialect (postgres|sqlite)
+  from the DSN; the `0001–0003_*.sql` RLS migrations and the two-role owner/app
+  split apply only on postgres. On sqlite, `AsUser`/`AsSystem` are pass-throughs
+  binding the single implicit user.
+- **Config (RMI-104):** `auth.enabled` is an axis independent of `team.enabled`;
+  `team.enabled=true` implies `auth.enabled=true`. Dialect is inferred from the
+  configured DSN.
+- **Auth (RMI-109):** the cookie-session/CSRF path supports `auth.enabled=true`
+  with `team.enabled=false` (single account, no allowlist).
+- **UI (RMI-115):** `GET /api/capabilities` drives one capability-aware SPA;
+  RMIs 116–119 render against it (team-only affordances hidden in personal mode).
+
+Dolt (MySQL dialect) is out of scope for v1 (TRD §7).
 
 ## Phase 1 — Identity & Data Foundation
 
 | RMI | Work |
 |-----|------|
 | RMI-OMNIAGENT-100 | `team/ent` schemas (users, identities, allowlist, magic_link_tokens, auth_sessions, chats, chat_members, messages); Atlas versioned migrations embedded via `embed.FS`; RLS policies + `FORCE ROW LEVEL SECURITY` as custom migration SQL |
-| RMI-OMNIAGENT-101 | `team/store`: open as `omniagent_app` role; migrations-on-start under advisory lock; `store.AsUser(ctx, userID, isSuperadmin, fn)` transaction helper setting `SET LOCAL app.current_user_id` / `app.is_superadmin`; raw DB kept unexported |
+| RMI-OMNIAGENT-101 | `team/store`: dialect select (postgres\|sqlite) from DSN; on postgres open as `omniagent_app` role with migrations-on-start under advisory lock and `store.AsUser(ctx, userID, isSuperadmin, fn)` setting `SET LOCAL app.current_user_id` / `app.is_superadmin`; on sqlite `AsUser`/`AsSystem` are pass-throughs and RLS steps are skipped; raw DB kept unexported |
 | RMI-OMNIAGENT-102 | `team` service: users (get/rename/display name), roles, allowlist CRUD; app-layer authorization mirroring RLS |
 | RMI-OMNIAGENT-103 | Superadmin bootstrap from `team.superadmin_email`; rename-username support incl. superadmin (US-3); uniqueness via citext |
-| RMI-OMNIAGENT-104 | `config.TeamConfig` (enabled, database DSN, base_url, superadmin_email, agent_handle, smtp.*) + validation + gateway command wiring; RLS policy test suite (cross-user isolation pinned in SQL tests) |
+| RMI-OMNIAGENT-104 | `config.TeamConfig` (enabled, database DSN, base_url, superadmin_email, agent_handle, smtp.*) + independent `auth.enabled` axis (`team.enabled` implies it) + dialect inferred from DSN; validation + gateway command wiring; RLS policy test suite (cross-user isolation pinned in SQL tests, postgres) |
 
 **Verification gate:** RLS tests prove member A cannot read member B's rows
 through the app role for every table; migrations idempotent across restarts.
@@ -49,7 +68,7 @@ through the app role for every table; migrations idempotent across restarts.
 | RMI-OMNIAGENT-106 | `team/auth`: issue (allowlist-gated, hashed-at-rest, 15-min TTL, single-use) + verify (constant-time, consume, first-login user creation); uniform responses |
 | RMI-OMNIAGENT-107 | Cookie sessions: `__Host-oa_session` HttpOnly/Secure/Lax; hashed server-side rows; sliding 30-day expiry; logout; revocation |
 | RMI-OMNIAGENT-108 | Allowlist admin API (`/api/admin/allowlist` CRUD, superadmin-only) + enforcement ordering (checked before token issue) |
-| RMI-OMNIAGENT-109 | HTTP middleware (auth + CSRF header) and cookie-authenticated WS upgrade binding Client→user; magic-link + verify endpoints rate-limited via the existing gateway escalating-delay limiter (IP + email keys); legacy API-key path preserved when team mode off |
+| RMI-OMNIAGENT-109 | HTTP middleware (auth + CSRF header) and cookie-authenticated WS upgrade binding Client→user; supports `auth.enabled=true` with `team.enabled=false` (single account, no allowlist); magic-link + verify endpoints rate-limited via the existing gateway escalating-delay limiter (IP + email keys); legacy API-key path preserved when auth off |
 
 **Verification gate:** end-to-end login test (request → mail capture → verify →
 cookie → authed API call); non-allowlisted email gets uniform response and no

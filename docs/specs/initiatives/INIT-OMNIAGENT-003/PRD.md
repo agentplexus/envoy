@@ -66,12 +66,21 @@ participates when addressed.
 
 ### Must Have (v1)
 
-1. **PostgreSQL system of record** with **Row-Level Security** enforcing per-user data isolation as defense-in-depth beneath the app layer.
+0. **Adaptable deployment modes.** The same binary and web UI serve both a
+   **personal** single-user deployment (SQLite, no PostgreSQL, optional single-
+   account auth) and a **team** multi-user deployment (PostgreSQL + RLS, magic-
+   link + allowlist). PostgreSQL is required **only** for team mode; personal use
+   keeps today's zero-dependency experience. Multi-user, auth, and storage are
+   independent axes (see TRD §1a); the UI adapts via a capabilities endpoint.
+1. **PostgreSQL system of record** with **Row-Level Security** enforcing per-user
+   data isolation as defense-in-depth beneath the app layer — **in team mode.**
+   (Personal mode uses SQLite with no RLS, since a single user has nothing to
+   isolate.)
 2. **Magic-link authentication** — passwordless, email-delivered, single-use, expiring; closed by the allowlist.
 3. **Superadmin** — bootstrapped from configuration; can rename self; manages allowlist and members.
 4. **Private chats** — one per member, agent always responds.
 5. **Group chats** — create/invite/leave; agent responds only on @-mention; members' messages fan out live.
-6. **Embedded web UI** — served from the omniagent binary (`go:embed`): login, chat list, private + group chat, minimal admin.
+6. **Embedded web UI** — served from the omniagent binary (`go:embed`): login, chat list, private + group chat, minimal admin. **Capability-driven**: the same SPA renders a reduced surface (chat list + history, no admin/membership/catalog) in personal mode.
 7. **Compose deployment** — Caddy (auto-HTTPS) → omniagent → PostgreSQL on one Lightsail instance, with backups.
 
 ### Should Have (v2)
@@ -98,5 +107,7 @@ participates when addressed.
 ## Constraints & Assumptions
 
 - Scale target is a **small** user count (≤ ~25); no horizontal scaling requirement.
-- Email delivery via operator-supplied SMTP credentials (any provider).
-- The existing single-operator gateway/channel behavior remains available and unbroken for deployments that do not enable team mode.
+- Email delivery via operator-supplied SMTP credentials (any provider); required only when auth is enabled (team mode, or personal mode using magic-link auth).
+- The existing single-operator gateway/channel behavior remains available and unbroken for deployments that do not enable the web UI.
+- **Personal mode requires no external services** — no PostgreSQL, no Caddy, no SMTP when auth is off; it runs as a single static binary with SQLite, preserving the current zero-dependency experience.
+- **Dolt** (versioned, MySQL-compatible storage) is a deliberate post-v1 backend, not part of this initiative (see TRD §7).

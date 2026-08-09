@@ -21,23 +21,67 @@
                     └───────────────────────────────────────────────────────────────────┘
 ```
 
+The diagram above shows **team mode**. Personal mode (§1a) is a strict subset:
+same binary and web UI, SQLite instead of PostgreSQL, no RLS, no Caddy required.
+
 **Storage split (deliberate):**
 
-| Data | Store | Rationale |
-|------|-------|-----------|
-| Users, identities, allowlist, auth sessions, magic-link tokens, chats, memberships, **messages** | PostgreSQL + RLS | Multi-user system of record; isolation is a security property |
-| Agent conversation context (LLM window), cron jobs, skill state | Existing KVS (`omnistorage-core`, sqlite file) | Derived/truncatable state (rollover applies); no cross-user exposure — keyed by chat |
-| Semantic memory | omnimemory (KVS provider at v1) | Scoped `TenantID=team`, `SubjectID=chat`; may move to its Postgres provider later |
+| Data | Team mode | Personal mode | Rationale |
+|------|-----------|---------------|-----------|
+| Users, identities, allowlist, auth sessions, magic-link tokens, chats, memberships, **messages** | PostgreSQL + RLS | SQLite (Ent, no RLS) | Team mode isolates N users as a security property; personal mode has one implicit user, so isolation is moot — see §1a |
+| Agent conversation context (LLM window), cron jobs, skill state | Existing KVS (`omnistorage-core`, sqlite file) | same | Derived/truncatable state (rollover applies); no cross-user exposure — keyed by chat |
+| Semantic memory | omnimemory (KVS provider at v1) | same | Scoped `TenantID=team`, `SubjectID=chat`; may move to its Postgres provider later |
 
-The **canonical chat transcript lives in PostgreSQL**; the agent's
-`sessions.Store` context (keyed `chat:<id>`) is a derived working set that
-rollover/compaction may truncate without losing the durable record.
+The **canonical chat transcript lives in the relational store** (PostgreSQL in
+team mode, SQLite in personal mode); the agent's `sessions.Store` context (keyed
+`chat:<id>`) is a derived working set that rollover/compaction may truncate
+without losing the durable record.
 
-## 2. Data Model (Ent on PostgreSQL)
+## 1a. Deployment Modes (three orthogonal axes)
 
-ORM: **Ent** (org default; Postgres supported). Versioned migrations
-(Atlas-generated) embedded via `embed.FS`, applied at startup. RLS policies are
-hand-written SQL appended as custom migration steps — Ent does not model them.
+"Personal vs team" is not one switch but three independent axes. This keeps the
+current no-dependency single-operator experience first-class while the same
+binary and UI scale up to a hosted team.
+
+| Axis | Options | Config |
+|------|---------|--------|
+| **Isolation (RLS)** | off (1 user) · on (N users) | `team.enabled` |
+| **Auth** | none · single-account · allowlist + magic-link | `auth.enabled` (independent of `team.enabled`) |
+| **Storage** | SQLite (Ent) · PostgreSQL (Ent + RLS) · *[Dolt: deferred, see §7]* | dialect inferred from DSN |
+
+Two supported profiles at v1 (other combinations are valid but unsupported):
+
+| Mode | Users | Storage | RLS | Auth | UI surface |
+|------|-------|---------|-----|------|-----------|
+| **Personal** (default) | 1 implicit | SQLite | no | optional (single account) | chat list + history; no admin / membership / catalog |
+| **Team** | N | PostgreSQL | yes | magic-link + allowlist | full |
+
+**Invariants:**
+
+- **PostgreSQL is required only for team mode.** RLS is its sole driver, and RLS
+  only means anything with more than one user. Personal mode never needs Postgres.
+- **Auth is decoupled from multi-user.** A personal deployment exposed on a VPS
+  can require a single account (reusing the magic-link machinery minus the
+  allowlist, or a configured credential) without any RLS apparatus. Localhost
+  personal use stays no-auth. This is the browser-facing form of the existing
+  `gateway.APIKeys` on/off auth.
+- **One SPA, capability-driven.** `GET /api/capabilities` reports
+  `{multiUser, authRequired, groupChats, admin, catalog}`; the UI hides
+  login / allowlist / group-chat / catalog affordances when a capability is off.
+  No separate builds.
+- **RLS applies only on the PostgreSQL dialect.** `store.AsUser` / `AsSystem`
+  set GUCs and the `0001–0003_*.sql` policy migrations run only when the dialect
+  is `postgres`; on SQLite `AsUser` is a pass-through (one implicit user), and
+  the RLS migration steps are skipped.
+
+## 2. Data Model (Ent on PostgreSQL or SQLite)
+
+ORM: **Ent** (org default), targeting PostgreSQL (team mode) or SQLite (personal
+mode) from the same schema. Versioned migrations (Atlas-generated) embedded via
+`embed.FS`, applied at startup. RLS policies are hand-written SQL appended as
+custom migration steps (Ent does not model them) and run **only on the postgres
+dialect** — see §3. Dialect-specific types (`citext` on Postgres →
+`COLLATE NOCASE` on SQLite) resolve per dialect.
 
 ```
 users            id (uuid pk) · email (citext unique) · username (citext unique)
@@ -132,6 +176,21 @@ chat — acceptable at v1, tightened later if needed).
 
 ## 4. Authentication
 
+Auth is an axis independent of multi-user (§1a), gated by `auth.enabled`:
+
+- **Personal, no auth** (`auth.enabled=false`, default): localhost/trusted use;
+  the single implicit user is always authenticated. This is today's behavior.
+- **Personal, single-account** (`auth.enabled=true`, `team.enabled=false`): the
+  browser UI requires login for one account, reusing the magic-link/cookie
+  machinery below **minus the allowlist and user creation** (the sole account is
+  the configured owner). Suits a personal agent exposed on a VPS.
+- **Team** (`team.enabled=true`, implies `auth.enabled=true`): full magic-link +
+  allowlist + sessions as specified in §4.1–4.4.
+
+`auth.enabled=true` with `team.enabled=false` uses the same cookie-session and
+CSRF mechanisms (§4.1.3–4.1.4); it just skips allowlist checks and multi-user
+bootstrap. The rest of §4 describes team mode.
+
 ### 4.1 Magic Link (v1)
 
 1. `POST /auth/magic-link {email}` — **uniform response regardless of outcome**
@@ -215,30 +274,49 @@ being a chat member never confers the right to configure the bound agent.
 - Lives in `web/` (this repo); built as a static SPA; output embedded with
   `go:embed` and served by the gateway mux at `/` (API under `/api/`, WS at
   `/ws`). No CDN/external assets. Caddy does TLS only.
-- v1 surface: login (request/verify magic link) · chat list · private chat ·
-  group chat (create/invite/member list, @-mention affordance) · minimal admin
-  (allowlist CRUD, member list, rename username) · logout.
-- The existing single-operator behavior is preserved: when team mode is
-  disabled (`team.enabled=false`, default), none of the new routes register.
+- **One SPA, capability-driven.** `GET /api/capabilities` returns
+  `{multiUser, authRequired, groupChats, admin, catalog}` derived from the
+  active mode (§1a). The UI renders only what is enabled — there are no separate
+  personal/team builds.
+- **Full surface (team):** login (request/verify magic link) · chat list ·
+  private chat · group chat (create/invite/member list, @-mention affordance) ·
+  minimal admin (allowlist CRUD, member list, rename username) · logout.
+- **Personal surface:** chat list + chat history + send; login/logout only when
+  `authRequired`; the group-chat, catalog, and admin affordances are hidden
+  (`multiUser=false`). The same components render against the same API shapes.
+- **Route registration:** the SPA and `/api/*` chat routes register whenever the
+  web UI is enabled (personal or team). Team-only routes (`/api/admin/*`,
+  allowlist, membership) register only when `team.enabled=true`. When the web UI
+  is disabled entirely, the existing single-operator gateway/channel behavior is
+  unchanged.
 
 ## 7. Deployment Profiles & Ecosystem Alignment
 
-Two deliberate deployment profiles coexist under `PROG-OMNIAGENT-LIGHTSAIL`;
-the deciding variable is **whether multiple users exist**, not storage
-preference:
+Deployment profiles coexist under `PROG-OMNIAGENT-LIGHTSAIL`; the deciding
+variable is **whether multiple users exist**, not storage preference:
 
 | Profile | Initiative | Shape | Storage |
 |---------|-----------|-------|---------|
-| **Bot** (single-operator) | `INIT-GROKIFYOMNIAGENT-001` | Static binary + systemd, outbound-only, SSH-only firewall, no Caddy | SQLite KVS on `/data` |
+| **Bot** (headless single-operator) | `INIT-GROKIFYOMNIAGENT-001` | Static binary + systemd, outbound-only, SSH-only firewall, no Caddy, no web UI | SQLite KVS on `/data` |
+| **Personal** (single-user + web UI) | `INIT-OMNIAGENT-003` (this) | Static binary, embedded UI, optional single-account auth; no Caddy/Postgres required | SQLite (Ent) for chat data + KVS for agent-internal state |
 | **Team** (multi-user) | `INIT-OMNIAGENT-003` (this) | Compose: Caddy + omniagent + PostgreSQL, inbound HTTPS | PostgreSQL + RLS for user data; KVS for agent-internal state |
 
-Policy: **PostgreSQL wherever users exist; KVS-SQLite for single-operator mode
-and for agent-internal state in both profiles.** RLS is the requirement that
-forces Postgres in team mode; nothing forces it on the bot profile, where the
-zero-dependency single binary is a feature. The bot initiative's deploy
+Policy: **PostgreSQL wherever multiple users exist; SQLite/KVS otherwise.** RLS
+is the requirement that forces Postgres in team mode; nothing forces it on the
+bot or personal profiles, where the zero-dependency single binary is a feature.
+The Personal profile adds the embedded web UI (and optional auth) over the bot's
+single-operator model without introducing Postgres. The bot initiative's deploy
 scripts and nightly-backup pattern are the reference implementations the team
 profile's compose/backup RMIs consolidate (`relates` links recorded:
 124↔GROKIFY-007, 126↔GROKIFY-010, 127↔GROKIFY-009).
+
+**Dolt (deferred, not v1):** Dolt is MySQL-wire-compatible — a *third* Ent
+dialect distinct from SQLite, offering versioned/time-travel history that could
+be attractive for a personal agent's transcript. It is deliberately out of v1
+scope: MySQL/Dolt lacks partial unique indexes (the `UNIQUE (created_by,
+agent_id) WHERE type='private'` DM constraint would need a trigger or app-level
+enforcement) and RLS, so it is a considered later backend, not a free option
+alongside SQLite.
 
 ### Sizing (PostgreSQL on a small Lightsail instance)
 

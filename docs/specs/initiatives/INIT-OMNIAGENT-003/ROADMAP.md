@@ -16,16 +16,16 @@
 
 - [ ] `RMI-OMNIAGENT-100` Ent schemas + versioned migrations + RLS policies
   - Acceptance: all eight tables migrate from empty; RLS enabled with FORCE; policies match TRD §3; migrations embedded and idempotent
-- [ ] `RMI-OMNIAGENT-101` RLS-scoped store (`AsUser` transaction helper)
+- [ ] `RMI-OMNIAGENT-101` Dialect-aware store (`AsUser` transaction helper)
   - Depends on: `RMI-OMNIAGENT-100`
-  - Acceptance: every query path flows through per-request `SET LOCAL` GUCs; raw DB unexported; advisory-locked migrations-on-start
+  - Acceptance: dialect selected (postgres\|sqlite) from DSN; on postgres every query path flows through per-request `SET LOCAL` GUCs with advisory-locked migrations-on-start; on sqlite `AsUser`/`AsSystem` pass through (single user) and RLS steps are skipped; raw DB unexported in both
 - [ ] `RMI-OMNIAGENT-102` Team service: users, roles, allowlist
   - Depends on: `RMI-OMNIAGENT-101`
   - Acceptance: rename/display-name, allowlist CRUD superadmin-only at app layer AND by policy
 - [ ] `RMI-OMNIAGENT-103` Superadmin bootstrap + rename
   - Acceptance: configured email becomes superadmin on first login; later config change does not demote; username change persists and is unique
-- [ ] `RMI-OMNIAGENT-104` Team config section + RLS isolation test suite
-  - Acceptance: `team.*` config validated; SQL tests prove cross-user isolation per table
+- [ ] `RMI-OMNIAGENT-104` Config (modes/auth axes) + RLS isolation test suite
+  - Acceptance: `team.*` config validated; `auth.enabled` independent of `team.enabled` (team implies auth); dialect inferred from DSN; SQL tests prove cross-user isolation per table (postgres)
 
 ## Phase 2 — Magic Link Authentication
 
@@ -66,27 +66,35 @@
   - Depends on: `RMI-OMNIAGENT-110`
   - Acceptance: membership-validated subscribe; commit-then-broadcast to all connected members; no cross-chat leakage
 - [ ] `RMI-OMNIAGENT-113` Mention policy + agent turns
-  - Depends on: `RMI-OMNIAGENT-111`, `RMI-OMNIAGENT-112`
-  - Acceptance: group = respond only on `@<handle>`; private = always; agent session keyed `chat:<id>`; reply persisted then broadcast; never self-replies
+  - Depends on: `RMI-OMNIAGENT-111`, `RMI-OMNIAGENT-112`, `INIT-OMNIAGENT-005` (agent entity + `Can()` + runtime binding)
+  - Acceptance: group = respond only on `@<agent-slug>`; private = always; chat runs on the bound agent's runtime (persona + enabled skills + agent secrets); agent session keyed `chat:<id>`; reply persisted then broadcast; never self-replies
 - [ ] `RMI-OMNIAGENT-114` Memory/tool scoping per chat
   - Depends on: `RMI-OMNIAGENT-113`
-  - Acceptance: TenantID=team, SubjectID=chat; group tool/model overrides owner/superadmin-only; rollover works per chat
+  - Acceptance: TenantID=team, SubjectID=chat; skills/model/persona are agent config (owner/maintainer-managed via INIT-005), not per-chat overrides; rollover works per chat
 
 ## Phase 4 — Embedded Web UI
 
-**Theme:** go:embed SPA served from the omniagent binary; Caddy does TLS only.
+**Theme:** One capability-driven go:embed SPA serving both personal and team modes; Caddy does TLS only (team).
 **Status:** Planned — 0 of 5 items completed
 
-- [ ] `RMI-OMNIAGENT-115` UI scaffold + embedded serving
-  - Acceptance: `web/dist` embedded; served at `/` only when team mode enabled; no external assets (CSP-clean)
+> Capability-driven (TRD §1a/§6): the same SPA reads `GET /api/capabilities`.
+> Login (116) shows only when `authRequired`; group chat (118) and admin (119)
+> only when `multiUser`. Personal mode = chat list + history (117) alone.
+
+- [ ] `RMI-OMNIAGENT-115` UI scaffold + embedded serving + capabilities endpoint
+  - Acceptance: `web/dist` embedded; served at `/` whenever the web UI is enabled (personal or team); `GET /api/capabilities` returns the active mode's flags; team-only routes gated on `team.enabled`; no external assets (CSP-clean)
 - [ ] `RMI-OMNIAGENT-116` Login UI (magic link)
   - Depends on: `RMI-OMNIAGENT-115`
+  - Acceptance: rendered only when `authRequired`; supports single-account personal auth and team allowlist auth
 - [ ] `RMI-OMNIAGENT-117` Private chat UI
-  - Depends on: `RMI-OMNIAGENT-116`
+  - Depends on: `RMI-OMNIAGENT-115`
+  - Acceptance: works in personal mode with no login when auth is off; history keyset scroll-back; live agent replies over WS
 - [ ] `RMI-OMNIAGENT-118` Group chat UI
   - Depends on: `RMI-OMNIAGENT-117`
+  - Acceptance: rendered only when `multiUser`
 - [ ] `RMI-OMNIAGENT-119` Admin UI (allowlist, members, rename)
   - Depends on: `RMI-OMNIAGENT-116`
+  - Acceptance: rendered only when `multiUser`
 
 ## Phase 5 — SSO (v2)
 
