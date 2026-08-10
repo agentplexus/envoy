@@ -5,8 +5,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/plexusone/omniagent/internal/pgtest"
 	"github.com/plexusone/omniagent/team/ent"
+	"github.com/plexusone/omniagent/team/ent/identity"
 	entuser "github.com/plexusone/omniagent/team/ent/user"
 	"github.com/plexusone/omniagent/team/store"
 )
@@ -168,6 +171,55 @@ func TestBootstrapAndService(t *testing.T) {
 	}
 	if aliceRow == nil || aliceRow.Status != entuser.StatusActive {
 		t.Errorf("alice status after re-enable = %+v, want active", aliceRow)
+	}
+}
+
+func TestListIdentities(t *testing.T) {
+	svc := setupService(t, "root@example.com")
+	ctx := context.Background()
+
+	root, _, err := svc.EnsureUser(ctx, "root@example.com")
+	if err != nil {
+		t.Fatalf("EnsureUser(root): %v", err)
+	}
+	alice, _, err := svc.EnsureUser(ctx, "alice@example.com")
+	if err != nil {
+		t.Fatalf("EnsureUser(alice): %v", err)
+	}
+	rootAct := Actor{UserID: root.ID, Superadmin: true}
+	aliceAct := Actor{UserID: alice.ID, Superadmin: false}
+
+	// Directly insert identity rows (normally written by team/auth) to
+	// isolate this test to the service-layer aggregation.
+	err = svc.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
+		if _, err := tx.Identity.Create().
+			SetUserID(alice.ID).SetProvider(identity.ProviderMagicLink).
+			SetProviderSubject("alice@example.com").SetVerifiedEmail("alice@example.com").Save(ctx); err != nil {
+			return err
+		}
+		_, err := tx.Identity.Create().
+			SetUserID(alice.ID).SetProvider(identity.ProviderGoogle).
+			SetProviderSubject("google-sub").SetVerifiedEmail("alice@example.com").Save(ctx)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("seed identities: %v", err)
+	}
+
+	// Member cannot list identities.
+	if _, err := svc.ListIdentities(ctx, aliceAct, []uuid.UUID{alice.ID}); !errors.Is(err, ErrForbidden) {
+		t.Errorf("member ListIdentities err = %v, want ErrForbidden", err)
+	}
+
+	got, err := svc.ListIdentities(ctx, rootAct, []uuid.UUID{root.ID, alice.ID})
+	if err != nil {
+		t.Fatalf("ListIdentities: %v", err)
+	}
+	if len(got[root.ID]) != 0 {
+		t.Errorf("root identities = %v, want none (never logged in in this test)", got[root.ID])
+	}
+	if len(got[alice.ID]) != 2 {
+		t.Errorf("alice identities = %v, want 2 (magic_link, google)", got[alice.ID])
 	}
 }
 
