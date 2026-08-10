@@ -1,0 +1,77 @@
+# Production team-mode stack: Caddy (automatic HTTPS) -> omniagent -> PostgreSQL,
+# for a single host (e.g. one Lightsail VM). See docs/guides/team-deployment.md.
+#
+#   cp .env.example .env   # fill in real values
+#   docker compose up -d --build
+#
+# PostgreSQL is not published to the host; only Caddy exposes 80/443.
+# Named volumes persist Postgres data and Caddy's certificate cache across
+# `docker compose down`/restart.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: omniagent_owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required, see .env.example}
+      POSTGRES_DB: omniagent_team
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?APP_DB_PASSWORD is required, see .env.example}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omniagent_owner -d omniagent_team"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  omniagent:
+    build:
+      context: ../../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      OMNIAGENT_GATEWAY_ADDRESS: "0.0.0.0:8080"
+      OMNIAGENT_TEAM_ENABLED: "true"
+      OMNIAGENT_TEAM_DATABASE_APP_DSN: "postgres://omniagent_app:${APP_DB_PASSWORD}@postgres:5432/omniagent_team?sslmode=disable"
+      OMNIAGENT_TEAM_DATABASE_MIGRATE_DSN: "postgres://omniagent_owner:${POSTGRES_PASSWORD}@postgres:5432/omniagent_team?sslmode=disable"
+      OMNIAGENT_TEAM_BASE_URL: "https://${DOMAIN:?DOMAIN is required, see .env.example}"
+      OMNIAGENT_TEAM_SUPERADMIN_EMAIL: "${SUPERADMIN_EMAIL:?SUPERADMIN_EMAIL is required, see .env.example}"
+      OMNIAGENT_TEAM_SMTP_HOST: "${SMTP_HOST:-}"
+      OMNIAGENT_TEAM_SMTP_PORT: "${SMTP_PORT:-587}"
+      OMNIAGENT_TEAM_SMTP_USERNAME: "${SMTP_USERNAME:-}"
+      OMNIAGENT_TEAM_SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      OMNIAGENT_TEAM_SMTP_FROM: "${SMTP_FROM:-}"
+      OMNIAGENT_AGENT_PROVIDER: "${AGENT_PROVIDER:-anthropic}"
+      OMNIAGENT_AGENT_MODEL: "${AGENT_MODEL:-claude-sonnet-5}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+    # No /data volume: team mode's data of record is 100% PostgreSQL: no
+    # cron/session store or Go code path writes to /data in `gateway run`'s
+    # team-mode path. Uncomment only if team.secrets.provider=file is
+    # configured via a mounted config file (no env binding yet):
+    # volumes:
+    #   - secrets_data:/var/lib/omniagent/secrets
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - omniagent
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  # secrets_data:   # uncomment alongside the omniagent volume mount above

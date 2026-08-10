@@ -1,0 +1,6 @@
+# Caddy 2 automatically provisions and renews a Let's Encrypt certificate for
+# any non-localhost domain -- no extra directives needed beyond the reverse
+# proxy target. omniagent listens on 8080 (see Dockerfile EXPOSE/HEALTHCHECK).
+{$DOMAIN} {
+	reverse_proxy omniagent:8080
+}
