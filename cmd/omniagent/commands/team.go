@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 
@@ -17,7 +18,11 @@ import (
 	"github.com/plexusone/omniagent/team/auth"
 	"github.com/plexusone/omniagent/team/chats"
 	"github.com/plexusone/omniagent/team/mail"
+	"github.com/plexusone/omniagent/team/secrets"
 	teamstore "github.com/plexusone/omniagent/team/store"
+	"github.com/plexusone/omnivault/providers/file"
+	"github.com/plexusone/omnivault/providers/memory"
+	"github.com/plexusone/omnivault/vault"
 )
 
 // setupTeamMode migrates the team database and builds the auth/admin and chat
@@ -25,7 +30,8 @@ import (
 // store; call it on shutdown.
 //
 // Agent-bound chats route their turns to a per-agent runtime instance built from
-// the agent's persona + enabled skills (RMI-309), gated by the RMI-113 mention
+// the agent's persona + enabled skills (RMI-309) and its agent-scoped secrets
+// (RMI-310, when a secret vault is configured), gated by the RMI-113 mention
 // policy and scoped per chat (RMI-114). The runtime is wired only when an LLM API
 // key is configured; without one, agent-bound chats stay silent and agent-less
 // private DMs echo.
@@ -49,13 +55,22 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("open team database: %w", err)
 	}
-	// runtimeCache is assigned below when a per-agent runtime is wired; captured
-	// by reference so cleanup evicts and closes every resident instance first.
-	var runtimeCache *agentruntime.Cache
+	// runtimeCache and secretVault are assigned below when a per-agent runtime is
+	// wired; captured by reference so cleanup evicts/closes resident instances and
+	// the backing secret vault first.
+	var (
+		runtimeCache *agentruntime.Cache
+		secretVault  io.Closer
+	)
 	cleanup := func() {
 		if runtimeCache != nil {
 			if cerr := runtimeCache.Close(); cerr != nil {
 				logger.Error("close agent runtime cache", "error", cerr)
+			}
+		}
+		if secretVault != nil {
+			if cerr := secretVault.Close(); cerr != nil {
+				logger.Error("close team secret vault", "error", cerr)
 			}
 		}
 		if cerr := st.Close(); cerr != nil {
@@ -118,6 +133,17 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	// chats silent (a wrong/failed reply is worse than none), exactly as before.
 	var runtime chats.AgentRuntime
 	if cfg.Agent.APIKey != "" {
+		// Agent-scoped secrets (RMI-OMNIAGENT-310): when a secret vault is
+		// configured, each instance is built with its own agent's secrets injected
+		// into secrets-aware skills (per-agent MCP subprocess env). Disabled config
+		// yields a nil source — no secrets injected, unchanged behavior.
+		secretSrc, sv, serr := buildAgentSecretSource(tc.Secrets, logger)
+		if serr != nil {
+			cleanup()
+			return nil, nil, nil, fmt.Errorf("team secrets: %w", serr)
+		}
+		secretVault = sv
+
 		builder := agentruntime.NewAgentBuilder(agentruntime.BuilderConfig{
 			Defaults: agent.Config{
 				Provider:     cfg.Agent.Provider,
@@ -130,6 +156,7 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 				Timezone:     cfg.Agent.Timezone,
 			},
 			BaseOptions: getAgentOptions(),
+			Secrets:     secretSrc,
 			Logger:      logger,
 		})
 		runtimeCache, err = agentruntime.New(agentruntime.Config{
@@ -143,7 +170,8 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		}
 		runtime = runtimeCache
 		logger.Info("team mode: per-agent runtime enabled",
-			"provider", cfg.Agent.Provider, "model", cfg.Agent.Model)
+			"provider", cfg.Agent.Provider, "model", cfg.Agent.Model,
+			"secrets", secretSrc != nil)
 	} else {
 		logger.Warn("team mode: no agent API key configured — agent-bound chats will not respond")
 	}
@@ -196,6 +224,52 @@ func (l agentConfigLoader) LoadConfig(ctx context.Context, agentID uuid.UUID) (a
 		Provider: rc.Provider,
 		Skills:   rc.Skills,
 	}, nil
+}
+
+// agentSecretSource adapts *secrets.Service to agentruntime.SecretSource,
+// resolving an agent's agent-scoped secrets into the env map its instance
+// injects. The adapter lives at the composition root so neither package depends
+// on the other.
+type agentSecretSource struct {
+	svc *secrets.Service
+}
+
+func (s agentSecretSource) ResolveSecrets(ctx context.Context, agentID uuid.UUID) (map[string]string, error) {
+	return s.svc.ResolveAgentSecrets(ctx, agentID)
+}
+
+// buildAgentSecretSource constructs the per-agent secret source from config,
+// returning it alongside the backing vault to close on shutdown. Returns
+// (nil, nil, nil) when no secret provider is configured, so no secrets are
+// injected (unchanged behavior). Tenant isolation (per-agent namespaces) is
+// applied by secrets.Service, so the raw deployment vault is passed through.
+func buildAgentSecretSource(cfg config.TeamSecretsConfig, logger *slog.Logger) (agentruntime.SecretSource, io.Closer, error) {
+	if cfg.Provider == "" {
+		return nil, nil, nil
+	}
+
+	var v vault.Vault
+	switch cfg.Provider {
+	case "memory":
+		v = memory.New()
+	case "file":
+		fv, err := file.New(file.Config{Directory: cfg.Dir})
+		if err != nil {
+			return nil, nil, fmt.Errorf("open file secret vault %q: %w", cfg.Dir, err)
+		}
+		v = fv
+	default:
+		return nil, nil, fmt.Errorf("unsupported team secrets provider %q", cfg.Provider)
+	}
+
+	svc, err := secrets.NewService(secrets.Config{Vault: v, Logger: logger})
+	if err != nil {
+		if cerr := v.Close(); cerr != nil {
+			logger.Error("close secret vault after service init failure", "error", cerr)
+		}
+		return nil, nil, err
+	}
+	return agentSecretSource{svc: svc}, v, nil
 }
 
 // buildMailer returns a real SMTP mailer when configured, otherwise a log

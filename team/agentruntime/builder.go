@@ -5,9 +5,21 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/google/uuid"
+
 	"github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omniagent/team/chats"
 )
+
+// SecretSource resolves an agent's secrets, by ID, into the environment map its
+// runtime instance injects (env-var name → value). It is the seam through which
+// agent-scoped secrets (RMI-OMNIAGENT-310) reach the builder, keeping the
+// builder independent of the secret store and unit-testable with a fake. A nil
+// SecretSource means no secrets are injected (prior behavior). Resolution runs
+// in system context — the runtime is a system principal, not a user.
+type SecretSource interface {
+	ResolveSecrets(ctx context.Context, agentID uuid.UUID) (map[string]string, error)
+}
 
 // BuilderConfig configures the production AgentBuilder.
 type BuilderConfig struct {
@@ -23,18 +35,25 @@ type BuilderConfig struct {
 	// come from and the agent's config selects which are active.
 	BaseOptions []agent.Option
 
+	// Secrets resolves each agent's agent-scoped secrets, injected into the
+	// instance's secrets-aware skills (notably per-agent MCP subprocess env) via
+	// agent.WithSecretEnv. Optional; nil means no secrets are injected. Because
+	// each instance is built with only its own agent's secrets, two agents load
+	// disjoint secrets with no cross-leak (RMI-OMNIAGENT-310).
+	Secrets SecretSource
+
 	// Logger defaults to slog.Default().
 	Logger *slog.Logger
 }
 
 // AgentBuilder is the production Builder: it constructs a real *agent.Agent from
-// an agent's persona + enabled skills. The persona becomes the system prompt;
-// the enabled-skill subset is applied via WithSkillIncludes over the shared
-// BaseOptions skill source; model/provider fall back to the deployment defaults.
-//
-// Agent-scoped secret binding — injecting the agent's secrets and per-agent MCP
-// subprocess env, and proving two agents load disjoint skills/secrets with no
-// cross-leak — is RMI-OMNIAGENT-310, layered on this builder next.
+// an agent's persona + enabled skills + agent-scoped secrets. The persona
+// becomes the system prompt; the enabled-skill subset is applied via
+// WithSkillIncludes over the shared BaseOptions skill source; model/provider
+// fall back to the deployment defaults; and, when a SecretSource is configured,
+// the agent's secrets are resolved and injected via WithSecretEnv (per-agent MCP
+// subprocess env and other secrets-aware skills), so two agents load disjoint
+// secrets with no cross-leak (RMI-OMNIAGENT-310).
 type AgentBuilder struct {
 	cfg BuilderConfig
 }
@@ -51,7 +70,7 @@ func NewAgentBuilder(cfg BuilderConfig) *AgentBuilder {
 }
 
 // Build constructs the agent instance for cfg. It satisfies Builder.
-func (b *AgentBuilder) Build(_ context.Context, cfg AgentConfig) (chats.AgentProcessor, error) {
+func (b *AgentBuilder) Build(ctx context.Context, cfg AgentConfig) (chats.AgentProcessor, error) {
 	ac := b.cfg.Defaults
 	ac.Logger = b.cfg.Logger
 	if cfg.Provider != "" {
@@ -70,10 +89,23 @@ func (b *AgentBuilder) Build(_ context.Context, cfg AgentConfig) (chats.AgentPro
 	// (memscope, RMI-114) and takes precedence at recall/rollover time.
 	ac.AgentID = cfg.ID.String()
 
-	opts := make([]agent.Option, 0, len(b.cfg.BaseOptions)+1)
+	opts := make([]agent.Option, 0, len(b.cfg.BaseOptions)+2)
 	opts = append(opts, b.cfg.BaseOptions...)
 	if len(cfg.Skills) > 0 {
 		opts = append(opts, agent.WithSkillIncludes(cfg.Skills...))
+	}
+
+	// Bind this agent's secrets to its own instance. Because each instance
+	// receives only its own agent's secrets, two agents' skills (and MCP
+	// subprocess environments) are disjoint (RMI-OMNIAGENT-310).
+	if b.cfg.Secrets != nil {
+		env, err := b.cfg.Secrets.ResolveSecrets(ctx, cfg.ID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve secrets for agent %q: %w", cfg.Slug, err)
+		}
+		if len(env) > 0 {
+			opts = append(opts, agent.WithSecretEnv(env))
+		}
 	}
 
 	ag, err := agent.New(ac, opts...)

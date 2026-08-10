@@ -30,7 +30,29 @@ type TeamConfig struct {
 
 	// SMTP configures magic-link email delivery.
 	SMTP TeamSMTPConfig `json:"smtp" yaml:"smtp"`
+
+	// Secrets configures the per-agent secret vault. When set, an @-mentioned
+	// agent's runtime instance is built with its own agent-scoped secrets
+	// injected into secrets-aware skills (per-agent MCP subprocess env). When
+	// unset, agents run without injected secrets.
+	Secrets TeamSecretsConfig `json:"secrets,omitempty" yaml:"secrets,omitempty"`
 }
+
+// TeamSecretsConfig configures the OmniVault-backed team secret store. Secrets
+// are namespaced per agent ("agents/<id>/<ENV_VAR>") so two agents load disjoint
+// secrets with no cross-leak. Encryption-at-rest is not yet provided here (the
+// mechanism ships first); "memory" suits tests and "file" a simple local store.
+type TeamSecretsConfig struct {
+	// Provider selects the OmniVault backing provider: "memory" or "file".
+	// Empty disables secret injection.
+	Provider string `json:"provider,omitempty" yaml:"provider,omitempty"`
+
+	// Dir is the storage directory for the "file" provider (required for it).
+	Dir string `json:"dir,omitempty" yaml:"dir,omitempty"`
+}
+
+// teamSecretProviders is the set of supported backing providers.
+var teamSecretProviders = map[string]bool{"memory": true, "file": true}
 
 // TeamDatabaseConfig holds the two-role PostgreSQL connection strings.
 type TeamDatabaseConfig struct {
@@ -88,6 +110,14 @@ func (c *TeamConfig) Validate() error {
 	if c.SMTP.From != "" {
 		if _, err := mail.ParseAddress(c.SMTP.From); err != nil {
 			return fmt.Errorf("team.smtp.from %q is not a valid email address", c.SMTP.From)
+		}
+	}
+	if c.Secrets.Provider != "" {
+		if !teamSecretProviders[c.Secrets.Provider] {
+			return fmt.Errorf("team.secrets.provider %q must be one of memory, file", c.Secrets.Provider)
+		}
+		if c.Secrets.Provider == "file" && c.Secrets.Dir == "" {
+			return fmt.Errorf("team.secrets.dir is required when team.secrets.provider is file")
 		}
 	}
 	return nil
