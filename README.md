@@ -52,6 +52,8 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🔗 **OpenAI-Compatible API** - Drop-in replacement for OpenAI client libraries with SSE streaming
 - 🖼️ **Image Generation** - AI image generation via OpenAI (DALL-E) or Fal AI (FLUX)
 - 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
+- 🏢 **Team Mode** - Multi-user deployments with magic-link sign-in, private/group chats, and PostgreSQL row-level isolation
+- 🪪 **Virtual Agents** - Named personas with per-agent skills, agent-scoped secrets, owner/maintainer roles, and a discoverable catalog
 - 📈 **Usage Analytics** - Token usage tracking, tool call statistics, and cost estimation
 - 🔧 **Tool Visualization** - Real-time tool call display with arguments and results in web UI
 
@@ -403,6 +405,57 @@ mgr.RecordMetric(ctx, "meetings-facilitated", 1)
 | **Workflows** | Structured multi-step operations |
 
 See the [Roles Guide](docs/guides/roles.md) for complete documentation.
+
+## Team Mode
+
+Team mode turns a single-operator deployment into a **multi-user** one: real
+accounts, allowlist-closed magic-link sign-in, private and group chats, and
+**virtual agents** that people discover in a catalog and chat with.
+
+```yaml
+# omniagent.yaml
+team:
+  enabled: true
+  superadmin_email: you@example.com
+  base_url: https://team.example.com
+  database:
+    app_dsn: postgres://omniagent_app:pw@db:5432/omniagent_team
+    migrate_dsn: postgres://owner:pw@db:5432/omniagent_team
+  smtp:
+    host: smtp.example.com
+    port: 587
+    from: agent@example.com
+web:
+  enabled: true
+agent:
+  provider: anthropic
+  model: claude-sonnet-5
+  api_key: ${ANTHROPIC_API_KEY}
+```
+
+```bash
+omniagent gateway run --config omniagent.yaml
+```
+
+The gateway migrates the database (schema **and** PostgreSQL row-level security),
+serves the SPA at `/`, and emails magic links (or logs them in dev when no SMTP
+is set). The account in `superadmin_email` bootstraps as superadmin on first
+sign-in.
+
+**Virtual agents.** In team mode an *agent* is a first-class entity: a
+persona + a chosen subset of the deployment's skills + agent-scoped secrets, with
+per-agent **owner/maintainer** roles (independent of chat membership — conversing
+never grants configuration) and a **private/listed + featured** registry. Owners
+configure agents under **My Agents**, anyone browses the **Catalog** and starts a
+DM or group, and superadmins promote agents under **Curation**.
+
+- Uses PostgreSQL for production (row-level security isolation); a non-`postgres://`
+  `app_dsn` selects SQLite for local trials only.
+- Agent-scoped secrets (`team.secrets`) are namespaced per agent so two agents
+  load disjoint secrets with no cross-leak.
+
+See the [Team Mode guide](docs/guides/team-mode.md) and
+[Virtual Agents guide](docs/guides/agents.md) for the full walkthrough.
 
 ## Sessions
 
