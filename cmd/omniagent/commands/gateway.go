@@ -68,14 +68,16 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	// surface. Registered with the gateway mux after it is created.
 	var teamHTTP *gateway.TeamHTTP
 	var teamChatHTTP *gateway.TeamChatHTTP
+	var agentsHTTP *gateway.AgentsHTTP
 	if cfg.Team.Enabled {
-		th, tch, cleanup, err := setupTeamMode(ctx, cfg, logger)
+		th, tch, ah, cleanup, err := setupTeamMode(ctx, cfg, logger)
 		if err != nil {
 			return err
 		}
 		defer cleanup()
 		teamHTTP = th
 		teamChatHTTP = tch
+		agentsHTTP = ah
 	}
 
 	// Embedded web UI: capability-driven SPA + GET /api/capabilities,
@@ -469,6 +471,20 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		gw.Handle("/api/chats", chatAPI)
 		gw.Handle("/api/chats/", chatAPI)
 		logger.Info("team chat API mounted at /api/chats (membership-scoped live delivery over WebSocket)")
+	}
+
+	// Agents management + discovery API (INIT-005 Phase 5): the owner/maintainer
+	// config area (RMI-311), catalog (RMI-312), and superadmin curation
+	// (RMI-313). Exact + subtree "/api/agents" patterns plus exact "/api/catalog"
+	// win over team mode's "/api/" subtree (ServeMux prefers the longer pattern),
+	// each wrapped in RequireAuth so every route runs with an authenticated
+	// principal the agents service authorizes.
+	if agentsHTTP != nil && teamHTTP != nil {
+		agentsAPI := teamHTTP.RequireAuth(agentsHTTP.Handler())
+		gw.Handle("/api/agents", agentsAPI)
+		gw.Handle("/api/agents/", agentsAPI)
+		gw.Handle("/api/catalog", agentsAPI)
+		logger.Info("agents management + catalog API mounted at /api/agents and /api/catalog")
 	}
 
 	// Web UI: capabilities is an exact pattern so it keeps resolving even

@@ -35,10 +35,10 @@ import (
 // policy and scoped per chat (RMI-114). The runtime is wired only when an LLM API
 // key is configured; without one, agent-bound chats stay silent and agent-less
 // private DMs echo.
-func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*gateway.TeamHTTP, *gateway.TeamChatHTTP, func(), error) {
+func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*gateway.TeamHTTP, *gateway.TeamChatHTTP, *gateway.AgentsHTTP, func(), error) {
 	tc := cfg.Team
 	if err := tc.Validate(); err != nil {
-		return nil, nil, nil, fmt.Errorf("team config: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("team config: %w", err)
 	}
 
 	storeCfg := teamstore.Config{
@@ -48,12 +48,12 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		Logger:     logger,
 	}
 	if err := teamstore.Migrate(ctx, storeCfg); err != nil {
-		return nil, nil, nil, fmt.Errorf("team database migration: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("team database migration: %w", err)
 	}
 
 	st, err := teamstore.Open(ctx, storeCfg)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("open team database: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("open team database: %w", err)
 	}
 	// runtimeCache and secretVault are assigned below when a per-agent runtime is
 	// wired; captured by reference so cleanup evicts/closes resident instances and
@@ -85,13 +85,13 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	})
 	if err != nil {
 		cleanup()
-		return nil, nil, nil, fmt.Errorf("team service: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("team service: %w", err)
 	}
 
 	mailer, err := buildMailer(tc.SMTP, "team mode", logger)
 	if err != nil {
 		cleanup()
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Cookies are Secure over https; plain-HTTP dev drops the __Host- prefix.
@@ -104,7 +104,7 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	})
 	if err != nil {
 		cleanup()
-		return nil, nil, nil, fmt.Errorf("auth service: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("auth service: %w", err)
 	}
 
 	teamHTTP := gateway.NewTeamHTTP(authSvc, teamSvc, gateway.TeamHTTPConfig{
@@ -123,7 +123,7 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	})
 	if err != nil {
 		cleanup()
-		return nil, nil, nil, fmt.Errorf("agents service: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("agents service: %w", err)
 	}
 
 	// Per-agent runtime (RMI-OMNIAGENT-309): build each agent-bound chat's
@@ -140,7 +140,7 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		secretSrc, sv, serr := buildAgentSecretSource(tc.Secrets, logger)
 		if serr != nil {
 			cleanup()
-			return nil, nil, nil, fmt.Errorf("team secrets: %w", serr)
+			return nil, nil, nil, nil, fmt.Errorf("team secrets: %w", serr)
 		}
 		secretVault = sv
 
@@ -166,7 +166,7 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		})
 		if err != nil {
 			cleanup()
-			return nil, nil, nil, fmt.Errorf("agent runtime: %w", err)
+			return nil, nil, nil, nil, fmt.Errorf("agent runtime: %w", err)
 		}
 		runtime = runtimeCache
 		logger.Info("team mode: per-agent runtime enabled",
@@ -187,16 +187,24 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	})
 	if err != nil {
 		cleanup()
-		return nil, nil, nil, fmt.Errorf("chats service: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("chats service: %w", err)
 	}
 	teamChatHTTP := gateway.NewTeamChatHTTP(gateway.TeamChatHTTPConfig{
 		Chats:  chatSvc,
 		Logger: logger,
 	})
 
+	// Agents management + discovery surface (INIT-OMNIAGENT-005 Phase 5): the
+	// owner/maintainer config area, the catalog, and superadmin curation, all
+	// over the same agentsSvc gate.
+	agentsHTTP := gateway.NewAgentsHTTP(gateway.AgentsHTTPConfig{
+		Agents: agentsSvc,
+		Logger: logger,
+	})
+
 	logger.Info("team mode enabled: database migrated (schema + RLS)",
 		"superadmin_email", tc.SuperadminEmail, "cookie_secure", secure)
-	return teamHTTP, teamChatHTTP, cleanup, nil
+	return teamHTTP, teamChatHTTP, agentsHTTP, cleanup, nil
 }
 
 // agentConfigLoader adapts *agents.Service to agentruntime.ConfigLoader,
