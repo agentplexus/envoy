@@ -285,6 +285,36 @@ func (g *Gateway) Broadcast(msg *Message) {
 	}
 }
 
+// BroadcastToUsers sends a message only to connected clients whose
+// authenticated user_id is in userIDs — the membership-scoped fan-out for
+// chat rooms (RMI-112). A chat's message is delivered to exactly its members'
+// sockets and no others, so there is no cross-chat leakage: a client whose
+// user is not a member never receives it. Clients with no bound user_id
+// (unauthenticated) are never matched.
+func (g *Gateway) BroadcastToUsers(userIDs []string, msg *Message) {
+	if len(userIDs) == 0 {
+		return
+	}
+	recipients := make(map[string]struct{}, len(userIDs))
+	for _, id := range userIDs {
+		if id != "" {
+			recipients[id] = struct{}{}
+		}
+	}
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	for _, client := range g.clients {
+		uid, ok := client.GetMetadata("user_id")
+		if !ok {
+			continue
+		}
+		s, _ := uid.(string)
+		if _, member := recipients[s]; member {
+			client.Send(msg)
+		}
+	}
+}
+
 // GetClient returns a client by ID.
 func (g *Gateway) GetClient(id string) *Client {
 	g.mu.RLock()
