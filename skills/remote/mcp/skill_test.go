@@ -8,6 +8,51 @@ import (
 	"testing"
 )
 
+// TestSetSecrets_MergePrecedence confirms injected secrets merge into the
+// subprocess env and override statically configured Env, without mutating the
+// caller's map or a shared base config.
+func TestSetSecrets_MergePrecedence(t *testing.T) {
+	base := Config{
+		Name:    "github",
+		Command: []string{"echo"},
+		Env:     map[string]string{"KEEP": "1", "TOKEN": "static"},
+	}
+
+	s := NewSkill(base)
+	injected := map[string]string{"TOKEN": "secret", "EXTRA": "e"}
+	s.SetSecrets(injected)
+
+	if got := s.config.Env["TOKEN"]; got != "secret" {
+		t.Errorf("TOKEN = %q, want secret (injected overrides static)", got)
+	}
+	if got := s.config.Env["KEEP"]; got != "1" {
+		t.Errorf("KEEP = %q, want 1 (static preserved)", got)
+	}
+	if got := s.config.Env["EXTRA"]; got != "e" {
+		t.Errorf("EXTRA = %q, want e (injected added)", got)
+	}
+
+	// The caller's injected map must not be mutated.
+	if len(injected) != 2 {
+		t.Errorf("injected map mutated: %v", injected)
+	}
+	// A second skill from the same base config must be unaffected (base map not
+	// mutated) — the basis for per-agent isolation over shared BaseOptions.
+	s2 := NewSkill(base)
+	if got := s2.config.Env["TOKEN"]; got != "static" {
+		t.Errorf("second skill TOKEN = %q, want static (base config not mutated)", got)
+	}
+}
+
+// TestSetSecrets_Empty is a no-op that leaves Env untouched.
+func TestSetSecrets_Empty(t *testing.T) {
+	s := NewSkill(Config{Name: "x", Command: []string{"echo"}, Env: map[string]string{"A": "1"}})
+	s.SetSecrets(nil)
+	if len(s.config.Env) != 1 || s.config.Env["A"] != "1" {
+		t.Errorf("Env = %v, want {A:1}", s.config.Env)
+	}
+}
+
 func TestNewSkill(t *testing.T) {
 	skill := NewSkill(Config{
 		Name:    "test",

@@ -7,10 +7,68 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"testing"
 
 	agentctx "github.com/plexusone/omniagent/context"
+	"github.com/plexusone/omniagent/skills/compiled"
+	"github.com/plexusone/omniskill/skill"
 )
+
+// fakeSecretSkill is a compiled.Skill that records injected secrets, used to
+// verify WithSecretEnv/SetSecretEnv injection.
+type fakeSecretSkill struct {
+	name    string
+	secrets map[string]string
+}
+
+func (f *fakeSecretSkill) Name() string                     { return f.name }
+func (f *fakeSecretSkill) Description() string              { return "fake" }
+func (f *fakeSecretSkill) Tools() []skill.Tool              { return nil }
+func (f *fakeSecretSkill) Init(context.Context) error       { return nil }
+func (f *fakeSecretSkill) Close() error                     { return nil }
+func (f *fakeSecretSkill) SetSecrets(env map[string]string) { f.secrets = env }
+
+var _ compiled.SecretsAware = (*fakeSecretSkill)(nil)
+
+func newTestAgent() *Agent {
+	return &Agent{tools: NewToolRegistry(), logger: slog.Default()}
+}
+
+// TestWithSecretEnv_InjectsAfterRegister confirms secrets set after a skill is
+// registered still reach it (SetSecretEnv pushes into existing skills).
+func TestWithSecretEnv_InjectsAfterRegister(t *testing.T) {
+	a := newTestAgent()
+	fs := &fakeSecretSkill{name: "github"}
+	if err := a.RegisterCompiledSkill(fs); err != nil {
+		t.Fatalf("RegisterCompiledSkill: %v", err)
+	}
+
+	env := map[string]string{"GITHUB_TOKEN": "ghp"}
+	if err := WithSecretEnv(env)(a); err != nil {
+		t.Fatalf("WithSecretEnv: %v", err)
+	}
+	if fs.secrets["GITHUB_TOKEN"] != "ghp" {
+		t.Errorf("secrets = %v, want GITHUB_TOKEN:ghp", fs.secrets)
+	}
+}
+
+// TestWithSecretEnv_InjectsBeforeRegister confirms secrets set before a skill is
+// registered reach it too (RegisterCompiledSkill applies a.secretEnv), so
+// injection is order-independent.
+func TestWithSecretEnv_InjectsBeforeRegister(t *testing.T) {
+	a := newTestAgent()
+	if err := WithSecretEnv(map[string]string{"GITHUB_TOKEN": "ghp"})(a); err != nil {
+		t.Fatalf("WithSecretEnv: %v", err)
+	}
+	fs := &fakeSecretSkill{name: "github"}
+	if err := a.RegisterCompiledSkill(fs); err != nil {
+		t.Fatalf("RegisterCompiledSkill: %v", err)
+	}
+	if fs.secrets["GITHUB_TOKEN"] != "ghp" {
+		t.Errorf("secrets = %v, want GITHUB_TOKEN:ghp", fs.secrets)
+	}
+}
 
 func TestWithTool(t *testing.T) {
 	tool := NewBaseTool("test_tool", "Test", nil, nil)

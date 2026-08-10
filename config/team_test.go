@@ -42,6 +42,11 @@ func TestTeamConfig_Validate(t *testing.T) {
 		{name: "smtp host without from", mutate: func(c *TeamConfig) { c.SMTP.From = "" }, wantErr: "smtp"},
 		{name: "bad smtp from", mutate: func(c *TeamConfig) { c.SMTP.From = "nope" }, wantErr: "smtp.from"},
 		{name: "no smtp at all ok at data layer", mutate: func(c *TeamConfig) { c.SMTP = TeamSMTPConfig{} }},
+		{name: "secrets memory provider ok", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{Provider: "memory"} }},
+		{name: "secrets file provider needs dir", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{Provider: "file"} }, wantErr: "secrets.dir"},
+		{name: "secrets file provider with dir ok", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{Provider: "file", Dir: "/var/secrets"} }},
+		{name: "secrets unknown provider", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{Provider: "vault"} }, wantErr: "secrets.provider"},
+		{name: "secrets empty provider ok", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{} }},
 	}
 
 	for _, tt := range tests {

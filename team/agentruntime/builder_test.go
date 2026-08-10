@@ -2,14 +2,45 @@ package agentruntime
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 
 	"github.com/google/uuid"
 
 	"github.com/plexusone/omniagent/agent"
+	"github.com/plexusone/omniagent/skills/compiled"
 	"github.com/plexusone/omniagent/team/chats"
+	"github.com/plexusone/omniskill/skill"
 )
+
+// fakeSecretSkill is a compiled.Skill that records injected secrets, used to
+// observe per-agent secret injection through the builder.
+type fakeSecretSkill struct {
+	secrets map[string]string
+}
+
+func (f *fakeSecretSkill) Name() string                     { return "fake" }
+func (f *fakeSecretSkill) Description() string              { return "fake" }
+func (f *fakeSecretSkill) Tools() []skill.Tool              { return nil }
+func (f *fakeSecretSkill) Init(context.Context) error       { return nil }
+func (f *fakeSecretSkill) Close() error                     { return nil }
+func (f *fakeSecretSkill) SetSecrets(env map[string]string) { f.secrets = env }
+
+var _ compiled.SecretsAware = (*fakeSecretSkill)(nil)
+
+// fakeSecretSource returns per-agent secrets by ID.
+type fakeSecretSource struct {
+	byID map[uuid.UUID]map[string]string
+	err  error
+}
+
+func (f fakeSecretSource) ResolveSecrets(_ context.Context, id uuid.UUID) (map[string]string, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.byID[id], nil
+}
 
 // TestAgentBuilder_Build builds a real *agent.Agent from persona + enabled
 // skills and confirms it satisfies chats.AgentProcessor and is closeable (so
@@ -38,6 +69,98 @@ func TestAgentBuilder_Build(t *testing.T) {
 	}
 	if err := closer.Close(); err != nil {
 		t.Errorf("Close: %v", err)
+	}
+}
+
+// TestAgentBuilder_InjectsDisjointSecrets is the RMI-310 gate at the builder
+// layer: two agents built from one builder + one SecretSource receive disjoint
+// secrets, each reaching only its own instance's secrets-aware skills. A fresh
+// fake skill is created per build (as MCP skills are), so this exercises real
+// per-instance injection, not a shared skill.
+func TestAgentBuilder_InjectsDisjointSecrets(t *testing.T) {
+	agentA, agentB := uuid.New(), uuid.New()
+	src := fakeSecretSource{byID: map[uuid.UUID]map[string]string{
+		agentA: {"TOKEN": "aaa"},
+		agentB: {"TOKEN": "bbb"},
+	}}
+
+	// Each build gets a fresh fake skill, recorded in order.
+	var created []*fakeSecretSkill
+	freshSkill := agent.Option(func(a *agent.Agent) error {
+		fs := &fakeSecretSkill{}
+		created = append(created, fs)
+		return a.RegisterCompiledSkill(fs)
+	})
+
+	b := NewAgentBuilder(BuilderConfig{
+		Defaults:    agent.Config{Provider: "openai", Model: "gpt-4o-mini", APIKey: "test-key"},
+		BaseOptions: []agent.Option{freshSkill},
+		Secrets:     src,
+	})
+
+	procA, err := b.Build(context.Background(), AgentConfig{ID: agentA, Slug: "a"})
+	if err != nil {
+		t.Fatalf("build A: %v", err)
+	}
+	if c, ok := procA.(io.Closer); ok {
+		defer c.Close() //nolint:errcheck // test teardown
+	}
+	procB, err := b.Build(context.Background(), AgentConfig{ID: agentB, Slug: "b"})
+	if err != nil {
+		t.Fatalf("build B: %v", err)
+	}
+	if c, ok := procB.(io.Closer); ok {
+		defer c.Close() //nolint:errcheck // test teardown
+	}
+
+	if len(created) != 2 {
+		t.Fatalf("expected 2 fresh skills, got %d", len(created))
+	}
+	if created[0].secrets["TOKEN"] != "aaa" {
+		t.Errorf("agent A skill secrets = %v, want TOKEN:aaa", created[0].secrets)
+	}
+	if created[1].secrets["TOKEN"] != "bbb" {
+		t.Errorf("agent B skill secrets = %v, want TOKEN:bbb", created[1].secrets)
+	}
+	// No cross-leak: A never sees bbb, B never sees aaa.
+	if created[0].secrets["TOKEN"] == created[1].secrets["TOKEN"] {
+		t.Error("agents received identical secrets (cross-leak)")
+	}
+}
+
+// TestAgentBuilder_NoSecretSource confirms a nil SecretSource injects nothing
+// (prior behavior) and the skill's secrets stay unset.
+func TestAgentBuilder_NoSecretSource(t *testing.T) {
+	var created []*fakeSecretSkill
+	freshSkill := agent.Option(func(a *agent.Agent) error {
+		fs := &fakeSecretSkill{}
+		created = append(created, fs)
+		return a.RegisterCompiledSkill(fs)
+	})
+	b := NewAgentBuilder(BuilderConfig{
+		Defaults:    agent.Config{Provider: "openai", Model: "gpt-4o-mini", APIKey: "test-key"},
+		BaseOptions: []agent.Option{freshSkill},
+	})
+	proc, err := b.Build(context.Background(), AgentConfig{ID: uuid.New(), Slug: "a"})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	if c, ok := proc.(io.Closer); ok {
+		defer c.Close() //nolint:errcheck // test teardown
+	}
+	if len(created) != 1 || created[0].secrets != nil {
+		t.Errorf("expected no secrets injected, got %v", created[0].secrets)
+	}
+}
+
+// TestAgentBuilder_SecretResolveError propagates a resolver failure.
+func TestAgentBuilder_SecretResolveError(t *testing.T) {
+	b := NewAgentBuilder(BuilderConfig{
+		Defaults: agent.Config{Provider: "openai", Model: "gpt-4o-mini", APIKey: "test-key"},
+		Secrets:  fakeSecretSource{err: errors.New("vault down")},
+	})
+	if _, err := b.Build(context.Background(), AgentConfig{ID: uuid.New(), Slug: "a"}); err == nil {
+		t.Fatal("expected error when secret resolution fails, got nil")
 	}
 }
 
