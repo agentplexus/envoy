@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-003`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Phases 1–2 completed — 17 of 29 items completed
+**Status:** Phases 1–4 completed — 20 of 29 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the
 > trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member
@@ -87,7 +87,7 @@
 ## Phase 4 — Embedded Web UI
 
 **Theme:** One capability-driven go:embed SPA serving both personal and team modes; Caddy does TLS only (team).
-**Status:** In progress — 4 of 5 items completed
+**Status:** Completed — 5 of 5 items completed
 
 > Capability-driven (TRD §1a/§6): the same SPA reads `GET /api/capabilities`.
 > Login (116) shows only when `authRequired`; group chat (118) and admin (119)
@@ -104,9 +104,22 @@
 - [x] `RMI-OMNIAGENT-118` Group chat UI
   - Depends on: `RMI-OMNIAGENT-117`
   - Acceptance: rendered only when `multiUser`. The SPA's `multiUser` branch renders `renderTeamChat`: a two-pane surface (chat-list sidebar + message pane) over the RMI-110/111/112 endpoint set. "Chat with agent" get-or-creates the private DM (`GET /api/chats/dm`); "New group" creates a group (`POST /api/chats`); selecting a chat loads its newest page with keyset scroll-back (`GET /api/chats/{id}` + `/messages?before=&limit=`). One shared WebSocket delivers `chat.message` fan-out filtered by `chatId` (unread dots on non-active chats); messages are attributed per-author via the new `authorUserId` message field resolved against the member map (self/other/agent). Groups get a member panel: list with roles, owner-only invite-by-username and remove, and leave (`/members`, `DELETE /members/{id}`, `/leave`), refreshed live on `chat.member.added`/`removed`. CSRF header on all mutations; CSP-clean (no external assets, guarded by `web` tests). Agent participation in groups (@-mention turns) stays deferred to RMI-113/INIT-005 — group sends fan out with no agent reply.
-- [ ] `RMI-OMNIAGENT-119` Admin UI (allowlist, members, rename)
+- [x] `RMI-OMNIAGENT-119` Admin UI (allowlist, members, rename)
   - Depends on: `RMI-OMNIAGENT-116`
-  - Acceptance: rendered only when `multiUser`
+  - Acceptance: rendered only when `multiUser`. An "Admin" nav tab (gated on
+    `me.superadmin`, same pattern as Curation) mounts `renderAdmin`, a two-card
+    view: **Allowlist** (add/remove, reusing the existing `/api/admin/allowlist`
+    CRUD) and **Members** (`GET /api/admin/users` — role/status per user, a
+    Disable/Enable toggle over the new `PATCH /api/admin/users/{id}`, hidden
+    for the viewer's own row since self-disable always 403s). The new HTTP
+    layer in `gateway/team_http.go` exposes `team.Service`'s already-complete
+    `ListUsers`/`SetUserStatus`/`RenameUser` (superadmin-only, self-lockout
+    guarded, `!Personal`-gated like the existing allowlist route); rename of
+    another user reuses the same endpoint's optional `username` field.
+    Covered by Postgres-backed HTTP tests (list shape +
+    403 for non-superadmin, disable/re-enable round trip, self-lockout,
+    rename-another-user, CSRF requirement, personal-mode 404 exclusion) plus a
+    service-layer re-enable test closing a prior coverage gap.
 
 ## Phase 5 — SSO (v2)
 

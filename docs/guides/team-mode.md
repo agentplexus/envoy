@@ -97,20 +97,29 @@ its first successful sign-in. Everyone else must be on the allowlist.
     `/api/auth/verify?token=…` URL from the logs, and open it. Handy for local
     trials; configure SMTP for any real deployment.
 
-### Managing the allowlist
+### Managing the allowlist and members
 
-Only allowlisted emails (plus the superadmin) can sign in. Superadmins manage
-the allowlist over the admin API:
+Only allowlisted emails (plus the superadmin) can sign in. Superadmins see an
+**Admin** tab in the web UI (visible only to the superadmin) covering:
+
+- **Allowlist** — add or remove approved emails, with an optional note.
+- **Members** — every user's role and status, with a Disable/Enable toggle.
+  Disabling ends a member's access immediately; their data stays scoped and
+  inaccessible to others, and it is a disable, not a delete. A superadmin
+  cannot disable their own account (lockout guard).
+
+The same operations are available over the admin API, useful for scripting:
 
 ```bash
-# List / add / remove (superadmin session cookie + CSRF header required)
+# Allowlist (superadmin session cookie + CSRF header required on mutations)
 GET    /api/admin/allowlist
 POST   /api/admin/allowlist        {"email":"teammate@example.com","note":"Design"}
 DELETE /api/admin/allowlist?email=teammate@example.com
-```
 
-A dedicated allowlist admin screen in the SPA is on the roadmap; until then use
-the API above.
+# Members
+GET    /api/admin/users
+PATCH  /api/admin/users/{id}       {"status":"disabled"}   # or {"username":"..."}
+```
 
 ## Chats
 
