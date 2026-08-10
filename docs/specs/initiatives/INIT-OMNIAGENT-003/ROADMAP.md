@@ -2,7 +2,8 @@
 
 **Initiative:** `INIT-OMNIAGENT-003`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Phases 1–4 completed — 20 of 29 items completed
+**Status:** v1 (Phases 1–4 + 6) completed — 25 of 29 items completed; only
+Phase 5 (SSO, v2) remains
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the
 > trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member
@@ -135,14 +136,43 @@
 ## Phase 6 — Hosted Deployment
 
 **Theme:** One Lightsail instance: Caddy → omniagent → PostgreSQL via compose.
-**Status:** Planned — 0 of 5 items completed
+**Status:** Completed — 5 of 5 items completed
 
-- [ ] `RMI-OMNIAGENT-124` Compose stack (caddy/omniagent/postgres)
-  - Acceptance: `docker compose up` yields a working stack; Postgres unexposed; volumes persist across restart
-- [ ] `RMI-OMNIAGENT-125` Caddyfile auto-HTTPS
+- [x] `RMI-OMNIAGENT-124` Compose stack (caddy/omniagent/postgres)
+  - Acceptance: `docker compose up` yields a working stack; Postgres unexposed; volumes persist across restart.
+    `deploy/team/prod/docker-compose.yaml`: `postgres` has no `ports:` mapping
+    (internal network only), `omniagent` builds from the root `Dockerfile` and
+    is entirely env-var configured (no baked-in config file — required new
+    `OMNIAGENT_TEAM_*` bindings in `config/loader.go`, since none existed
+    before this RMI), `caddy` publishes 80/443. Named volumes `pgdata`,
+    `caddy_data`, `caddy_config` persist across restart. No `/data` volume for
+    `omniagent`: team mode's data of record is 100% PostgreSQL.
+- [x] `RMI-OMNIAGENT-125` Caddyfile auto-HTTPS
   - Depends on: `RMI-OMNIAGENT-124`
-- [ ] `RMI-OMNIAGENT-126` Backup + tested restore
+  - Acceptance: `deploy/team/prod/Caddyfile` — a bare `{$DOMAIN} { reverse_proxy
+    omniagent:8080 }` block; Caddy 2's default automatic Let's Encrypt HTTPS
+    needs no further directives.
+- [x] `RMI-OMNIAGENT-126` Backup + tested restore
   - Depends on: `RMI-OMNIAGENT-124`
-- [ ] `RMI-OMNIAGENT-127` Lightsail deployment guide + smoke checklist
+  - Acceptance: `deploy/team/prod/backup.sh`/`restore.sh`
+    (`pg_dump --clean --if-exists` / `psql`, restore requires `--force` or an
+    interactive confirmation). "Tested" is machine-verified, not just
+    documented: `.github/workflows/team-backup-restore.yaml`
+    (`workflow_dispatch`-only) migrates the real team-mode Postgres schema,
+    seeds users via `team.Service`, backs up, restores into a throwaway
+    database, and asserts the row count survives — verified locally end-to-end
+    against the real RLS-policy schema before landing.
+- [x] `RMI-OMNIAGENT-127` Lightsail deployment guide + smoke checklist
   - Depends on: `RMI-OMNIAGENT-125`
-- [ ] `RMI-OMNIAGENT-128` Ops runbook (upgrades, env matrix)
+  - Acceptance: new `docs/guides/team-deployment.md` — Lightsail VM
+    provisioning, `docker compose up -d --build`, and a 5-step smoke checklist
+    (health check, magic-link login, superadmin confirmation, allowlisting a
+    second member via the RMI-119 Admin UI, agent reply). Linked from
+    `mkdocs.yml` nav and cross-linked with `team-mode.md` and `deployment.md`
+    (the latter is the separate OmniDeploy/personal-mode guide).
+- [x] `RMI-OMNIAGENT-128` Ops runbook (upgrades, env matrix)
+  - Acceptance: folded into `team-deployment.md`'s "Operations" section —
+    upgrade procedure (migrations run automatically and idempotently on every
+    start, confirmed via `team/store`'s advisory-locked migrate-on-start
+    path), rollback guidance, a link to the full `OMNIAGENT_TEAM_*` env var
+    matrix in `docs/reference/environment.md`, and a troubleshooting table.

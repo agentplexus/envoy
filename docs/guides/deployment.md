@@ -10,7 +10,10 @@ OmniAgent applications can be deployed as:
 2. **Container** - Docker deployment to container services
 3. **Managed service** - Using OmniDeploy for automated infrastructure
 
-This guide covers containerized deployment using [OmniDeploy](https://github.com/plexusone/omnideploy).
+This guide covers containerized deployment using [OmniDeploy](https://github.com/plexusone/omnideploy)
+for a **single-operator** (personal-mode) deployment. For a self-hosted
+**team-mode** stack (Caddy + PostgreSQL via Docker Compose on one VM), see
+[Team Deployment](team-deployment.md) instead.
 
 ## Deployment Checklist
 

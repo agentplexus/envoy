@@ -196,6 +196,10 @@ cross-leak, and each agent's runtime instance is built with only its own secrets
 
 ## Deployment notes
 
+For a production Caddy + PostgreSQL stack on a single VM (e.g. Lightsail),
+including a provisioning walkthrough, upgrade/backup procedures, and a
+troubleshooting table, see **[Team Deployment](team-deployment.md)**.
+
 - **HTTPS.** When `base_url` is `https://`, session cookies are set `Secure` with
   the `__Host-` prefix. Plain-HTTP localhost drops the prefix for dev.
 - **CSRF.** State-changing API calls require the `X-OmniAgent-CSRF` header;
