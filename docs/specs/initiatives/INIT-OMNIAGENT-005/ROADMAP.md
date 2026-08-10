@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-005`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** In progress — 11 of 14 items completed (Phases 1–4 complete; Phase 5 web UI remains)
+**Status:** Complete — 14 of 14 items completed (Phases 1–5 complete)
 
 > RMI IDs are stable and permanent. Commits carry `Refs: RMI-OMNIAGENT-<NNN>`.
 > Phase status derives from member RMIs. Cross-initiative dependencies on
@@ -69,11 +69,14 @@
 ## Phase 5 — Web UI
 
 **Theme:** Owners configure agents; users browse a catalog and start chats.
-**Status:** Planned — 0 of 3 items completed
+**Status:** Completed — 3 of 3 items completed
 
-- [ ] `RMI-OMNIAGENT-311` Agents area (owner/maintainer: config, skills, maintainers, visibility)
+- [x] `RMI-OMNIAGENT-311` Agents area (owner/maintainer: config, skills, maintainers, visibility)
   - Depends on: `RMI-OMNIAGENT-305`, `RMI-OMNIAGENT-115` (web UI)
-- [ ] `RMI-OMNIAGENT-312` Catalog UI (browse featured/listed; start DM/group; conversant has no config surface)
+  - Acceptance: owners/maintainers create, configure, and delete agents; controls appear only for held capabilities; conversing never exposes a config surface. Built as a new HTTP layer `gateway/agents_http.go` over `agents.Service` (mounted at `/api/agents`, `/api/agents/`, `/api/catalog`, wrapped in `RequireAuth`; CSRF on mutations; every route authorized by the service's `Can`/`requireEditor`/`requireOwner`, RLS as backstop) and a team-mode **My Agents** view in the vanilla-JS SPA (`web/dist/app.js`): list → create → detail with Configuration / Skills (checkboxes over the available-skills catalog) / Visibility / Maintainers (add-by-username, remove, self-leave) / Danger-zone (delete) panels, each panel shown per the caller's `caps` returned by `GET /api/agents/{id}`. The agent detail response carries `enabledSkills`, `availableSkills`, and the caller's `{configure, manageMaintainers, manageRegistry, administer}` capabilities. Covered by `gateway/agents_http_test.go` (owner/maintainer/stranger/superadmin authz across CRUD, skills, roles, visibility; CSRF-required).
+- [x] `RMI-OMNIAGENT-312` Catalog UI (browse featured/listed; start DM/group; conversant has no config surface)
   - Depends on: `RMI-OMNIAGENT-307`, `RMI-OMNIAGENT-311`
-- [ ] `RMI-OMNIAGENT-313` Superadmin curation UI (featured) + docs
-  - Depends on: `RMI-OMNIAGENT-312`, `RMI-OMNIAGENT-119` (admin UI)
+  - Acceptance: any user browses the catalog scoped to what they may see and starts a DM/group with a startable agent; no configuration surface for a plain conversant. `GET /api/catalog` returns Featured + Listed with per-entry `canStart`; the SPA **Catalog** view renders both sections and, when `canStart`, offers **Chat** (DM) and **New group**. Agent-bound chat starts were missing from the HTTP surface, so `POST /api/chats/agents/{agentId}/dm` (StartAgentDM, idempotent per user+agent) and `POST /api/chats/agents/{agentId}/group` (CreateGroupWithAgent) were added to `gateway/team_chat_http.go`, gated by the chats service's `Can(CapCreateChat)` (`ErrNoAgentRegistry` → 503 in personal mode). Starting a chat hands it to the Chats tab, which auto-opens it. Covered by `gateway/agents_http_test.go` (listed-agent DM start + idempotency, private-agent start forbidden, agent group create).
+- [x] `RMI-OMNIAGENT-313` Superadmin curation UI (featured) + docs
+  - Depends on: `RMI-OMNIAGENT-312`, ~~`RMI-OMNIAGENT-119`~~ (admin UI — not required; curation is a standalone superadmin tab)
+  - Acceptance: only a superadmin can feature/unfeature; featuring promotes a Listed agent deployment-wide; documented. `PUT /api/agents/{id}/featured` (superadmin-only; non-superadmin → 403) backs a **Curation** tab shown only to superadmins, listing Featured + Listed agents with a Feature/Unfeature toggle over `GET /api/catalog`. Documented in `docs/guides/agents.md` (My Agents, Catalog, Curation, roles/capabilities, the HTTP API, and the secrets-are-off-UI note), linked from `mkdocs.yml`. Covered by `gateway/agents_http_test.go` (owner cannot feature; superadmin can; featured surfaces in the Featured section).
