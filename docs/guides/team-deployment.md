@@ -60,6 +60,14 @@ Run through this after first deploy (and after any upgrade):
    Admin tab.
 5. **Agent reply** — if an LLM key is set, message the agent in a private
    chat and confirm a reply arrives.
+6. **SSO sign-in** (if `GOOGLE_CLIENT_ID`/`GITHUB_CLIENT_ID` are set) — click
+   the Google/GitHub button on the login screen, complete the provider's
+   consent screen, and confirm you land back in the app signed in. Sign in
+   again with the *same* provider account using a second browser/incognito
+   window and confirm no duplicate account is created. If an existing
+   magic-link user signs in via SSO with the same email, confirm the Admin
+   tab's Members card shows both `magic_link` and the SSO provider as
+   badges on one row (not two separate users).
 
 ## Operations
 
@@ -129,3 +137,6 @@ verify the restore path still works after a schema change.
 | Magic links never arrive | SMTP misconfigured. Team mode does not fail startup on bad SMTP — it falls back to **logging** the link instead of emailing it. Check `docker compose logs omniagent` for the link, then fix `SMTP_*` in `.env`. |
 | Caddy never gets a certificate | Port 80/443 not reachable from the internet (firewall/security group), or DNS hasn't propagated yet to the instance's IP. `docker compose logs caddy` shows the ACME error. |
 | `docker compose up` fails on the `postgres` service | `APP_DB_PASSWORD` unset when the database first initialized — the app role is only created via `init/01-app-role.sh` on a **fresh** data volume. If you changed `APP_DB_PASSWORD` after first boot, update the role's password directly (`ALTER ROLE omniagent_app PASSWORD '...'`) rather than expecting the init script to re-run. |
+| `omniagent` container exits immediately with Google SSO configured | OIDC discovery against `accounts.google.com` failed at startup (no outbound internet, DNS/firewall block). This is fatal by design — check `docker compose logs omniagent` for the discovery error; GitHub SSO makes no such call and is unaffected. |
+| SSO redirects back with `?error=sso_state` or `?error=sso_failed` | The provider's registered redirect URI doesn't exactly match `https://$DOMAIN/api/auth/{google,github}/callback`, or the client ID/secret is wrong — re-check the provider's app settings against `.env`. |
+| SSO redirects back with `?error=not_allowed` | The signed-in account's verified email isn't on the allowlist — add it from the Admin tab, then retry. |

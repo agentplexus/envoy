@@ -142,6 +142,63 @@ GET    /api/admin/users
 PATCH  /api/admin/users/{id}       {"status":"disabled"}   # or {"username":"..."}
 ```
 
+### SSO (Google, GitHub)
+
+Magic-link email is always available; Google OIDC and GitHub OAuth are
+optional, additive sign-in methods configured under `team.sso`:
+
+```yaml
+team:
+  sso:
+    google:
+      client_id: "1234567890-abc.apps.googleusercontent.com"
+      client_secret: "GOCSPX-..."
+    github:
+      client_id: "Iv1.abc123"
+      client_secret: "..."
+```
+
+Each provider is independent — configure one, both, or neither. A provider
+needs both `client_id` and `client_secret` set to be enabled; the web UI's
+login screen shows a "Sign in with Google/GitHub" button only for providers
+the server has configured (`GET /api/capabilities`'s `googleSso`/`githubSso`
+flags).
+
+**Redirect URI is fixed, not configurable** — `{base_url}/api/auth/{google,github}/callback`.
+Register exactly that URL with each provider:
+
+- **Google**: [Google Cloud Console](https://console.cloud.google.com/apis/credentials) →
+  Create OAuth client ID → Application type **Web application** → Authorized
+  redirect URI `{base_url}/api/auth/google/callback`. The OAuth consent
+  screen must be configured first (internal or external, per your org).
+- **GitHub**: your account or org's
+  [Developer settings → OAuth Apps](https://github.com/settings/developers) →
+  New OAuth App (not a GitHub App) → Authorization callback URL
+  `{base_url}/api/auth/github/callback`.
+
+**How SSO resolves an account** — SSO never bypasses the allowlist. On first
+sign-in with a given provider, the provider's *verified* email is checked
+against the allowlist exactly like a magic-link request; a non-allowlisted
+email is rejected and no account is created. If the email matches an
+existing user (e.g. someone who has only ever used magic-link so far), the
+SSO identity links to that same account — it does not create a duplicate. A
+user may hold multiple linked identities (magic link, Google, GitHub all at
+once); the Admin tab's Members card shows each user's linked providers as
+small badges.
+
+Set the client credentials via `team.sso.*` in the config file, or the
+equivalent `OMNIAGENT_TEAM_SSO_*` environment variables (see
+[Environment Variables](../reference/environment.md#team-mode)) — handy for
+the Docker Compose deployment in
+[Team Deployment](team-deployment.md).
+
+!!! warning "Google discovery happens at startup"
+    Configuring Google SSO makes `gateway run` perform a real OIDC discovery
+    call to `accounts.google.com` at boot. A network failure there is
+    **fatal** — the process exits rather than silently starting without
+    working Google sign-in. GitHub's plain OAuth2 flow makes no such call
+    and never fails at boot.
+
 ## Chats
 
 Signed-in users get a two-pane chat surface under the **Chats** tab:

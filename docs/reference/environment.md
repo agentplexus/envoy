@@ -167,6 +167,10 @@ value always overrides the file.
 | `OMNIAGENT_TEAM_SMTP_USERNAME` | SMTP username |
 | `OMNIAGENT_TEAM_SMTP_PASSWORD` | SMTP password |
 | `OMNIAGENT_TEAM_SMTP_FROM` | From address for magic-link email |
+| `OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_ID` | Google OAuth client ID (optional SSO) |
+| `OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_ID` | GitHub OAuth App client ID (optional SSO) |
+| `OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
 
 ## Gateway
 
