@@ -161,6 +161,61 @@ func TestSend_NonMemberForbidden(t *testing.T) {
 	}
 }
 
+func TestHistoryBefore_ScrollBack(t *testing.T) {
+	svc, userID := setupChats(t, &echoAgent{reply: "ok"})
+	ctx := context.Background()
+	c, err := svc.PrivateChat(ctx, userID)
+	if err != nil {
+		t.Fatalf("PrivateChat: %v", err)
+	}
+	for i := 0; i < 3; i++ {
+		if _, _, err := svc.Send(ctx, userID, c.ID, "msg"); err != nil {
+			t.Fatalf("Send %d: %v", i, err)
+		}
+	}
+	// 6 messages total. Newest page of 2, oldest-first.
+	newest, err := svc.HistoryBefore(ctx, userID, c.ID, nil, 2)
+	if err != nil {
+		t.Fatalf("HistoryBefore(nil): %v", err)
+	}
+	if len(newest) != 2 {
+		t.Fatalf("newest page = %d messages, want 2", len(newest))
+	}
+	if newest[0].ID.String() >= newest[1].ID.String() {
+		t.Error("HistoryBefore is not oldest-first")
+	}
+
+	// The full forward history, for cross-checking positions.
+	all, err := svc.History(ctx, userID, c.ID, nil, 100)
+	if err != nil {
+		t.Fatalf("History: %v", err)
+	}
+	if newest[1].ID != all[5].ID || newest[0].ID != all[4].ID {
+		t.Error("newest page is not the last two messages")
+	}
+
+	// Scroll back before the oldest loaded → the two preceding messages.
+	older, err := svc.HistoryBefore(ctx, userID, c.ID, &newest[0].ID, 2)
+	if err != nil {
+		t.Fatalf("HistoryBefore(before): %v", err)
+	}
+	if len(older) != 2 || older[0].ID != all[2].ID || older[1].ID != all[3].ID {
+		t.Errorf("older page = %v, want messages [2],[3]", older)
+	}
+}
+
+func TestHistoryBefore_NonMemberForbidden(t *testing.T) {
+	svc, userID := setupChats(t, nil)
+	ctx := context.Background()
+	c, err := svc.PrivateChat(ctx, userID)
+	if err != nil {
+		t.Fatalf("PrivateChat: %v", err)
+	}
+	if _, err := svc.HistoryBefore(ctx, uuid.New(), c.ID, nil, 10); !errors.Is(err, ErrForbidden) {
+		t.Errorf("HistoryBefore by non-member err = %v, want ErrForbidden", err)
+	}
+}
+
 func TestHistory_KeysetPagination(t *testing.T) {
 	svc, userID := setupChats(t, &echoAgent{reply: "ok"})
 	ctx := context.Background()

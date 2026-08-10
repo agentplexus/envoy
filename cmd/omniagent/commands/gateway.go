@@ -466,25 +466,34 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	// Personal single-account auth: exact-pattern "/api/auth/..." and
 	// "/api/users/..." routes so they keep resolving alongside the other
 	// exact /api/* patterns above — ServeMux prefers the longer, more
-	// specific pattern (same trick as team mode's "/api/" subtree).
+	// specific pattern (same trick as team mode's "/api/" subtree). Also
+	// gate the WebSocket upgrade on the same session cookie so live agent
+	// replies (below) are never broadcast to an unauthenticated socket.
 	if personalAuthHTTP != nil {
 		gw.Handle("/api/auth/", personalAuthHTTP.Handler())
 		gw.Handle("/api/users/", personalAuthHTTP.Handler())
-		logger.Info("personal single-account auth mounted at /api/auth/")
+		gw.SetConnectAuthorizer(personalAuthHTTP.ConnectAuthorizer())
+		logger.Info("personal single-account auth mounted at /api/auth/, WebSocket cookie-authenticated")
 	}
 
 	// Personal-mode chat API, gated on a valid session cookie when
-	// single-account auth is enabled.
+	// single-account auth is enabled. The agent reply to a POST is delivered
+	// asynchronously over the WebSocket, so wire the broadcaster to the
+	// gateway (single-user mode: broadcast == deliver to the one user).
 	if personalChatHTTP != nil {
+		personalChatHTTP.SetBroadcaster(gw.Broadcast)
 		chatHandler := personalChatHTTP.ChatHandler()
+		historyHandler := personalChatHTTP.HistoryHandler()
 		sendHandler := personalChatHTTP.SendHandler()
 		if personalAuthHTTP != nil {
 			chatHandler = personalAuthHTTP.RequireAuth(chatHandler)
+			historyHandler = personalAuthHTTP.RequireAuth(historyHandler)
 			sendHandler = personalAuthHTTP.RequireAuth(sendHandler)
 		}
 		gw.Handle("/api/chat", chatHandler)
+		gw.Handle("/api/chat/history", historyHandler)
 		gw.Handle("/api/chat/messages", sendHandler)
-		logger.Info("personal chat API mounted at /api/chat")
+		logger.Info("personal chat API mounted at /api/chat (live replies over WebSocket)")
 	}
 
 	// Start gateway

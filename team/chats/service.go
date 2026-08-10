@@ -156,20 +156,83 @@ func (s *Service) History(ctx context.Context, userID, chatID uuid.UUID, cursor 
 	return msgs, err
 }
 
+// HistoryBefore returns up to limit messages older than before, oldest-first
+// (ready to prepend in a scroll-back UI — TRD §5 "Ordering/limits"). A nil
+// before returns the newest limit messages. This is the backward
+// (scroll-back) direction; History is the forward direction.
+func (s *Service) HistoryBefore(ctx context.Context, userID, chatID uuid.UUID, before *uuid.UUID, limit int) ([]*ent.Message, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	var msgs []*ent.Message
+	err := s.store.AsUser(ctx, userID, false, func(ctx context.Context, tx *ent.Tx) error {
+		if err := s.membership(ctx, tx, userID, chatID); err != nil {
+			return err
+		}
+		q := tx.Message.Query().Where(message.ChatIDEQ(chatID))
+		if before != nil {
+			exists, err := tx.Message.Query().
+				Where(message.IDEQ(*before), message.ChatIDEQ(chatID)).Exist(ctx)
+			if err != nil {
+				return err
+			}
+			if !exists {
+				return ErrForbidden
+			}
+			// IDs are UUIDv7 (time-ordered), so the ID alone is a stable
+			// keyset cursor (see History for the rationale).
+			q = q.Where(message.IDLT(*before))
+		}
+		// Fetch the newest `limit` older-than-cursor (descending), then
+		// reverse to oldest-first for the caller.
+		var err error
+		msgs, err = q.Order(ent.Desc(message.FieldID)).Limit(limit).All(ctx)
+		if err != nil {
+			return err
+		}
+		for i, j := 0, len(msgs)-1; i < j; i, j = i+1, j-1 {
+			msgs[i], msgs[j] = msgs[j], msgs[i]
+		}
+		return nil
+	})
+	if errors.Is(err, ErrForbidden) || ent.IsNotFound(err) {
+		return nil, ErrForbidden
+	}
+	return msgs, err
+}
+
 // Send persists the user's message, runs the agent's turn (private chats
 // always respond — TRD §5), persists the reply, and returns both. agentMsg
 // is nil only if the agent turn itself errors after the user message
-// already landed; callers should still show the user's message.
+// already landed; callers should still show the user's message. Send is the
+// synchronous convenience path; the HTTP layer instead calls PostUserMessage
+// then GenerateReply so the (slow) agent turn can be delivered out-of-band.
 func (s *Service) Send(ctx context.Context, userID, chatID uuid.UUID, content string) (userMsg, agentMsg *ent.Message, err error) {
+	userMsg, err = s.PostUserMessage(ctx, userID, chatID, content)
+	if err != nil {
+		return nil, nil, err
+	}
+	agentMsg, err = s.GenerateReply(ctx, chatID, userMsg.Content)
+	if err != nil {
+		return userMsg, nil, err
+	}
+	return userMsg, agentMsg, nil
+}
+
+// PostUserMessage validates and persists a user message, returning it. It
+// performs the membership check but does not run the agent turn — callers
+// wanting the reply call GenerateReply next (see Send).
+func (s *Service) PostUserMessage(ctx context.Context, userID, chatID uuid.UUID, content string) (*ent.Message, error) {
 	content = strings.TrimSpace(content)
 	if content == "" {
-		return nil, nil, ErrEmptyMessage
+		return nil, ErrEmptyMessage
 	}
 	if len(content) > MaxMessageBytes {
-		return nil, nil, fmt.Errorf("message exceeds %d bytes", MaxMessageBytes)
+		return nil, fmt.Errorf("message exceeds %d bytes", MaxMessageBytes)
 	}
 
-	err = s.store.AsUser(ctx, userID, false, func(ctx context.Context, tx *ent.Tx) error {
+	var userMsg *ent.Message
+	err := s.store.AsUser(ctx, userID, false, func(ctx context.Context, tx *ent.Tx) error {
 		if err := s.membership(ctx, tx, userID, chatID); err != nil {
 			return err
 		}
@@ -180,27 +243,34 @@ func (s *Service) Send(ctx context.Context, userID, chatID uuid.UUID, content st
 		return err
 	})
 	if errors.Is(err, ErrForbidden) || ent.IsNotFound(err) {
-		return nil, nil, ErrForbidden
+		return nil, ErrForbidden
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("persist message: %w", err)
+		return nil, fmt.Errorf("persist message: %w", err)
 	}
+	return userMsg, nil
+}
 
+// GenerateReply runs the agent's turn for content and persists the reply as
+// an agent-authored message (no membership check — the caller already
+// validated it via PostUserMessage). The reply row is written AsSystem
+// because the agent is not a user principal.
+func (s *Service) GenerateReply(ctx context.Context, chatID uuid.UUID, content string) (*ent.Message, error) {
 	reply, aerr := s.reply(ctx, chatID, content)
 	if aerr != nil {
-		return userMsg, nil, fmt.Errorf("agent turn: %w", aerr)
+		return nil, fmt.Errorf("agent turn: %w", aerr)
 	}
-
-	err = s.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
+	var agentMsg *ent.Message
+	err := s.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
 		var err error
 		agentMsg, err = tx.Message.Create().
 			SetChatID(chatID).SetAuthorType(message.AuthorTypeAgent).SetContent(reply).Save(ctx)
 		return err
 	})
 	if err != nil {
-		return userMsg, nil, fmt.Errorf("persist agent reply: %w", err)
+		return nil, fmt.Errorf("persist agent reply: %w", err)
 	}
-	return userMsg, agentMsg, nil
+	return agentMsg, nil
 }
 
 // reply runs the agent's turn, echoing the message when no agent is

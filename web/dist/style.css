@@ -157,6 +157,11 @@ form.login button {
   align-self: flex-start;
 }
 
+.msg-typing {
+  opacity: 0.6;
+  font-style: italic;
+}
+
 form.send {
   display: flex;
   gap: 0.5rem;
