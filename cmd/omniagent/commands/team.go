@@ -6,9 +6,14 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/google/uuid"
+
+	"github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omniagent/config"
 	"github.com/plexusone/omniagent/gateway"
 	"github.com/plexusone/omniagent/team"
+	"github.com/plexusone/omniagent/team/agentruntime"
+	"github.com/plexusone/omniagent/team/agents"
 	"github.com/plexusone/omniagent/team/auth"
 	"github.com/plexusone/omniagent/team/chats"
 	"github.com/plexusone/omniagent/team/mail"
@@ -16,11 +21,14 @@ import (
 )
 
 // setupTeamMode migrates the team database and builds the auth/admin and chat
-// HTTP handlers. The returned cleanup closes the store; call it on shutdown.
+// HTTP handlers. The returned cleanup closes the per-agent runtime cache and the
+// store; call it on shutdown.
 //
-// The chat service is created without an agent: group messages are persisted
-// and fanned out with no agent turn, and private DMs echo. Binding a chat to
-// its agent's runtime (persona + skills + secrets) is RMI-113/RMI-309.
+// Agent-bound chats route their turns to a per-agent runtime instance built from
+// the agent's persona + enabled skills (RMI-309), gated by the RMI-113 mention
+// policy and scoped per chat (RMI-114). The runtime is wired only when an LLM API
+// key is configured; without one, agent-bound chats stay silent and agent-less
+// private DMs echo.
 func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*gateway.TeamHTTP, *gateway.TeamChatHTTP, func(), error) {
 	tc := cfg.Team
 	if err := tc.Validate(); err != nil {
@@ -41,7 +49,15 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("open team database: %w", err)
 	}
+	// runtimeCache is assigned below when a per-agent runtime is wired; captured
+	// by reference so cleanup evicts and closes every resident instance first.
+	var runtimeCache *agentruntime.Cache
 	cleanup := func() {
+		if runtimeCache != nil {
+			if cerr := runtimeCache.Close(); cerr != nil {
+				logger.Error("close agent runtime cache", "error", cerr)
+			}
+		}
 		if cerr := st.Close(); cerr != nil {
 			logger.Error("close team store", "error", cerr)
 		}
@@ -83,11 +99,61 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		Logger:       logger,
 	})
 
+	// Agents registry (INIT-OMNIAGENT-005): gates agent-bound chat creation
+	// (Can(CapCreateChat)) and, as the runtime's ConfigLoader, supplies each
+	// agent's persona/model/skills in system context.
+	agentsSvc, err := agents.NewService(st, agents.Config{
+		AvailableSkills: cfg.Skills.Includes,
+		Logger:          logger,
+	})
+	if err != nil {
+		cleanup()
+		return nil, nil, nil, fmt.Errorf("agents service: %w", err)
+	}
+
+	// Per-agent runtime (RMI-OMNIAGENT-309): build each agent-bound chat's
+	// instance lazily from its persona + enabled skills, held in a bounded LRU.
+	// Wired only when an LLM API key is configured — without one a built agent
+	// could not complete a turn, so leaving the runtime nil keeps agent-bound
+	// chats silent (a wrong/failed reply is worse than none), exactly as before.
+	var runtime chats.AgentRuntime
+	if cfg.Agent.APIKey != "" {
+		builder := agentruntime.NewAgentBuilder(agentruntime.BuilderConfig{
+			Defaults: agent.Config{
+				Provider:     cfg.Agent.Provider,
+				Model:        cfg.Agent.Model,
+				APIKey:       cfg.Agent.APIKey,
+				BaseURL:      cfg.Agent.BaseURL,
+				Temperature:  cfg.Agent.Temperature,
+				MaxTokens:    cfg.Agent.MaxTokens,
+				SystemPrompt: cfg.Agent.SystemPrompt,
+				Timezone:     cfg.Agent.Timezone,
+			},
+			BaseOptions: getAgentOptions(),
+			Logger:      logger,
+		})
+		runtimeCache, err = agentruntime.New(agentruntime.Config{
+			Loader:  agentConfigLoader{svc: agentsSvc},
+			Builder: builder,
+			Logger:  logger,
+		})
+		if err != nil {
+			cleanup()
+			return nil, nil, nil, fmt.Errorf("agent runtime: %w", err)
+		}
+		runtime = runtimeCache
+		logger.Info("team mode: per-agent runtime enabled",
+			"provider", cfg.Agent.Provider, "model", cfg.Agent.Model)
+	} else {
+		logger.Warn("team mode: no agent API key configured — agent-bound chats will not respond")
+	}
+
 	// MemoryTenant scopes each chat turn's memory to TenantID=team,
 	// SubjectID="chat:<id>" (RMI-OMNIAGENT-114): a chat's memories are isolated
-	// to that chat. Takes effect once a per-agent runtime (RMI-309) actually
-	// runs turns; until then chats stay silent and no memory is written.
+	// to that chat.
 	chatSvc, err := chats.NewService(st, chats.Config{
+		Agents:       agentsSvc,
+		Runtime:      runtime,
 		MemoryTenant: chats.MemoryTenantTeam,
 		Logger:       logger,
 	})
@@ -103,6 +169,33 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	logger.Info("team mode enabled: database migrated (schema + RLS)",
 		"superadmin_email", tc.SuperadminEmail, "cookie_secure", secure)
 	return teamHTTP, teamChatHTTP, cleanup, nil
+}
+
+// agentConfigLoader adapts *agents.Service to agentruntime.ConfigLoader,
+// mapping the agents-owned RuntimeConfig to the runtime's AgentConfig. The
+// adapter lives at the composition root so neither package depends on the other.
+type agentConfigLoader struct {
+	svc *agents.Service
+}
+
+func (l agentConfigLoader) AgentSlug(ctx context.Context, agentID uuid.UUID) (string, error) {
+	return l.svc.AgentSlugByID(ctx, agentID)
+}
+
+func (l agentConfigLoader) LoadConfig(ctx context.Context, agentID uuid.UUID) (agentruntime.AgentConfig, error) {
+	rc, err := l.svc.LoadRuntimeConfig(ctx, agentID)
+	if err != nil {
+		return agentruntime.AgentConfig{}, err
+	}
+	return agentruntime.AgentConfig{
+		ID:       rc.ID,
+		Slug:     rc.Slug,
+		Name:     rc.Name,
+		Persona:  rc.Persona,
+		Model:    rc.Model,
+		Provider: rc.Provider,
+		Skills:   rc.Skills,
+	}, nil
 }
 
 // buildMailer returns a real SMTP mailer when configured, otherwise a log
