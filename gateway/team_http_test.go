@@ -145,6 +145,72 @@ func (f *teamHTTPFixture) get(t *testing.T, path string) *http.Response {
 	return resp
 }
 
+func (f *teamHTTPFixture) patch(t *testing.T, path, body string, csrf bool) *http.Response {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodPatch, f.server.URL+path, strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if csrf {
+		req.Header.Set(csrfHeader, "1")
+	}
+	resp, err := f.client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resp
+}
+
+// me decodes /api/auth/me for the fixture's logged-in principal.
+func (f *teamHTTPFixture) me(t *testing.T) struct {
+	UserID     string `json:"user_id"`
+	Username   string `json:"username"`
+	Email      string `json:"email"`
+	Superadmin bool   `json:"superadmin"`
+} {
+	t.Helper()
+	resp := f.get(t, "/api/auth/me")
+	defer resp.Body.Close()
+	var out struct {
+		UserID     string `json:"user_id"`
+		Username   string `json:"username"`
+		Email      string `json:"email"`
+		Superadmin bool   `json:"superadmin"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatalf("decode me: %v", err)
+	}
+	return out
+}
+
+// loginKid allowlists and logs in a second ("kid") member principal sharing
+// the fixture's server/mailer, mirroring TestTeamHTTP_CSRFAndAdminRBAC.
+func loginKid(t *testing.T, f *teamHTTPFixture, email string) *teamHTTPFixture {
+	t.Helper()
+	body := `{"email":"` + email + `"}`
+	resp := f.post(t, "/api/admin/allowlist", body, true)
+	resp.Body.Close()
+	f.post(t, "/api/auth/magic-link", body, false).Body.Close()
+	kidToken := f.mailer.lastToken(t)
+
+	jar, _ := newJar()
+	kid := &teamHTTPFixture{server: f.server, mailer: f.mailer, client: &http.Client{
+		Jar:           jar,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}}
+	kid.get(t, "/api/auth/verify?token="+kidToken).Body.Close()
+	return kid
+}
+
+// loginSuperadmin logs the fixture's client in as the configured superadmin
+// (root@example.com).
+func loginSuperadmin(t *testing.T, f *teamHTTPFixture) {
+	t.Helper()
+	f.post(t, "/api/auth/magic-link", `{"email":"root@example.com"}`, false).Body.Close()
+	f.get(t, "/api/auth/verify?token="+f.mailer.lastToken(t)).Body.Close()
+}
+
 func TestTeamHTTP_MagicLinkLoginFlow(t *testing.T) {
 	f := setupTeamHTTP(t)
 
@@ -347,4 +413,163 @@ func TestTeamHTTP_RequireAuth(t *testing.T) {
 	if !called {
 		t.Fatal("handler did not run after authentication")
 	}
+}
+
+// TestTeamHTTP_AdminListUsers covers RMI-OMNIAGENT-119: the member list shows
+// role/status/displayName, and only a superadmin may read it.
+func TestTeamHTTP_AdminListUsers(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+
+	resp := f.get(t, "/api/admin/users")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list users = %d, want 200", resp.StatusCode)
+	}
+	var listResp struct {
+		Users []userView `json:"users"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&listResp)
+	resp.Body.Close()
+	if len(listResp.Users) != 2 {
+		t.Fatalf("users = %+v, want 2 rows", listResp.Users)
+	}
+	var root, member *userView
+	for i := range listResp.Users {
+		switch listResp.Users[i].Email {
+		case "root@example.com":
+			root = &listResp.Users[i]
+		case "kid@example.com":
+			member = &listResp.Users[i]
+		}
+	}
+	if root == nil || root.Role != "superadmin" || root.Status != "active" {
+		t.Fatalf("root row = %+v", root)
+	}
+	if member == nil || member.Role != "member" || member.Status != "active" {
+		t.Fatalf("member row = %+v", member)
+	}
+
+	// A member (kid) cannot list users.
+	resp = kid.get(t, "/api/admin/users")
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("kid list users = %d, want 403", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+// TestTeamHTTP_AdminSetUserStatus covers the disable/re-enable round trip,
+// which was untested even at the service layer before this RMI.
+func TestTeamHTTP_AdminSetUserStatus(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+	kidID := kid.me(t).UserID
+
+	resp := f.patch(t, "/api/admin/users/"+kidID, `{"status":"disabled"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("disable = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+	if status := userStatus(t, f, kidID); status != "disabled" {
+		t.Fatalf("status after disable = %q, want disabled", status)
+	}
+
+	resp = f.patch(t, "/api/admin/users/"+kidID, `{"status":"active"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("re-enable = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+	if status := userStatus(t, f, kidID); status != "active" {
+		t.Fatalf("status after re-enable = %q, want active", status)
+	}
+}
+
+// userStatus looks up a user's status via the admin list endpoint.
+func userStatus(t *testing.T, f *teamHTTPFixture, userID string) string {
+	t.Helper()
+	resp := f.get(t, "/api/admin/users")
+	defer resp.Body.Close()
+	var listResp struct {
+		Users []userView `json:"users"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&listResp); err != nil {
+		t.Fatalf("decode users: %v", err)
+	}
+	for _, u := range listResp.Users {
+		if u.ID.String() == userID {
+			return u.Status
+		}
+	}
+	t.Fatalf("user %s not found in list", userID)
+	return ""
+}
+
+// TestTeamHTTP_AdminSetUserStatus_SelfLockout confirms a superadmin cannot
+// disable their own account via the admin endpoint.
+func TestTeamHTTP_AdminSetUserStatus_SelfLockout(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	rootID := f.me(t).UserID
+
+	resp := f.patch(t, "/api/admin/users/"+rootID, `{"status":"disabled"}`, true)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("self-disable = %d, want 403", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+// TestTeamHTTP_AdminRenameOtherUser confirms a superadmin may rename any
+// member via the admin endpoint (team.Service.RenameUser already allows
+// this; this test covers the new HTTP exposure).
+func TestTeamHTTP_AdminRenameOtherUser(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+	kidID := kid.me(t).UserID
+
+	resp := f.patch(t, "/api/admin/users/"+kidID, `{"username":"renamed-kid"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("rename = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	if got := kid.me(t).Username; got != "renamed-kid" {
+		t.Fatalf("kid username = %q, want renamed-kid", got)
+	}
+}
+
+// TestTeamHTTP_AdminUsers_RequiresCSRF confirms the mutating admin/users
+// route rejects requests without the CSRF header.
+func TestTeamHTTP_AdminUsers_RequiresCSRF(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	rootID := f.me(t).UserID
+
+	resp := f.patch(t, "/api/admin/users/"+rootID, `{"username":"nope"}`, false)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("patch without CSRF = %d, want 403", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+// TestTeamHTTP_PersonalModeHidesAdminUsers mirrors
+// TestTeamHTTP_PersonalModeHidesAdminAllowlist for the new admin/users
+// routes: they must not be registered at all in personal mode.
+func TestTeamHTTP_PersonalModeHidesAdminUsers(t *testing.T) {
+	f := setupTeamHTTPMode(t, true)
+	loginSuperadmin(t, f)
+	rootID := f.me(t).UserID
+
+	resp := f.get(t, "/api/admin/users")
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("personal-mode list users = %d, want 404 (not registered)", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	resp = f.patch(t, "/api/admin/users/"+rootID, `{"username":"nope"}`, true)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("personal-mode update user = %d, want 404 (not registered)", resp.StatusCode)
+	}
+	resp.Body.Close()
 }

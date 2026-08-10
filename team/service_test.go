@@ -151,11 +151,23 @@ func TestBootstrapAndService(t *testing.T) {
 	if err := svc.SetUserStatus(ctx, rootActor, alice.ID, entuser.StatusDisabled); err != nil {
 		t.Errorf("disable member: %v", err)
 	}
+	if err := svc.SetUserStatus(ctx, rootActor, alice.ID, entuser.StatusActive); err != nil {
+		t.Errorf("re-enable member: %v", err)
+	}
 
 	// --- Superadmin overview -------------------------------------------
 	users, err := svc.ListUsers(ctx, rootActor)
 	if err != nil || len(users) != 3 {
 		t.Errorf("ListUsers: %d users err=%v, want 3", len(users), err)
+	}
+	var aliceRow *ent.User
+	for _, u := range users {
+		if u.ID == alice.ID {
+			aliceRow = u
+		}
+	}
+	if aliceRow == nil || aliceRow.Status != entuser.StatusActive {
+		t.Errorf("alice status after re-enable = %+v, want active", aliceRow)
 	}
 }
 
