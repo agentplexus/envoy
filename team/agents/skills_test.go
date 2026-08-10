@@ -61,6 +61,7 @@ func setupWithCatalog(t *testing.T, available, blocked []string) *fixture {
 		t.Fatalf("NewService: %v", err)
 	}
 	f.svc = svc
+	f.st = st
 	return f
 }
 

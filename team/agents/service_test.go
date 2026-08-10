@@ -19,6 +19,7 @@ import (
 // team/store/agents_rls_test.go against PostgreSQL).
 type fixture struct {
 	svc        *Service
+	st         *store.Store
 	superadmin uuid.UUID
 	alice      uuid.UUID
 	bob        uuid.UUID
@@ -69,6 +70,7 @@ func setup(t *testing.T) *fixture {
 		t.Fatalf("NewService: %v", err)
 	}
 	f.svc = svc
+	f.st = st
 	return f
 }
 

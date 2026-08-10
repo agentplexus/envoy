@@ -319,18 +319,20 @@ func (s *Service) DeleteAgent(ctx context.Context, actor Actor, agentID uuid.UUI
 // ---- Authorization helpers ----------------------------------------------
 
 // lookup reads, via system context so the decision does not depend on RLS
-// visibility, the actor's role on an agent (if any) and whether the agent
-// exists. It is the shared substrate for requireEditor and requireOwner.
-func (s *Service) lookup(ctx context.Context, actorID, agentID uuid.UUID) (role agentrole.Role, hasRole, exists bool, err error) {
+// visibility, an agent's visibility, the actor's role on it (if any), and
+// whether it exists. It is the shared substrate for requireEditor,
+// requireOwner, and Can.
+func (s *Service) lookup(ctx context.Context, actorID, agentID uuid.UUID) (vis agent.Visibility, role agentrole.Role, hasRole, exists bool, err error) {
 	err = s.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
-		ok, e := tx.Agent.Query().Where(agent.IDEQ(agentID)).Exist(ctx)
+		a, e := tx.Agent.Get(ctx, agentID)
+		if ent.IsNotFound(e) {
+			return nil
+		}
 		if e != nil {
 			return e
 		}
-		if !ok {
-			return nil
-		}
 		exists = true
+		vis = a.Visibility
 
 		r, e := tx.AgentRole.Query().
 			Where(agentrole.AgentIDEQ(agentID), agentrole.UserIDEQ(actorID)).Only(ctx)
@@ -350,7 +352,7 @@ func (s *Service) lookup(ctx context.Context, actorID, agentID uuid.UUID) (role 
 // requireEditor authorizes a configure-level operation: owner, maintainer, or
 // superadmin. ErrNotFound when the agent is absent; ErrForbidden otherwise.
 func (s *Service) requireEditor(ctx context.Context, actor Actor, agentID uuid.UUID) error {
-	_, hasRole, exists, err := s.lookup(ctx, actor.UserID, agentID)
+	_, _, hasRole, exists, err := s.lookup(ctx, actor.UserID, agentID)
 	if err != nil {
 		return err
 	}
@@ -366,7 +368,7 @@ func (s *Service) requireEditor(ctx context.Context, actor Actor, agentID uuid.U
 // requireOwner authorizes an owner-only operation (delete, manage
 // maintainers): owner or superadmin.
 func (s *Service) requireOwner(ctx context.Context, actor Actor, agentID uuid.UUID) error {
-	role, hasRole, exists, err := s.lookup(ctx, actor.UserID, agentID)
+	_, role, hasRole, exists, err := s.lookup(ctx, actor.UserID, agentID)
 	if err != nil {
 		return err
 	}
