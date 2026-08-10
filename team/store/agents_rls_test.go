@@ -6,56 +6,17 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/plexusone/omniagent/internal/pgtest"
 	"github.com/plexusone/omniagent/team/ent"
 	"github.com/plexusone/omniagent/team/ent/agent"
 	"github.com/plexusone/omniagent/team/ent/agentrole"
 	"github.com/plexusone/omniagent/team/ent/agentskill"
-	entuser "github.com/plexusone/omniagent/team/ent/user"
 )
 
-// setupAgentFixture reuses setupRLS's user seeding (superadmin/alice/bob) so
-// this suite can run independently of the chat-focused rls_test.go.
+// setupAgentFixture reuses setupRLS's migrate + user seeding
+// (superadmin/alice/bob); the agent suite only needs the same fixture.
 func setupAgentFixture(t *testing.T) *rlsFixture {
 	t.Helper()
-	ownerDSN, appDSN := pgtest.DSNs(t)
-	ctx := context.Background()
-
-	cfg := Config{AppDSN: appDSN, MigrateDSN: ownerDSN}
-	if err := Migrate(ctx, cfg); err != nil {
-		t.Fatalf("Migrate: %v", err)
-	}
-	s, err := Open(ctx, cfg)
-	if err != nil {
-		t.Fatalf("Open: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := s.Close(); err != nil {
-			t.Errorf("Close: %v", err)
-		}
-	})
-
-	f := &rlsFixture{store: s}
-	if err := s.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
-		var err error
-		f.superadmin, err = tx.User.Create().
-			SetEmail("root@example.com").SetUsername("root").
-			SetRole(entuser.RoleSuperadmin).Save(ctx)
-		if err != nil {
-			return err
-		}
-		f.alice, err = tx.User.Create().
-			SetEmail("alice@example.com").SetUsername("alice").Save(ctx)
-		if err != nil {
-			return err
-		}
-		f.bob, err = tx.User.Create().
-			SetEmail("bob@example.com").SetUsername("bob").Save(ctx)
-		return err
-	}); err != nil {
-		t.Fatalf("seed users: %v", err)
-	}
-	return f
+	return setupRLS(t)
 }
 
 // createAgentAsUser exercises the two-step bootstrap: an authenticated user
@@ -263,7 +224,10 @@ func TestAgentsRLS(t *testing.T) {
 		}
 	})
 
-	t.Run("maintainer can self-leave", func(t *testing.T) {
+	// The next two subtests are deliberately parallel — self-leave vs. an
+	// owner removing a maintainer are distinct authorization paths through the
+	// same agent_roles DELETE policy, and the parallel structure is the point.
+	t.Run("maintainer can self-leave", func(t *testing.T) { //nolint:dupl // parallel authorization scenario, intentionally mirrored
 		a := createAgentAsUser(t, s, f.alice.ID, "leave-bot")
 		if err := s.AsUser(ctx, f.alice.ID, false, func(ctx context.Context, tx *ent.Tx) error {
 			_, err := tx.AgentRole.Create().
@@ -296,7 +260,7 @@ func TestAgentsRLS(t *testing.T) {
 		}
 	})
 
-	t.Run("only owner can remove another agent's maintainer", func(t *testing.T) {
+	t.Run("only owner can remove another agent's maintainer", func(t *testing.T) { //nolint:dupl // parallel authorization scenario, intentionally mirrored
 		a := createAgentAsUser(t, s, f.alice.ID, "remove-bot")
 		if err := s.AsUser(ctx, f.alice.ID, false, func(ctx context.Context, tx *ent.Tx) error {
 			_, err := tx.AgentRole.Create().
@@ -378,13 +342,4 @@ func TestAgentsRLS(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-}
-
-func mustParseUUID(t *testing.T, s string) (out [16]byte) {
-	t.Helper()
-	u, err := uuid.Parse(s)
-	if err != nil {
-		t.Fatalf("parse uuid %q: %v", s, err)
-	}
-	return u
 }
