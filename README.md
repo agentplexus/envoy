@@ -76,6 +76,18 @@ OmniAgent supports multiple connection methods for different use cases:
 - [Voice Gateway](#voice-gateway) - Phone calls via Twilio/Telnyx
 - [LiveKit Agents](#livekit-voice-agents) - WebRTC voice in meetings
 
+### Screenshots
+
+#### Stock Skill via OmniAgent Web Interface
+
+![web](docs/images/ss_omniagent_col-002_stock-chart_img-001_2026-06-17_redacted.png)
+
+#### Search Skill via WhatsApp
+
+![Search found](docs/images/ss_omniagent_col-001_whatsapp_img-001_2026-02-22.png)
+
+![Search not found](docs/images/ss_omniagent_col-001_whatsapp_img-002_2026-02-23.png)
+
 ## Installation
 
 ```bash
