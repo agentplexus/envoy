@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -162,6 +163,46 @@ func loadEnv(cfg *Config) {
 	}
 	if v := os.Getenv("OMNIAGENT_VOICE_TTS_VOICE_ID"); v != "" {
 		cfg.Voice.TTS.VoiceID = v
+	}
+
+	// Team (multi-user) mode
+	if os.Getenv("OMNIAGENT_TEAM_ENABLED") == "true" {
+		cfg.Team.Enabled = true
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_DATABASE_APP_DSN"); v != "" {
+		cfg.Team.Database.AppDSN = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_DATABASE_MIGRATE_DSN"); v != "" {
+		cfg.Team.Database.MigrateDSN = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_DATABASE_APP_ROLE"); v != "" {
+		cfg.Team.Database.AppRole = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_BASE_URL"); v != "" {
+		cfg.Team.BaseURL = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SUPERADMIN_EMAIL"); v != "" {
+		cfg.Team.SuperadminEmail = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_AGENT_HANDLE"); v != "" {
+		cfg.Team.AgentHandle = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SMTP_HOST"); v != "" {
+		cfg.Team.SMTP.Host = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SMTP_PORT"); v != "" {
+		if port, err := strconv.Atoi(v); err == nil {
+			cfg.Team.SMTP.Port = port
+		}
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SMTP_USERNAME"); v != "" {
+		cfg.Team.SMTP.Username = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SMTP_PASSWORD"); v != "" {
+		cfg.Team.SMTP.Password = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SMTP_FROM"); v != "" {
+		cfg.Team.SMTP.From = v
 	}
 
 	// Observability
