@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -67,15 +68,35 @@ type Actor struct {
 type Config struct {
 	// Logger defaults to slog.Default().
 	Logger *slog.Logger
+
+	// AvailableSkills is the deployment's registered skill catalog (the
+	// compiled/MCP/markdown skill names). SetAgentSkills accepts only skills
+	// in this catalog. Empty means the deployment registered none, so no
+	// skill may be enabled (RMI-302, TRD §5).
+	AvailableSkills []string
+
+	// BlockedSkills is the operator deny-list (config agents.blocked_skills):
+	// skills removed from the catalog that can never be enabled, bounding the
+	// blast radius of user-created agents (e.g. a shell/exec skill).
+	BlockedSkills []string
 }
 
 // Service exposes agent operations over the team store.
 type Service struct {
 	store  *store.Store
 	logger *slog.Logger
+
+	// allowed maps a lowercased skill name to its canonical catalog name
+	// (available minus blocked). blocked is the lowercased deny-list, kept so
+	// SetAgentSkills can report a blocked skill distinctly from an unknown one.
+	allowed     map[string]string
+	allowedList []string // canonical names, sorted, for AvailableSkills
+	blocked     map[string]bool
 }
 
-// NewService creates the agents service.
+// NewService creates the agents service. The available-skills catalog is
+// resolved once here (available minus blocked); an empty catalog is valid and
+// simply means no skill may be enabled.
 func NewService(st *store.Store, cfg Config) (*Service, error) {
 	if st == nil {
 		return nil, fmt.Errorf("agents: store is required")
@@ -83,7 +104,35 @@ func NewService(st *store.Store, cfg Config) (*Service, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
-	return &Service{store: st, logger: cfg.Logger}, nil
+
+	blocked := make(map[string]bool, len(cfg.BlockedSkills))
+	for _, b := range cfg.BlockedSkills {
+		if key := strings.ToLower(strings.TrimSpace(b)); key != "" {
+			blocked[key] = true
+		}
+	}
+	allowed := make(map[string]string)
+	for _, a := range cfg.AvailableSkills {
+		canon := strings.TrimSpace(a)
+		key := strings.ToLower(canon)
+		if key == "" || blocked[key] {
+			continue
+		}
+		allowed[key] = canon
+	}
+	allowedList := make([]string, 0, len(allowed))
+	for _, canon := range allowed {
+		allowedList = append(allowedList, canon)
+	}
+	sort.Strings(allowedList)
+
+	return &Service{
+		store:       st,
+		logger:      cfg.Logger,
+		allowed:     allowed,
+		allowedList: allowedList,
+		blocked:     blocked,
+	}, nil
 }
 
 // CreateSpec is the input to CreateAgent. Slug and Name are required; the rest
