@@ -10,9 +10,42 @@
   // re-render (e.g. logout) so we never leak a socket per render().
   var chatTeardown = null;
 
+  // Team-mode view router state (RMI-311/312/313). One SPA, several surfaces:
+  // "chat" (DMs + groups), "catalog" (discovery), "agents" (owner/maintainer
+  // config), "curation" (superadmin featured). currentCaps/currentMe are the
+  // last-fetched capability + identity so tab switches re-render without a
+  // round-trip. pendingOpenChat lets the catalog hand a freshly-started chat to
+  // the chat view to auto-open.
+  var teamView = "chat";
+  var currentCaps = null;
+  var currentMe = null;
+  var pendingOpenChat = null;
+
   function csrfHeaders(extra) {
     var h = Object.assign({ "Content-Type": "application/json" }, extra || {});
     return h;
+  }
+
+  // el is a small DOM builder used by the agents/catalog/curation views:
+  // el("div", {className:"x", onclick:fn}, [child, "text"]). Text is always set
+  // via textContent / text nodes (never innerHTML), so user-supplied strings
+  // cannot inject markup. Kept local rather than retrofitting the older chat
+  // views, which predate it.
+  function el(tag, props, children) {
+    var node = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        if (k === "className") node.className = props[k];
+        else if (k === "text") node.textContent = props[k];
+        else if (k === "onclick") node.addEventListener("click", props[k]);
+        else node[k] = props[k];
+      });
+    }
+    (children || []).forEach(function (c) {
+      if (c == null) return;
+      node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+    return node;
   }
 
   function fetchCapabilities() {
@@ -32,6 +65,20 @@
 
   function renderNav(caps, me) {
     nav.innerHTML = "";
+    // Team-mode view tabs (RMI-311/312/313): Chats, Catalog, My Agents, and
+    // Curation (superadmin only). Personal mode has a single surface and no tabs.
+    if (caps.multiUser && me) {
+      var tabs = [["chat", "Chats"], ["catalog", "Catalog"], ["agents", "My Agents"]];
+      if (me.superadmin) tabs.push(["curation", "Curation"]);
+      tabs.forEach(function (t) {
+        nav.appendChild(el("button", {
+          type: "button",
+          text: t[1],
+          className: "nav-tab" + (teamView === t[0] ? " active" : ""),
+          onclick: function () { switchTeamView(t[0]); },
+        }));
+      });
+    }
     if (caps.authRequired && me) {
       var logout = document.createElement("button");
       logout.textContent = "Log out (" + me.username + ")";
@@ -40,6 +87,36 @@
           .then(render);
       });
       nav.appendChild(logout);
+    }
+  }
+
+  // switchTeamView changes the active team-mode surface: it re-renders the nav
+  // (to move the active marker) and mounts the chosen view. Used by the tabs and
+  // by the catalog after starting a chat.
+  function switchTeamView(name) {
+    teamView = name;
+    renderNav(currentCaps, currentMe);
+    mountTeamView();
+  }
+
+  // mountTeamView renders the current team surface into #app, first tearing down
+  // any live chat view so its WebSocket/timers do not leak across a switch.
+  function mountTeamView() {
+    if (chatTeardown) {
+      chatTeardown();
+      chatTeardown = null;
+    }
+    app.innerHTML = "";
+    var me = currentMe;
+    if (teamView === "catalog") {
+      app.appendChild(renderCatalog(me));
+    } else if (teamView === "agents") {
+      app.appendChild(renderAgents(me));
+    } else if (teamView === "curation" && me && me.superadmin) {
+      app.appendChild(renderCuration(me));
+    } else {
+      teamView = "chat";
+      app.appendChild(renderTeamChat(me));
     }
   }
 
@@ -955,6 +1032,12 @@
       .then(function () {
         status.textContent = state.chats.length ? "" : "Start a DM with the agent or create a group.";
         connectWS();
+        // A chat just started from the catalog (RMI-312) is auto-opened here.
+        if (pendingOpenChat) {
+          var target = pendingOpenChat;
+          pendingOpenChat = null;
+          selectChat(target);
+        }
       })
       .catch(function (err) {
         if (err.message === "unauthenticated") return;
@@ -963,6 +1046,445 @@
       });
 
     return wrap;
+  }
+
+  // ---- Catalog: discover agents, start chats (RMI-312) ------------------
+
+  function renderCatalog() {
+    var section = el("section", { className: "catalog" });
+    var status = el("p", { className: "loading", text: "Loading catalog…" });
+    section.appendChild(status);
+
+    // startChat hands the new chat to the chat view, which auto-opens it.
+    function startDM(entry) {
+      jsonFetch("/api/chats/agents/" + encodeURIComponent(entry.id) + "/dm", {
+        method: "POST",
+        headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+      })
+        .then(function (chat) {
+          pendingOpenChat = { id: chat.id, type: chat.type, name: chat.name };
+          switchTeamView("chat");
+        })
+        .catch(function (err) {
+          if (err.message === "unauthenticated") return;
+          status.className = "error";
+          status.textContent = "Could not start chat: " + err.message;
+        });
+    }
+
+    function startGroup(entry) {
+      var name = window.prompt("Group name:");
+      if (name === null) return;
+      name = name.trim();
+      if (!name) return;
+      jsonFetch("/api/chats/agents/" + encodeURIComponent(entry.id) + "/group", {
+        method: "POST",
+        headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+        body: JSON.stringify({ name: name }),
+      })
+        .then(function (chat) {
+          pendingOpenChat = { id: chat.id, type: chat.type, name: chat.name };
+          switchTeamView("chat");
+        })
+        .catch(function (err) {
+          if (err.message === "unauthenticated") return;
+          status.className = "error";
+          status.textContent = "Could not create group: " + err.message;
+        });
+    }
+
+    function card(entry) {
+      var head = el("div", { className: "agent-card-head" }, [
+        el("span", { className: "agent-card-name", text: entry.name }),
+        entry.featured ? el("span", { className: "badge featured", text: "Featured" }) : null,
+      ]);
+      var body = [head];
+      if (entry.description) {
+        body.push(el("p", { className: "agent-card-desc", text: entry.description }));
+      }
+      var actions = el("div", { className: "agent-card-actions" });
+      if (entry.canStart) {
+        actions.appendChild(el("button", { type: "button", text: "Chat", onclick: function () { startDM(entry); } }));
+        actions.appendChild(el("button", { type: "button", text: "New group", onclick: function () { startGroup(entry); } }));
+      } else {
+        actions.appendChild(el("span", { className: "muted", text: "No access" }));
+      }
+      body.push(actions);
+      return el("li", { className: "agent-card" }, body);
+    }
+
+    function sectionFor(title, entries) {
+      var wrap = el("div", { className: "catalog-section" }, [el("h3", { text: title })]);
+      if (!entries.length) {
+        wrap.appendChild(el("p", { className: "muted", text: "None yet." }));
+        return wrap;
+      }
+      var ul = el("ul", { className: "agent-cards" });
+      entries.forEach(function (e) { ul.appendChild(card(e)); });
+      wrap.appendChild(ul);
+      return wrap;
+    }
+
+    jsonFetch("/api/catalog")
+      .then(function (cat) {
+        status.remove();
+        var featured = cat.featured || [];
+        var listed = cat.listed || [];
+        if (!featured.length && !listed.length) {
+          section.appendChild(el("p", { className: "muted", text: "No agents are listed yet. Create one under My Agents and set it to Listed." }));
+          return;
+        }
+        section.appendChild(sectionFor("Featured", featured));
+        section.appendChild(sectionFor("All agents", listed));
+      })
+      .catch(function (err) {
+        if (err.message === "unauthenticated") return;
+        status.className = "error";
+        status.textContent = "Failed to load catalog: " + err.message;
+      });
+
+    return section;
+  }
+
+  // ---- My Agents: owner/maintainer configuration (RMI-311) --------------
+
+  function renderAgents() {
+    var section = el("section", { className: "agents-area" });
+    var content = el("div", { className: "agents-content" });
+    section.appendChild(content);
+
+    function setError(node, err) {
+      if (err.message === "unauthenticated") return;
+      node.className = "error";
+      node.textContent = err.message;
+    }
+
+    // ---- List view ----
+    function showList() {
+      content.innerHTML = "";
+      var bar = el("div", { className: "agents-bar" }, [
+        el("h2", { className: "view-title", text: "My Agents" }),
+        el("button", { type: "button", text: "New agent", onclick: showCreate }),
+      ]);
+      content.appendChild(bar);
+      var status = el("p", { className: "loading", text: "Loading…" });
+      content.appendChild(status);
+
+      jsonFetch("/api/agents")
+        .then(function (body) {
+          status.remove();
+          var agents = body.agents || [];
+          if (!agents.length) {
+            content.appendChild(el("p", { className: "muted", text: "You do not own or maintain any agents yet." }));
+            return;
+          }
+          var ul = el("ul", { className: "agent-cards" });
+          agents.forEach(function (a) {
+            ul.appendChild(el("li", { className: "agent-card link", onclick: function () { showDetail(a.id); } }, [
+              el("div", { className: "agent-card-head" }, [
+                el("span", { className: "agent-card-name", text: a.name }),
+                el("span", { className: "badge " + a.visibility, text: a.visibility }),
+                a.featured ? el("span", { className: "badge featured", text: "Featured" }) : null,
+              ]),
+              el("p", { className: "agent-card-desc muted", text: "@" + a.slug }),
+            ]));
+          });
+          content.appendChild(ul);
+        })
+        .catch(function (err) { setError(status, err); });
+    }
+
+    // ---- Create view ----
+    function showCreate() {
+      content.innerHTML = "";
+      content.appendChild(el("h2", { className: "view-title", text: "New agent" }));
+      var status = el("p", { className: "error" });
+
+      var slug = el("input", { type: "text", placeholder: "slug (3-32 chars, a-z 0-9 - _)", autocomplete: "off" });
+      var name = el("input", { type: "text", placeholder: "Display name", autocomplete: "off" });
+      var desc = el("textarea", { placeholder: "Short description (shown in the catalog)", rows: 2 });
+      var persona = el("textarea", { placeholder: "Persona / system prompt", rows: 5 });
+      var model = el("input", { type: "text", placeholder: "Model (optional — deployment default)", autocomplete: "off" });
+      var provider = el("input", { type: "text", placeholder: "Provider (optional — deployment default)", autocomplete: "off" });
+
+      var form = el("form", { className: "agent-form" }, [
+        field("Slug", slug), field("Name", name), field("Description", desc),
+        field("Persona", persona), field("Model", model), field("Provider", provider),
+        el("div", { className: "form-actions" }, [
+          el("button", { type: "submit", text: "Create" }),
+          el("button", { type: "button", text: "Cancel", onclick: showList }),
+        ]),
+        status,
+      ]);
+      form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        status.textContent = "";
+        jsonFetch("/api/agents", {
+          method: "POST",
+          headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+          body: JSON.stringify({
+            slug: slug.value.trim(), name: name.value.trim(), description: desc.value,
+            persona: persona.value, model: model.value.trim(), provider: provider.value.trim(),
+          }),
+        })
+          .then(function (a) { showDetail(a.id); })
+          .catch(function (err) { setError(status, err); });
+      });
+      content.appendChild(form);
+    }
+
+    // ---- Detail / edit view ----
+    function showDetail(id) {
+      content.innerHTML = "";
+      var status = el("p", { className: "loading", text: "Loading…" });
+      content.appendChild(el("button", { type: "button", className: "back", text: "← Back", onclick: showList }));
+      content.appendChild(status);
+
+      jsonFetch("/api/agents/" + encodeURIComponent(id))
+        .then(function (d) {
+          status.remove();
+          content.appendChild(el("h2", { className: "view-title", text: d.name }));
+          content.appendChild(el("p", { className: "muted", text: "@" + d.slug }));
+          if (d.caps.configure) {
+            content.appendChild(configCard(d));
+            content.appendChild(skillsCard(d));
+          }
+          if (d.caps.manageRegistry) {
+            content.appendChild(visibilityCard(d));
+          }
+          content.appendChild(maintainersCard(d));
+          content.appendChild(dangerCard(d));
+        })
+        .catch(function (err) { setError(status, err); });
+    }
+
+    function configCard(d) {
+      var status = el("p", { className: "error" });
+      var name = el("input", { type: "text", value: d.name, autocomplete: "off" });
+      var desc = el("textarea", { rows: 2 }); desc.value = d.description || "";
+      var persona = el("textarea", { rows: 5 }); persona.value = d.persona || "";
+      var model = el("input", { type: "text", value: d.model || "", autocomplete: "off" });
+      var provider = el("input", { type: "text", value: d.provider || "", autocomplete: "off" });
+      var form = el("form", { className: "agent-form" }, [
+        field("Name", name), field("Description", desc), field("Persona", persona),
+        field("Model", model), field("Provider", provider),
+        el("div", { className: "form-actions" }, [el("button", { type: "submit", text: "Save changes" })]),
+        status,
+      ]);
+      form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        status.className = "error"; status.textContent = "";
+        jsonFetch("/api/agents/" + encodeURIComponent(d.id), {
+          method: "PATCH",
+          headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+          body: JSON.stringify({
+            name: name.value.trim(), description: desc.value, persona: persona.value,
+            model: model.value.trim(), provider: provider.value.trim(),
+          }),
+        })
+          .then(function () { status.className = "ok"; status.textContent = "Saved."; })
+          .catch(function (err) { setError(status, err); });
+      });
+      return card("Configuration", form);
+    }
+
+    function skillsCard(d) {
+      var status = el("p", { className: "error" });
+      var available = d.availableSkills || [];
+      var enabled = {};
+      (d.enabledSkills || []).forEach(function (s) { enabled[s] = true; });
+      var boxes = el("div", { className: "skill-list" });
+      if (!available.length) {
+        boxes.appendChild(el("p", { className: "muted", text: "No skills are available in this deployment." }));
+      }
+      var inputs = [];
+      available.forEach(function (s) {
+        var cb = el("input", { type: "checkbox", value: s });
+        cb.checked = !!enabled[s];
+        inputs.push(cb);
+        boxes.appendChild(el("label", { className: "skill" }, [cb, " " + s]));
+      });
+      var save = el("button", { type: "button", text: "Save skills", onclick: function () {
+        status.className = "error"; status.textContent = "";
+        var chosen = inputs.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+        jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/skills", {
+          method: "PUT",
+          headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+          body: JSON.stringify({ skills: chosen }),
+        })
+          .then(function () { status.className = "ok"; status.textContent = "Saved."; })
+          .catch(function (err) { setError(status, err); });
+      } });
+      return card("Skills", el("div", {}, [boxes, el("div", { className: "form-actions" }, [save]), status]));
+    }
+
+    function visibilityCard(d) {
+      var status = el("p", { className: "error" });
+      var sel = el("select", {}, [
+        el("option", { value: "private", text: "Private — only editors can start chats" }),
+        el("option", { value: "listed", text: "Listed — anyone can discover and start" }),
+      ]);
+      sel.value = d.visibility;
+      var save = el("button", { type: "button", text: "Save visibility", onclick: function () {
+        status.className = "error"; status.textContent = "";
+        jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/visibility", {
+          method: "PUT",
+          headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+          body: JSON.stringify({ visibility: sel.value }),
+        })
+          .then(function () { status.className = "ok"; status.textContent = "Saved."; })
+          .catch(function (err) { setError(status, err); });
+      } });
+      return card("Visibility", el("div", {}, [sel, el("div", { className: "form-actions" }, [save]), status]));
+    }
+
+    function maintainersCard(d) {
+      var status = el("p", { className: "error" });
+      var list = el("ul", { className: "member-list" });
+      var body = el("div", {}, [list]);
+
+      function reload() {
+        jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/roles")
+          .then(function (r) { renderRoles(r.roles || []); })
+          .catch(function (err) { setError(status, err); });
+      }
+      function renderRoles(roles) {
+        list.innerHTML = "";
+        roles.forEach(function (m) {
+          var isMe = currentMe && m.userId === currentMe.user_id;
+          var li = el("li", {}, [
+            el("span", { text: m.username + (isMe ? " (you)" : "") }),
+            el("span", { className: "member-role", text: m.role }),
+          ]);
+          // Owners/superadmin may remove other non-owner holders.
+          if (d.caps.manageMaintainers && m.role !== "owner" && !isMe) {
+            li.appendChild(el("button", { type: "button", className: "member-remove", text: "Remove", onclick: function () {
+              jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/maintainers/" + encodeURIComponent(m.userId), {
+                method: "DELETE", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+              }).then(reload).catch(function (err) { setError(status, err); });
+            } }));
+          }
+          list.appendChild(li);
+        });
+      }
+
+      if (d.caps.manageMaintainers) {
+        var uname = el("input", { type: "text", placeholder: "username to add", autocomplete: "off" });
+        var invite = el("form", { className: "invite" }, [uname, el("button", { type: "submit", text: "Add maintainer" })]);
+        invite.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          var u = uname.value.trim();
+          if (!u) return;
+          status.className = "error"; status.textContent = "";
+          jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/maintainers", {
+            method: "POST", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }), body: JSON.stringify({ username: u }),
+          }).then(function () { uname.value = ""; reload(); }).catch(function (err) { setError(status, err); });
+        });
+        body.appendChild(invite);
+      }
+      body.appendChild(status);
+      reload();
+      return card("Maintainers", body);
+    }
+
+    function dangerCard(d) {
+      var status = el("p", { className: "error" });
+      var buttons = [];
+      // Self-leave (any role holder).
+      buttons.push(el("button", { type: "button", className: "leave-btn", text: "Leave this agent", onclick: function () {
+        if (!window.confirm("Leave this agent? You will lose your role on it.")) return;
+        jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/leave", {
+          method: "POST", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+        }).then(showList).catch(function (err) { setError(status, err); });
+      } }));
+      // Delete (owner/superadmin — mirrors ManageMaintainers gate).
+      if (d.caps.manageMaintainers) {
+        buttons.push(el("button", { type: "button", className: "member-remove", text: "Delete agent", onclick: function () {
+          if (!window.confirm("Delete this agent permanently? Its skills and roles are removed.")) return;
+          jsonFetch("/api/agents/" + encodeURIComponent(d.id), {
+            method: "DELETE", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+          }).then(showList).catch(function (err) { setError(status, err); });
+        } }));
+      }
+      return card("Danger zone", el("div", {}, [el("div", { className: "form-actions" }, buttons), status]));
+    }
+
+    showList();
+    return section;
+  }
+
+  // field wraps a labeled control for the agent forms.
+  function field(label, control) {
+    return el("label", { className: "form-field" }, [el("span", { className: "form-label", text: label }), control]);
+  }
+
+  // card is a titled panel used across the agent detail view.
+  function card(title, body) {
+    return el("section", { className: "panel" }, [el("h3", { className: "panel-title", text: title }), body]);
+  }
+
+  // ---- Superadmin curation: featured agents (RMI-313) -------------------
+
+  function renderCuration() {
+    var section = el("section", { className: "curation" });
+    section.appendChild(el("p", { className: "muted", text: "Feature listed agents to promote them to the top of everyone's catalog." }));
+    var status = el("p", { className: "loading", text: "Loading…" });
+    section.appendChild(status);
+    var container = el("div");
+    section.appendChild(container);
+
+    function toggle(entry) {
+      jsonFetch("/api/agents/" + encodeURIComponent(entry.id) + "/featured", {
+        method: "PUT",
+        headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+        body: JSON.stringify({ featured: !entry.featured }),
+      })
+        .then(load)
+        .catch(function (err) {
+          if (err.message === "unauthenticated") return;
+          status.className = "error";
+          status.textContent = "Could not update: " + err.message;
+        });
+    }
+
+    function group(title, entries) {
+      container.appendChild(el("h3", { text: title }));
+      if (!entries.length) {
+        container.appendChild(el("p", { className: "muted", text: "None." }));
+        return;
+      }
+      var ul = el("ul", { className: "agent-cards" });
+      entries.forEach(function (e) {
+        ul.appendChild(el("li", { className: "agent-card" }, [
+          el("div", { className: "agent-card-head" }, [
+            el("span", { className: "agent-card-name", text: e.name }),
+            e.featured ? el("span", { className: "badge featured", text: "Featured" }) : null,
+          ]),
+          el("div", { className: "agent-card-actions" }, [
+            el("button", { type: "button", text: e.featured ? "Unfeature" : "Feature", onclick: function () { toggle(e); } }),
+          ]),
+        ]));
+      });
+      container.appendChild(ul);
+    }
+
+    function load() {
+      container.innerHTML = "";
+      jsonFetch("/api/catalog")
+        .then(function (cat) {
+          status.remove();
+          group("Featured", cat.featured || []);
+          group("Listed", cat.listed || []);
+        })
+        .catch(function (err) {
+          if (err.message === "unauthenticated") return;
+          status.className = "error";
+          status.textContent = "Failed to load: " + err.message;
+        });
+    }
+
+    load();
+    return section;
   }
 
   function render() {
@@ -975,6 +1497,9 @@
       .then(function (caps) {
         var showLogin = caps.authRequired;
         return (showLogin ? fetchMe() : Promise.resolve(null)).then(function (me) {
+          currentCaps = caps;
+          currentMe = me;
+          if (!me) teamView = "chat"; // reset the active surface across logout
           renderNav(caps, me);
           if (showLogin && !me) {
             app.appendChild(renderLogin());
@@ -984,9 +1509,10 @@
             app.appendChild(renderChat());
             return;
           }
-          // Team mode: private DMs + group chats (rendered only when
-          // multiUser, per the capability gate).
-          app.appendChild(renderTeamChat(me));
+          // Team mode: a small view router over the chat, catalog, agents, and
+          // curation surfaces (rendered only when multiUser, per the capability
+          // gate). mountTeamView owns #app from here.
+          mountTeamView();
         });
       })
       .catch(function (err) {

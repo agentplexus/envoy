@@ -376,3 +376,181 @@ form.invite button {
   .chat-list { max-height: 30vh; }
   .chat-pane { height: 70vh; }
 }
+
+/* ---- Team-mode view tabs (RMI-311/312/313) ---- */
+
+.nav-tab.active {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.muted { color: var(--muted); }
+.ok { color: #1e8e3e; }
+
+.view-title { font-size: 1.15rem; margin: 0 0 0.75rem; }
+
+/* ---- Catalog + agent lists (RMI-311/312) ---- */
+
+.catalog-section { margin-bottom: 1.5rem; }
+.catalog-section h3, .curation h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+
+.agent-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.agent-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.agent-card.link { cursor: pointer; }
+.agent-card.link:hover { background: rgba(127, 127, 127, 0.08); }
+
+.agent-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.agent-card-name { font-weight: 600; }
+
+.agent-card-desc {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.agent-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.agent-card-actions button {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+}
+
+.badge {
+  font-size: 0.68rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.badge.featured { color: #b8860b; border-color: #b8860b; }
+.badge.listed { color: #1e8e3e; border-color: #1e8e3e; }
+.badge.private { color: var(--muted); }
+
+/* ---- Agents area: bar, forms, panels (RMI-311) ---- */
+
+.agents-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.agents-bar button, .back {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+}
+
+.back { margin-bottom: 0.75rem; }
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.panel-title { margin: 0 0 0.6rem; font-size: 0.95rem; }
+
+.agent-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.form-label { font-size: 0.75rem; color: var(--muted); }
+
+.agent-form input,
+.agent-form textarea,
+.curation select,
+.panel select {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  width: 100%;
+}
+
+.agent-form textarea, .panel textarea { resize: vertical; }
+
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.form-actions button {
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.form-actions .member-remove {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: #c0392b;
+}
+
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.skill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.skill input { width: auto; }
