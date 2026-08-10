@@ -49,15 +49,18 @@
 ## Phase 3 — Private & Group Chats
 
 **Theme:** Agent-anchored chats with membership fan-out and @-mention agent policy.
-**Status:** In progress — 3 of 5 items completed
+**Status:** In progress — 4 of 5 items completed
 
 > **Cross-initiative dependency:** rescoped onto `INIT-OMNIAGENT-005` (Virtual
 > Agents, Roles & Registry) — a chat attaches to an `agent_id` and creation is
 > gated by `Can(CapCreateChat)`. INIT-005 **RMI-308** adds `chats.agent_id` +
 > the `Can()` gate on top of RMI-110; INIT-005 Phases 1–3 must land before this
 > phase completes. RMI-110/111/112 (chat/membership/message/fan-out) carry no
-> INIT-005 dependency and are complete; **RMI-113/114 remain blocked** on the
-> INIT-005 agent entity + `Can()` + per-agent runtime binding.
+> INIT-005 dependency and are complete; **RMI-113** (mention policy + agent
+> turns) is complete on top of INIT-005 RMI-308 — the per-agent runtime is
+> reached through the `chats.AgentRuntime` seam that INIT-005 **RMI-309** fills
+> (until then agent-bound chats stay silent). **RMI-114** remains blocked on
+> RMI-113 + per-chat memory scoping.
 
 - [x] `RMI-OMNIAGENT-110` Chat + membership service
   - Acceptance: DM (private) with an agent created on demand for permitted users, one per user per agent; group create/invite/leave/remove with chat owner/superadmin rules; invitees join as conversants with no agent-config rights. Implemented in `team/chats`: `CreateGroup`, `Invite` (by username, resolved in system context since RLS hides other users; idempotent; owner/superadmin only), `Leave` (self-leave with sole-owner orphan guard), `RemoveMember` (owner/superadmin; owners not removable, no self-remove), `ListChats`/`GetChat`/`Members`/`MembersDetailed` (member/superadmin scoped). Backstopped by the existing chats/chat_members RLS policies (Postgres) and enforced at the service layer for the SQLite path.
@@ -67,9 +70,9 @@
 - [x] `RMI-OMNIAGENT-112` WebSocket chat rooms + fan-out
   - Depends on: `RMI-OMNIAGENT-110`
   - Acceptance: membership-validated subscribe; commit-then-broadcast to all connected members; no cross-chat leakage. `Gateway.BroadcastToUsers` delivers a persisted message only to the sockets whose bound `user_id` is in the chat's member set (computed per send); non-members and unauthenticated sockets never receive it. Persist-then-fan-out: the HTTP handler persists the user message, then broadcasts a `chat.message` event (channel = chat ID) to members; private DMs additionally run the agent turn out-of-band and fan out the reply.
-- [ ] `RMI-OMNIAGENT-113` Mention policy + agent turns
+- [x] `RMI-OMNIAGENT-113` Mention policy + agent turns
   - Depends on: `RMI-OMNIAGENT-111`, `RMI-OMNIAGENT-112`, `INIT-OMNIAGENT-005` (agent entity + `Can()` + runtime binding)
-  - Acceptance: group = respond only on `@<agent-slug>`; private = always; chat runs on the bound agent's runtime (persona + enabled skills + agent secrets); agent session keyed `chat:<id>`; reply persisted then broadcast; never self-replies
+  - Acceptance: group = respond only on `@<agent-slug>`; private = always; chat runs on the bound agent's runtime (persona + enabled skills + agent secrets); agent session keyed `chat:<id>`; reply persisted then broadcast; never self-replies. `chats.Service.AgentTurn` applies the policy: a private chat always takes a turn; a group chat takes one only when the user message @-mentions the bound agent's slug (`mentionsAgent` — whole-token, case-insensitive, honoring hyphen/underscore slug chars, so `@helperbot`/`me@helper` do not match `helper`). Routing goes through the `AgentRuntime` seam (`Slug` for the cheap mention check, `Processor` built only when the agent actually responds) which INIT-005 **RMI-309** fills with the per-agent runtime (persona + enabled skills + agent secrets); until a runtime is wired an agent-bound chat stays silent rather than answering as the wrong agent, and agent-less DMs use the fallback processor (personal mode). The session is keyed `chat:<id>` (`SessionID`); the reply is persisted `author_type=agent` (AsSystem) then fanned out to members. No self-replies: the turn runs only on a user message and its reply is agent-authored, which no user can post. Covered by sqlite-backed tests (mention table + private/group × mention/no-mention × runtime/no-runtime/agent-less).
 - [ ] `RMI-OMNIAGENT-114` Memory/tool scoping per chat
   - Depends on: `RMI-OMNIAGENT-113`
   - Acceptance: TenantID=team, SubjectID=chat; skills/model/persona are agent config (owner/maintainer-managed via INIT-005), not per-chat overrides; rollover works per chat
