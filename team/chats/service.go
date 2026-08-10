@@ -1,9 +1,11 @@
-// Package chats is the chat/membership/message service layer: DM (private)
-// chats with the agent, message persistence, and the agent turn. Group
-// chats, the @-mention policy, and the INIT-OMNIAGENT-005 agent registry
-// (Can(CapCreateChat), chats.agent_id) are out of scope here — this is the
-// personal-mode slice (TRD §5): one implicit user, one private chat, the
-// agent always responds.
+// Package chats is the chat/membership/message service layer: private (DM) and
+// group chats, membership, message persistence, and the agent turn. It serves
+// both the personal-mode slice (TRD §5: one implicit user, one private chat, the
+// agent always responds) and team mode: group chats (RMI-110), the @-mention
+// agent policy (RMI-113), the INIT-OMNIAGENT-005 agent registry binding
+// (Can(CapCreateChat), chats.agent_id — RMI-308), and per-chat memory scoping
+// (TenantID=team, SubjectID="chat:<id>" — RMI-114). The per-agent runtime the
+// agent turn routes to is supplied through the AgentRuntime seam (RMI-309).
 package chats
 
 import (
@@ -16,6 +18,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/plexusone/omniagent/memscope"
 	"github.com/plexusone/omniagent/team/ent"
 	"github.com/plexusone/omniagent/team/ent/chat"
 	"github.com/plexusone/omniagent/team/ent/chatmember"
@@ -47,6 +50,11 @@ var (
 	// attempted but no AgentGate is configured (personal mode).
 	ErrNoAgentRegistry = errors.New("agent registry not configured")
 )
+
+// MemoryTenantTeam is the memory tenant for team-mode chats (RMI-OMNIAGENT-114):
+// every chat turn's memory is attributed to this tenant, subject-scoped per chat.
+// The composition root passes it as Config.MemoryTenant in team mode.
+const MemoryTenantTeam = "team"
 
 // MaxMessageBytes caps a single message's length (TRD §5).
 const MaxMessageBytes = 32 << 10
@@ -106,17 +114,24 @@ type Config struct {
 	// agent turn (RMI-113). Nil when no per-agent runtime is wired: agent-bound
 	// chats then take no turn (see AgentRuntime).
 	Runtime AgentRuntime
+	// MemoryTenant, when non-empty, scopes every agent turn's memory to this
+	// tenant and to the chat (SubjectID="chat:<id>") — TenantID=team,
+	// SubjectID=chat (RMI-OMNIAGENT-114), so each chat's memories are isolated
+	// from every other chat. Empty (personal mode) leaves memory scoping to the
+	// agent's own configuration, unchanged. Set it to "team" in team mode.
+	MemoryTenant string
 	// Logger defaults to slog.Default().
 	Logger *slog.Logger
 }
 
 // Service exposes chat operations over the store.
 type Service struct {
-	store   *store.Store
-	agent   AgentProcessor
-	agents  AgentGate
-	runtime AgentRuntime
-	logger  *slog.Logger
+	store        *store.Store
+	agent        AgentProcessor
+	agents       AgentGate
+	runtime      AgentRuntime
+	memoryTenant string
+	logger       *slog.Logger
 }
 
 // NewService creates the chats service.
@@ -127,7 +142,7 @@ func NewService(st *store.Store, cfg Config) (*Service, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
-	return &Service{store: st, agent: cfg.Agent, agents: cfg.Agents, runtime: cfg.Runtime, logger: cfg.Logger}, nil
+	return &Service{store: st, agent: cfg.Agent, agents: cfg.Agents, runtime: cfg.Runtime, memoryTenant: cfg.MemoryTenant, logger: cfg.Logger}, nil
 }
 
 // SessionID returns the agent session key for a chat (TRD §5): one session
@@ -405,6 +420,19 @@ func (s *Service) resolveTurn(ctx context.Context, c *ent.Chat, content string) 
 func (s *Service) runTurn(ctx context.Context, proc AgentProcessor, chatID uuid.UUID, content string) (string, error) {
 	if proc == nil {
 		return "Message received: " + content, nil
+	}
+	// Scope this turn's memory to the chat (RMI-OMNIAGENT-114): TenantID=team,
+	// SubjectID="chat:<id>". The agent's automatic recall/rollover and the
+	// memory skill's tools honor the stamped scope, so a chat's memories are
+	// isolated to that chat. The scope carries memory attribution only — never
+	// model, tools, or persona — so a chat cannot override its agent's config;
+	// those stay owner/maintainer-managed (INIT-005). In personal mode
+	// (memoryTenant empty) no scope is stamped and memory scoping is unchanged.
+	if s.memoryTenant != "" {
+		ctx = memscope.NewContext(ctx, memscope.Scope{
+			TenantID:  s.memoryTenant,
+			SubjectID: SessionID(chatID),
+		})
 	}
 	return proc.Process(ctx, SessionID(chatID), content)
 }

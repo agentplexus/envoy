@@ -9,6 +9,8 @@ import (
 
 	"github.com/plexusone/omnimemory/core"
 	"github.com/plexusone/omniskill/skill"
+
+	"github.com/plexusone/omniagent/memscope"
 )
 
 const (
@@ -227,13 +229,28 @@ func (s *Skill) Tools() []skill.Tool {
 	}
 }
 
-// memoryContext creates an omnimemory context for operations.
-func (s *Skill) memoryContext(subjectID string) core.Context {
+// memoryContext creates an omnimemory context for operations. A memory scope
+// stamped on ctx (e.g. a chat turn scoped to TenantID=team, SubjectID="chat:<id>"
+// — RMI-OMNIAGENT-114) sets the tenant and the default subject, so tool-driven
+// memory lands in the same per-chat scope as the agent's automatic recall. An
+// explicit subject_id argument still wins for that one operation; absent both a
+// scope subject and an explicit subject, memory defaults to the tenant subject.
+func (s *Skill) memoryContext(ctx context.Context, subjectID string) core.Context {
+	tenantID := s.tenantID
+	scope, scoped := memscope.FromContext(ctx)
+	if scoped && scope.TenantID != "" {
+		tenantID = scope.TenantID
+	}
 	if subjectID == "" {
-		subjectID = s.tenantID // Default to tenant if no subject specified
+		switch {
+		case scoped && scope.SubjectID != "":
+			subjectID = scope.SubjectID
+		default:
+			subjectID = tenantID // Default to tenant if no subject specified
+		}
 	}
 	return core.Context{
-		TenantID:  s.tenantID,
+		TenantID:  tenantID,
 		SubjectID: subjectID,
 		AgentID:   s.agentID,
 	}
@@ -270,7 +287,7 @@ func (s *Skill) handleStore(ctx context.Context, params map[string]any) (any, er
 		}
 	}
 
-	memCtx := s.memoryContext(input.SubjectID)
+	memCtx := s.memoryContext(ctx, input.SubjectID)
 	memCtx.Scope = scope
 
 	mem, err := s.client.Add(ctx, &core.AddRequest{
@@ -321,7 +338,7 @@ func (s *Skill) handleSearch(ctx context.Context, params map[string]any) (any, e
 	}
 
 	resp, err := s.client.Search(ctx, &core.SearchRequest{
-		Context: s.memoryContext(""),
+		Context: s.memoryContext(ctx, ""),
 		Query:   input.Query,
 		Types:   types,
 		Scopes:  scopes,
@@ -373,7 +390,7 @@ func (s *Skill) handleRecall(ctx context.Context, params map[string]any) (any, e
 	}
 
 	resp, err := s.client.Recall(ctx, &core.RecallRequest{
-		Context:      s.memoryContext(""),
+		Context:      s.memoryContext(ctx, ""),
 		Query:        input.Query,
 		MaxResults:   maxResults,
 		IncludeTypes: types,
@@ -433,7 +450,7 @@ func (s *Skill) handleList(ctx context.Context, params map[string]any) (any, err
 	}
 
 	resp, err := s.client.List(ctx, &core.ListRequest{
-		Context: s.memoryContext(""),
+		Context: s.memoryContext(ctx, ""),
 		Types:   types,
 		Scopes:  scopes,
 		Limit:   limit,
@@ -473,7 +490,7 @@ func (s *Skill) handleDelete(ctx context.Context, params map[string]any) (any, e
 	}
 
 	if err := s.client.Delete(ctx, &core.DeleteRequest{
-		Context: s.memoryContext(""),
+		Context: s.memoryContext(ctx, ""),
 		ID:      input.ID,
 	}); err != nil {
 		return nil, fmt.Errorf("delete memory: %w", err)

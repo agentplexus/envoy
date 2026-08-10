@@ -23,6 +23,7 @@ import (
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/cron"
 	"github.com/plexusone/omniagent/hooks"
+	"github.com/plexusone/omniagent/memscope"
 	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omniagent/skills"
 	"github.com/plexusone/omniagent/skills/compiled"
@@ -291,10 +292,14 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 		if session != nil {
 			sessionID = session.ID
 		}
+		// A caller may stamp a memory scope on the context (e.g. a chat turn
+		// scopes to TenantID=team, SubjectID="chat:<id>" — RMI-OMNIAGENT-114).
+		// When unset, fall back to the agent's tenant and the session subject.
+		tenantID, subjectID := memscope.Resolve(ctx, a.config.TenantID, sessionID)
 		resp, err := a.memory.Recall(ctx, &core.RecallRequest{
 			Context: core.Context{
-				TenantID:  a.config.TenantID,
-				SubjectID: sessionID,
+				TenantID:  tenantID,
+				SubjectID: subjectID,
 				AgentID:   a.config.AgentID,
 				SessionID: sessionID,
 			},
@@ -561,10 +566,16 @@ func (a *Agent) saveRolloverMemory(ctx context.Context, e hooks.Event) error {
 	}
 
 	content := formatRolloverMemory(data, a.timezone())
+	// Persist under the same scope the turn recalled from: a stamped memory
+	// scope (e.g. a chat's TenantID=team, SubjectID="chat:<id>") overrides the
+	// agent tenant and the session subject, so a chat's rolled-over context is
+	// stored to that chat's memory (RMI-OMNIAGENT-114). The rollover event is
+	// emitted synchronously on the turn context, so the scope is still present.
+	tenantID, subjectID := memscope.Resolve(ctx, a.config.TenantID, data.SessionID)
 	_, err := a.memory.Add(ctx, &core.AddRequest{
 		Context: core.Context{
-			TenantID:  a.config.TenantID,
-			SubjectID: data.SessionID,
+			TenantID:  tenantID,
+			SubjectID: subjectID,
 			AgentID:   a.config.AgentID,
 			SessionID: data.SessionID,
 		},

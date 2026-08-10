@@ -83,7 +83,14 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		Logger:       logger,
 	})
 
-	chatSvc, err := chats.NewService(st, chats.Config{Logger: logger})
+	// MemoryTenant scopes each chat turn's memory to TenantID=team,
+	// SubjectID="chat:<id>" (RMI-OMNIAGENT-114): a chat's memories are isolated
+	// to that chat. Takes effect once a per-agent runtime (RMI-309) actually
+	// runs turns; until then chats stay silent and no memory is written.
+	chatSvc, err := chats.NewService(st, chats.Config{
+		MemoryTenant: chats.MemoryTenantTeam,
+		Logger:       logger,
+	})
 	if err != nil {
 		cleanup()
 		return nil, nil, nil, fmt.Errorf("chats service: %w", err)
