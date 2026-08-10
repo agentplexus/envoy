@@ -42,7 +42,9 @@ team:
     port: 587
     from: agent@example.com
     username: apikey
-    password: ${SMTP_PASSWORD}
+    # password: set via OMNIAGENT_TEAM_SMTP_PASSWORD (see below) — YAML
+    # values are not shell-expanded, so a literal ${VAR} here is not
+    # substituted.
   secrets:
     provider: file                       # optional per-agent secret vault
     dir: /var/lib/omniagent/secrets
@@ -53,8 +55,27 @@ web:
 agent:
   provider: anthropic
   model: claude-sonnet-5
-  api_key: ${ANTHROPIC_API_KEY}
+  # api_key: set via ANTHROPIC_API_KEY (loadEnv falls back to the
+  # provider-specific env var when api_key is left unset here)
 ```
+
+Every `team.*` field can also be set via an `OMNIAGENT_TEAM_*` environment
+variable instead of the file — the env value always wins:
+
+| Variable | Config field |
+|----------|--------------|
+| `OMNIAGENT_TEAM_ENABLED` | `team.enabled` |
+| `OMNIAGENT_TEAM_DATABASE_APP_DSN` | `team.database.app_dsn` |
+| `OMNIAGENT_TEAM_DATABASE_MIGRATE_DSN` | `team.database.migrate_dsn` |
+| `OMNIAGENT_TEAM_DATABASE_APP_ROLE` | `team.database.app_role` |
+| `OMNIAGENT_TEAM_BASE_URL` | `team.base_url` |
+| `OMNIAGENT_TEAM_SUPERADMIN_EMAIL` | `team.superadmin_email` |
+| `OMNIAGENT_TEAM_AGENT_HANDLE` | `team.agent_handle` |
+| `OMNIAGENT_TEAM_SMTP_HOST` | `team.smtp.host` |
+| `OMNIAGENT_TEAM_SMTP_PORT` | `team.smtp.port` |
+| `OMNIAGENT_TEAM_SMTP_USERNAME` | `team.smtp.username` |
+| `OMNIAGENT_TEAM_SMTP_PASSWORD` | `team.smtp.password` |
+| `OMNIAGENT_TEAM_SMTP_FROM` | `team.smtp.from` |
 
 Start it:
 

@@ -147,6 +147,27 @@ OAuth 2.0 SSO authentication for the web UI. See [Authentication Guide](../guide
 | `AUTH_ALLOWED_EMAILS` | Comma-separated allowed email addresses |
 | `AUTH_ALLOWED_DOMAINS` | Comma-separated allowed domains (e.g., `@company.com`) |
 
+## Team Mode
+
+Multi-user team mode (`team.enabled`). See the [Team Mode guide](../guides/team-mode.md)
+for setup. Every field is also settable in the `team:` config block; an env
+value always overrides the file.
+
+| Variable | Description |
+|----------|-------------|
+| `OMNIAGENT_TEAM_ENABLED` | Enable team mode (`true`/`false`) |
+| `OMNIAGENT_TEAM_DATABASE_APP_DSN` | Non-owner application role connection string |
+| `OMNIAGENT_TEAM_DATABASE_MIGRATE_DSN` | Owner role connection string (migrations-on-start only) |
+| `OMNIAGENT_TEAM_DATABASE_APP_ROLE` | Application role name granted access by migrations |
+| `OMNIAGENT_TEAM_BASE_URL` | External origin for magic links + cookies |
+| `OMNIAGENT_TEAM_SUPERADMIN_EMAIL` | Email bootstrapped as superadmin on first login |
+| `OMNIAGENT_TEAM_AGENT_HANDLE` | @-mention handle in group chats |
+| `OMNIAGENT_TEAM_SMTP_HOST` | Outbound SMTP host for magic-link email |
+| `OMNIAGENT_TEAM_SMTP_PORT` | Outbound SMTP port |
+| `OMNIAGENT_TEAM_SMTP_USERNAME` | SMTP username |
+| `OMNIAGENT_TEAM_SMTP_PASSWORD` | SMTP password |
+| `OMNIAGENT_TEAM_SMTP_FROM` | From address for magic-link email |
+
 ## Gateway
 
 | Variable | Description | Default |
