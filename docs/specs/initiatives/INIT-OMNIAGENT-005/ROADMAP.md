@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-005`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** In progress — 2 of 14 items completed
+**Status:** In progress — 9 of 14 items completed (Phases 1–3 complete)
 
 > RMI IDs are stable and permanent. Commits carry `Refs: RMI-OMNIAGENT-<NNN>`.
 > Phase status derives from member RMIs. Cross-initiative dependencies on
@@ -12,47 +12,47 @@
 ## Phase 1 — Agent Entity & Configuration
 
 **Theme:** An agent = persona + an enabled subset of skills; persisted, RLS-scoped.
-**Status:** In progress — 1 of 3 items completed
+**Status:** Completed — 3 of 3 items completed
 
 - [x] `RMI-OMNIAGENT-300` `agents` + `agent_skills` schema, migration, RLS
   - Depends on: `RMI-OMNIAGENT-101` (RLS store)
   - Acceptance: private agents invisible to non-members by RLS; `team_is_agent_editor` helper; migration idempotent. Ent schemas `agent`/`agent_skill` (citext slug unique, `visibility` private|listed, superadmin-only `featured`, cascade-delete of skills/roles) generate the tables; `team/store/migrations/0001_functions.sql` adds the SECURITY DEFINER helpers `team_is_agent_editor`/`team_is_agent_owner`/`team_is_agent_creator`; `0002_policies.sql` binds `agents`/`agent_skills` RLS (SELECT = editor OR `visibility='listed'` OR superadmin OR system; writes = editor/superadmin/system). All migrations are idempotent (`CREATE OR REPLACE`, `DROP POLICY IF EXISTS`). Proven by `team/store/agents_rls_test.go` (private-agent invisibility to non-editors, superadmin administrative visibility, listed-agent visibility, editor-only writes).
-- [ ] `RMI-OMNIAGENT-301` Agent service: permissive create + CRUD
+- [x] `RMI-OMNIAGENT-301` Agent service: permissive create + CRUD
   - Depends on: `RMI-OMNIAGENT-300`
-  - Acceptance: any allowlisted user creates an agent and is its owner in one tx; unique slug
-- [ ] `RMI-OMNIAGENT-302` Enabled-skills subset + available-skills catalog
+  - Acceptance: any allowlisted user creates an agent and is its owner in one tx; unique slug. `team/agents.Service`: `CreateAgent` inserts the agent + the creator's owner `AgentRole` in one transaction (the bootstrap authorized by the `team_is_agent_creator` insert policy), slug validated (3-32 chars, citext-unique) with a duplicate mapped to `ErrSlugTaken`. Adds `GetAgent`, `ListMyAgents`, `UpdateAgent` (editor-gated), `DeleteAgent` (owner-gated, cascades). Authorization is a system-context `lookup` of role + existence, so the service is the primary gate and RLS the backstop. Covered by sqlite-backed tests.
+- [x] `RMI-OMNIAGENT-302` Enabled-skills subset + available-skills catalog
   - Depends on: `RMI-OMNIAGENT-301`
-  - Acceptance: enabled skills must be a subset of the deployment catalog minus operator deny-list; unknown/blocked skills rejected
+  - Acceptance: enabled skills must be a subset of the deployment catalog minus operator deny-list; unknown/blocked skills rejected. `NewService` resolves the catalog once (config `AvailableSkills` minus `BlockedSkills`, case-insensitive). `SetAgentSkills` validates the whole set before persisting — unknown → `ErrUnknownSkill`, deny-listed → `ErrBlockedSkill` — so a rejected set leaves the enabled skills intact (full replace, editor-gated). `AgentSkills` lists them; `AvailableSkills` exposes the catalog.
 
 ## Phase 2 — Per-Agent Roles & Authorization
 
 **Theme:** Owner/maintainer per agent; conversing never grants configuration.
-**Status:** In progress — 1 of 3 items completed
+**Status:** Completed — 3 of 3 items completed
 
 - [x] `RMI-OMNIAGENT-303` `agent_roles` schema + RLS
   - Depends on: `RMI-OMNIAGENT-300`
   - Acceptance: owner manages maintainers; self-leave; superadmin visible; RLS owner-only writes. Ent schema `agent_role` (`role` owner|maintainer, unique `(agent_id, user_id)`, cascade with the agent) generates the table; `0002_policies.sql` binds `agent_roles` RLS: SELECT = editor OR superadmin OR system; INSERT = owner OR superadmin OR system OR the creator's bootstrap self-insert (`team_is_agent_creator` before any role row exists); DELETE = self-leave OR owner OR superadmin OR system. Proven by `team/store/agents_rls_test.go` (creator bootstraps as owner, owner adds maintainer, maintainer cannot add another maintainer, self-leave, owner-only removal, owner-only delete).
-- [ ] `RMI-OMNIAGENT-304` Role management API + superadmin admin override
+- [x] `RMI-OMNIAGENT-304` Role management API + superadmin admin override
   - Depends on: `RMI-OMNIAGENT-303`
-  - Acceptance: owner adds/removes maintainers; maintainers cannot; superadmin can administer any agent's roles
-- [ ] `RMI-OMNIAGENT-305` `Can(actor, agent, capability)` authorization matrix
+  - Acceptance: owner adds/removes maintainers; maintainers cannot; superadmin can administer any agent's roles. `AddMaintainer` grants the maintainer role by username (resolved in system context since RLS hides other users), idempotent and never demoting an owner; `RemoveMaintainer` removes another holder (owners not removable this way, no self-remove); `LeaveAgent` is self-leave with the sole-owner orphan guard (`ErrLastOwner`; a lone owner may leave, orphaning the agent for superadmin reassignment per TRD §9); `Roles` lists holders with usernames (editor-gated). Owner/superadmin only for add/remove. Covered by sqlite-backed tests.
+- [x] `RMI-OMNIAGENT-305` `Can(actor, agent, capability)` authorization matrix
   - Depends on: `RMI-OMNIAGENT-304`
-  - Acceptance: conversant→converse only; maintainer→config/secrets/visibility not maintainers; owner→all; superadmin→administer but not auto-granted secrets
+  - Acceptance: conversant→converse only; maintainer→config/secrets/visibility not maintainers; owner→all; superadmin→administer but not auto-granted secrets. `Capability` = {Chat, CreateChat, Configure, ManageMaintainers, ManageRegistry, Administer}; `Can` resolves the matrix — owner → all bar Administer; maintainer → all bar ManageMaintainers/Administer; superadmin → Administer + everything except secret values; any user → CreateChat/Chat iff the agent is listed. Featured stays superadmin-only (`SetFeatured`), not `CapManageRegistry`. Facts read via the shared system-context `lookup`; a nonexistent/invisible agent → `(false, nil)`. Covered by a full owner/maintainer/stranger/superadmin × private/listed table.
 
 ## Phase 3 — Registry & Discovery
 
 **Theme:** Per-agent visibility + superadmin curation; discovery + start-chat authz.
-**Status:** Planned — 0 of 3 items completed
+**Status:** Completed — 3 of 3 items completed
 
-- [ ] `RMI-OMNIAGENT-306` Visibility (private/listed) + featured (superadmin)
+- [x] `RMI-OMNIAGENT-306` Visibility (private/listed) + featured (superadmin)
   - Depends on: `RMI-OMNIAGENT-305`
-  - Acceptance: owner/maintainer set visibility; only superadmin sets featured; enforced by authz + RLS
-- [ ] `RMI-OMNIAGENT-307` Catalog API + start-chat authorization
+  - Acceptance: owner/maintainer set visibility; only superadmin sets featured; enforced by authz + RLS. `SetVisibility` (CapManageRegistry = editor/superadmin; invalid values → `ErrInvalidVisibility`) and `SetFeatured` (superadmin-only curation per TRD §9 Q1 — a non-superadmin gets `ErrForbidden` even for their own agent). Both backstopped by the `agents_update` RLS policy. Covered by sqlite-backed tests.
+- [x] `RMI-OMNIAGENT-307` Catalog API + start-chat authorization
   - Depends on: `RMI-OMNIAGENT-306`
-  - Acceptance: catalog returns featured + listed for the caller; listed→any user may start, private→owner/maintainer/invitee
-- [ ] `RMI-OMNIAGENT-308` Chat↔agent integration (`chats.agent_id`)
+  - Acceptance: catalog returns featured + listed for the caller; listed→any user may start, private→owner/maintainer/invitee. `Catalog` returns Featured (superadmin curation) + Listed (owner-opted, excluding featured), computed in the actor's scope so RLS filters what the caller sees — a featured-but-private agent surfaces only to its editors/superadmin, never leaking to the deployment (v1 interpretation: featuring promotes a listed agent; a private-featured agent is not surfaced deployment-wide). Each entry carries `CanStart`; `CanStartChat`/`AuthorizeStartChat` are the start-chat gate (`Can(CapCreateChat)`). The invitee case is enforced by chat membership in the chats service, not here.
+- [x] `RMI-OMNIAGENT-308` Chat↔agent integration (`chats.agent_id`)
   - Depends on: `RMI-OMNIAGENT-307`, `RMI-OMNIAGENT-110` (chats)
-  - Acceptance: chats reference an agent; chat creation consults `Can(CapCreateChat)`
+  - Acceptance: chats reference an agent; chat creation consults `Can(CapCreateChat)`. Added `chats.agent_id` (optional FK to `agents`) + a `(created_by, agent_id)` partial unique index (one DM per user per agent; agent-less personal DMs deduped at the service layer). The chats service gains an `AgentGate` (primitive-signature interface so chats stays decoupled from `agents`; `*agents.Service` satisfies it via `AuthorizeStartChat`); `StartAgentDM` and `CreateGroupWithAgent` gate on `Can(CapCreateChat)` and return `ErrNoAgentRegistry` when unwired (personal mode). This is the integration point **RMI-113** builds on. Covered by sqlite-backed tests with a stub gate.
 
 ## Phase 4 — Runtime: Per-Agent Skill & Secret Binding
 
