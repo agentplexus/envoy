@@ -10,8 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/plexusone/omniagent/team"
 	"github.com/plexusone/omniagent/team/auth"
+	"github.com/plexusone/omniagent/team/ent"
+	entuser "github.com/plexusone/omniagent/team/ent/user"
 )
 
 // csrfHeader must be present on state-changing team requests. Combined with a
@@ -119,6 +123,8 @@ func (h *TeamHTTP) routes() {
 	// TeamHTTPConfig.Personal.
 	if !h.cfg.Personal {
 		h.mux.HandleFunc("/api/admin/allowlist", h.handleAllowlist)
+		h.mux.HandleFunc("GET /api/admin/users", h.handleListUsers)
+		h.mux.HandleFunc("PATCH /api/admin/users/{id}", h.handleUpdateUser)
 	}
 }
 
@@ -288,6 +294,119 @@ func (h *TeamHTTP) handleAllowlist(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 	}
+}
+
+// ---- Admin: users ----------------------------------------------------
+
+// userView is the admin-facing shape of a user row.
+type userView struct {
+	ID          uuid.UUID `json:"id"`
+	Username    string    `json:"username"`
+	DisplayName string    `json:"displayName"`
+	Email       string    `json:"email"`
+	Role        string    `json:"role"`   // "superadmin" | "member"
+	Status      string    `json:"status"` // "active" | "disabled"
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+func toUserView(u *ent.User) userView {
+	return userView{
+		ID:          u.ID,
+		Username:    u.Username,
+		DisplayName: u.DisplayName,
+		Email:       u.Email,
+		Role:        u.Role.String(),
+		Status:      u.Status.String(),
+		CreatedAt:   u.CreatedAt,
+	}
+}
+
+// actor resolves the authenticated principal to a team Actor and requires
+// superadmin (every admin endpoint is superadmin-only); responds 401/403 and
+// reports false otherwise. This is a defense-in-depth check at the HTTP layer
+// on top of team.Service's own actor.Superadmin gate on each method.
+func (h *TeamHTTP) actor(w http.ResponseWriter, r *http.Request) (team.Actor, bool) {
+	p, err := h.principalFromRequest(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return team.Actor{}, false
+	}
+	if !p.Superadmin {
+		writeError(w, http.StatusForbidden, "forbidden")
+		return team.Actor{}, false
+	}
+	return p.Actor(), true
+}
+
+// actorCSRF is actor plus the custom-header CSRF check required on mutations.
+func (h *TeamHTTP) actorCSRF(w http.ResponseWriter, r *http.Request) (team.Actor, bool) {
+	if !hasCSRF(r) {
+		writeError(w, http.StatusForbidden, "missing CSRF header")
+		return team.Actor{}, false
+	}
+	return h.actor(w, r)
+}
+
+func (h *TeamHTTP) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.actor(w, r)
+	if !ok {
+		return
+	}
+	users, err := h.team.ListUsers(r.Context(), actor)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]userView, len(users))
+	for i, u := range users {
+		out[i] = toUserView(u)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"users": out})
+}
+
+type updateUserRequest struct {
+	Username *string `json:"username"`
+	Status   *string `json:"status"`
+}
+
+func (h *TeamHTTP) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.actorCSRF(w, r)
+	if !ok {
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	var req updateUserRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Username != nil {
+		if err := h.team.RenameUser(r.Context(), actor, id, *req.Username); err != nil {
+			h.writeServiceError(w, err)
+			return
+		}
+	}
+	if req.Status != nil {
+		var status entuser.Status
+		switch *req.Status {
+		case "active":
+			status = entuser.StatusActive
+		case "disabled":
+			status = entuser.StatusDisabled
+		default:
+			writeError(w, http.StatusBadRequest, "status must be active or disabled")
+			return
+		}
+		if err := h.team.SetUserStatus(r.Context(), actor, id, status); err != nil {
+			h.writeServiceError(w, err)
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
 }
 
 // ---- Middleware ----------------------------------------------------------
