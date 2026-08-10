@@ -2,6 +2,8 @@ package gateway
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -15,6 +17,7 @@ import (
 	"github.com/plexusone/omniagent/team"
 	"github.com/plexusone/omniagent/team/auth"
 	"github.com/plexusone/omniagent/team/ent"
+	"github.com/plexusone/omniagent/team/ent/identity"
 	entuser "github.com/plexusone/omniagent/team/ent/user"
 )
 
@@ -26,6 +29,21 @@ const csrfHeader = "X-OmniAgent-CSRF"
 
 // principalCtxKey carries the authenticated principal through the request.
 type principalCtxKey struct{}
+
+// SSOProvider drives one OAuth/OIDC sign-in provider's browser-facing
+// redirect flow. Symmetric across providers — GitHub's implementation
+// ignores nonce — so the gateway's start/callback handling is one shared
+// implementation with no per-provider branching, and is fully testable with
+// a fake implementation independent of real provider connectivity.
+type SSOProvider interface {
+	// AuthURL returns the redirect URL for the provider's consent screen,
+	// carrying state (CSRF) and nonce (OIDC replay protection).
+	AuthURL(state, nonce string) string
+	// Exchange trades an authorization code for the provider's verified
+	// subject (a stable per-account id) and verified email. nonce is echoed
+	// back for providers that need it (Google); others ignore it.
+	Exchange(ctx context.Context, code, nonce string) (subject, verifiedEmail string, err error)
+}
 
 // TeamHTTPConfig configures the team HTTP handler.
 type TeamHTTPConfig struct {
@@ -45,6 +63,13 @@ type TeamHTTPConfig struct {
 	// no row-level security — a second allowlisted account would see the
 	// sole account's data with no isolation.
 	Personal bool
+
+	// GoogleProvider and GitHubProvider are nil-able: nil means that
+	// provider is not configured, and its /api/auth/{provider}* routes are
+	// not registered at all (mirrors the Personal-mode convention for
+	// /api/admin/*).
+	GoogleProvider SSOProvider
+	GitHubProvider SSOProvider
 }
 
 // TeamHTTP serves the team auth and admin API.
@@ -119,6 +144,15 @@ func (h *TeamHTTP) routes() {
 	h.mux.HandleFunc("/api/auth/me", h.requireAuth(h.handleMe)) // GET
 	// Self-service
 	h.mux.HandleFunc("/api/users/me/username", h.requireCSRF(h.requireAuth(h.handleRename)))
+	// SSO — each provider's routes are only registered when configured.
+	if h.cfg.GoogleProvider != nil {
+		h.mux.HandleFunc("GET /api/auth/google", h.handleSSOStart("google", h.cfg.GoogleProvider))
+		h.mux.HandleFunc("GET /api/auth/google/callback", h.handleSSOCallback("google", identity.ProviderGoogle, h.cfg.GoogleProvider))
+	}
+	if h.cfg.GitHubProvider != nil {
+		h.mux.HandleFunc("GET /api/auth/github", h.handleSSOStart("github", h.cfg.GitHubProvider))
+		h.mux.HandleFunc("GET /api/auth/github/callback", h.handleSSOCallback("github", identity.ProviderGithub, h.cfg.GitHubProvider))
+	}
 	// Admin (superadmin only) — excluded in personal mode, see
 	// TeamHTTPConfig.Personal.
 	if !h.cfg.Personal {
@@ -183,6 +217,128 @@ func (h *TeamHTTP) handleVerify(w http.ResponseWriter, r *http.Request) {
 	}
 	h.setSessionCookie(w, sessionToken)
 	http.Redirect(w, r, h.appURL("/"), http.StatusSeeOther)
+}
+
+// ---- SSO -------------------------------------------------------------
+
+// ssoStateTTL bounds how long a start request's state/nonce cookies remain
+// valid — long enough for a real consent-screen round trip, short enough to
+// limit exposure if abandoned mid-flow.
+const ssoStateTTL = 10 * time.Minute
+
+// ssoCookieName builds the state/nonce cookie name for one provider,
+// following the same __Host- prefixing convention as the session cookie.
+func ssoCookieName(provider, kind string, secure bool) string {
+	prefix := "oa_sso_"
+	if secure {
+		prefix = "__Host-oa_sso_"
+	}
+	return prefix + provider + "_" + kind
+}
+
+// randomSSOToken returns a URL-safe random value for state/nonce use.
+func randomSSOToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// handleSSOStart redirects the browser to the provider's consent screen,
+// after stamping state (CSRF) and nonce (OIDC replay protection) as
+// short-lived cookies the callback reads back and clears.
+func (h *TeamHTTP) handleSSOStart(name string, p SSOProvider) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		state, err := randomSSOToken()
+		if err != nil {
+			h.logger.Error("sso: generate state failed", "provider", name, "error", err)
+			http.Redirect(w, r, h.appURL("/?error=sso_failed"), http.StatusSeeOther)
+			return
+		}
+		nonce, err := randomSSOToken()
+		if err != nil {
+			h.logger.Error("sso: generate nonce failed", "provider", name, "error", err)
+			http.Redirect(w, r, h.appURL("/?error=sso_failed"), http.StatusSeeOther)
+			return
+		}
+		h.setSSOCookie(w, name, "state", state)
+		h.setSSOCookie(w, name, "nonce", nonce)
+		http.Redirect(w, r, p.AuthURL(state, nonce), http.StatusFound)
+	}
+}
+
+// handleSSOCallback validates the state/nonce cookies, exchanges the
+// authorization code, resolves the identity to a session via
+// auth.Service.CompleteSSOLogin, and redirects — mirroring handleVerify's
+// success/failure redirect shape.
+func (h *TeamHTTP) handleSSOCallback(name string, provider identity.Provider, p SSOProvider) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		state, hasState := h.readAndClearSSOCookie(w, r, name, "state")
+		nonce, hasNonce := h.readAndClearSSOCookie(w, r, name, "nonce")
+		if !hasState || !hasNonce || r.URL.Query().Get("state") != state {
+			http.Redirect(w, r, h.appURL("/?error=sso_state"), http.StatusSeeOther)
+			return
+		}
+
+		subject, verifiedEmail, err := p.Exchange(r.Context(), r.URL.Query().Get("code"), nonce)
+		if err != nil {
+			h.logger.Error("sso: exchange failed", "provider", name, "error", err)
+			http.Redirect(w, r, h.appURL("/?error=sso_failed"), http.StatusSeeOther)
+			return
+		}
+
+		sessionToken, _, err := h.auth.CompleteSSOLogin(r.Context(), provider, subject, verifiedEmail, r.UserAgent(), clientIP(r))
+		switch {
+		case errors.Is(err, auth.ErrNotAllowed):
+			http.Redirect(w, r, h.appURL("/?error=not_allowed"), http.StatusSeeOther)
+			return
+		case errors.Is(err, auth.ErrAccountDisabled):
+			http.Redirect(w, r, h.appURL("/?error=disabled"), http.StatusSeeOther)
+			return
+		case err != nil:
+			h.logger.Error("sso: login failed", "provider", name, "error", err)
+			http.Redirect(w, r, h.appURL("/?error=sso_failed"), http.StatusSeeOther)
+			return
+		}
+
+		h.setSessionCookie(w, sessionToken)
+		http.Redirect(w, r, h.appURL("/"), http.StatusSeeOther)
+	}
+}
+
+func (h *TeamHTTP) setSSOCookie(w http.ResponseWriter, provider, kind, value string) {
+	//nolint:gosec // G124: Secure mirrors CookieSecure, same as the session cookie.
+	http.SetCookie(w, &http.Cookie{
+		Name:     ssoCookieName(provider, kind, h.cfg.CookieSecure),
+		Value:    value,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.cfg.CookieSecure,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(ssoStateTTL.Seconds()),
+	})
+}
+
+// readAndClearSSOCookie reads a state/nonce cookie and immediately expires
+// it (single-use, matching the magic-link token's consume-once semantics).
+func (h *TeamHTTP) readAndClearSSOCookie(w http.ResponseWriter, r *http.Request, provider, kind string) (string, bool) {
+	name := ssoCookieName(provider, kind, h.cfg.CookieSecure)
+	c, err := r.Cookie(name)
+	//nolint:gosec // G124: Secure mirrors CookieSecure; this is a deletion cookie (MaxAge<0).
+	http.SetCookie(w, &http.Cookie{
+		Name:     name,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.cfg.CookieSecure,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+	if err != nil || c.Value == "" {
+		return "", false
+	}
+	return c.Value, true
 }
 
 func (h *TeamHTTP) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -307,6 +463,9 @@ type userView struct {
 	Role        string    `json:"role"`   // "superadmin" | "member"
 	Status      string    `json:"status"` // "active" | "disabled"
 	CreatedAt   time.Time `json:"createdAt"`
+	// Identities lists linked sign-in providers ("magic_link", "google",
+	// "github"); empty until the user's next login backfills it.
+	Identities []string `json:"identities"`
 }
 
 func toUserView(u *ent.User) userView {
@@ -357,9 +516,19 @@ func (h *TeamHTTP) handleListUsers(w http.ResponseWriter, r *http.Request) {
 		h.writeServiceError(w, err)
 		return
 	}
+	ids := make([]uuid.UUID, len(users))
+	for i, u := range users {
+		ids[i] = u.ID
+	}
+	identities, err := h.team.ListIdentities(r.Context(), actor, ids)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
 	out := make([]userView, len(users))
 	for i, u := range users {
 		out[i] = toUserView(u)
+		out[i].Identities = identities[u.ID]
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"users": out})
 }
