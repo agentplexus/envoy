@@ -342,6 +342,25 @@ form.send button:disabled {
   padding: 0 0.4rem;
 }
 
+.secret-row {
+  flex-wrap: wrap;
+}
+
+.secret-name {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.secret-row input {
+  flex: 1;
+  min-width: 12rem;
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
 .member-remove, .leave-btn {
   padding: 0.2rem 0.5rem;
   border: 1px solid var(--border);

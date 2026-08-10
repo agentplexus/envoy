@@ -1292,6 +1292,7 @@
           if (d.caps.configure) {
             content.appendChild(configCard(d));
             content.appendChild(skillsCard(d));
+            content.appendChild(secretsCard(d));
           }
           if (d.caps.manageRegistry) {
             content.appendChild(visibilityCard(d));
@@ -1380,6 +1381,60 @@
           .catch(function (err) { setError(status, err); });
       } });
       return card("Visibility", el("div", {}, [sel, el("div", { className: "form-actions" }, [save]), status]));
+    }
+
+    // secretsCard lists the secrets the agent's enabled skills declare, with a
+    // set/unset indicator and a write-only paste-to-set input (GitHub-style).
+    // Values are never rendered — the API returns names + set-state only.
+    function secretsCard(d) {
+      var status = el("p", { className: "error" });
+      var list = el("ul", { className: "member-list" });
+      var body = el("div", {}, [list]);
+
+      function reload() {
+        jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/secrets")
+          .then(function (r) { renderSecrets(r.secrets || []); })
+          .catch(function (err) { setError(status, err); });
+      }
+      function renderSecrets(secrets) {
+        list.innerHTML = "";
+        if (!secrets.length) {
+          list.appendChild(el("li", {}, [el("span", { className: "muted", text: "No skill declares a secret. Enable a skill that needs one." })]));
+          return;
+        }
+        secrets.forEach(function (s) {
+          var label = s.name + (s.required ? " *" : "");
+          var input = el("input", { type: "password", placeholder: s.set ? "•••••• (set) — paste to replace" : "paste value to set", autocomplete: "off" });
+          var setBtn = el("button", { type: "button", text: "Save", onclick: function () {
+            var v = input.value;
+            if (!v) return;
+            status.className = "error"; status.textContent = "";
+            jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/secrets", {
+              method: "PUT", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+              body: JSON.stringify({ name: s.env, value: v }),
+            }).then(function () { input.value = ""; reload(); }).catch(function (err) { setError(status, err); });
+          } });
+          var row = [
+            el("span", { className: "secret-name", text: label }),
+            el("span", { className: "badge " + (s.set ? "active" : "disabled"), text: s.set ? "set" : "unset" }),
+            s.description ? el("span", { className: "muted", text: s.description }) : null,
+            input,
+            setBtn,
+          ];
+          if (s.set) {
+            row.push(el("button", { type: "button", className: "member-remove", text: "Delete", onclick: function () {
+              jsonFetch("/api/agents/" + encodeURIComponent(d.id) + "/secrets/" + encodeURIComponent(s.env), {
+                method: "DELETE", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+              }).then(reload).catch(function (err) { setError(status, err); });
+            } }));
+          }
+          list.appendChild(el("li", { className: "secret-row" }, row));
+        });
+      }
+
+      body.appendChild(status);
+      reload();
+      return card("Secrets", body);
     }
 
     function maintainersCard(d) {
