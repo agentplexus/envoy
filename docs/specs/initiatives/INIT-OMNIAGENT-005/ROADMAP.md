@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-005`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Planned — 0 of 14 items completed
+**Status:** In progress — 2 of 14 items completed
 
 > RMI IDs are stable and permanent. Commits carry `Refs: RMI-OMNIAGENT-<NNN>`.
 > Phase status derives from member RMIs. Cross-initiative dependencies on
@@ -12,11 +12,11 @@
 ## Phase 1 — Agent Entity & Configuration
 
 **Theme:** An agent = persona + an enabled subset of skills; persisted, RLS-scoped.
-**Status:** Planned — 0 of 3 items completed
+**Status:** In progress — 1 of 3 items completed
 
-- [ ] `RMI-OMNIAGENT-300` `agents` + `agent_skills` schema, migration, RLS
+- [x] `RMI-OMNIAGENT-300` `agents` + `agent_skills` schema, migration, RLS
   - Depends on: `RMI-OMNIAGENT-101` (RLS store)
-  - Acceptance: private agents invisible to non-members by RLS; `team_is_agent_editor` helper; migration idempotent
+  - Acceptance: private agents invisible to non-members by RLS; `team_is_agent_editor` helper; migration idempotent. Ent schemas `agent`/`agent_skill` (citext slug unique, `visibility` private|listed, superadmin-only `featured`, cascade-delete of skills/roles) generate the tables; `team/store/migrations/0001_functions.sql` adds the SECURITY DEFINER helpers `team_is_agent_editor`/`team_is_agent_owner`/`team_is_agent_creator`; `0002_policies.sql` binds `agents`/`agent_skills` RLS (SELECT = editor OR `visibility='listed'` OR superadmin OR system; writes = editor/superadmin/system). All migrations are idempotent (`CREATE OR REPLACE`, `DROP POLICY IF EXISTS`). Proven by `team/store/agents_rls_test.go` (private-agent invisibility to non-editors, superadmin administrative visibility, listed-agent visibility, editor-only writes).
 - [ ] `RMI-OMNIAGENT-301` Agent service: permissive create + CRUD
   - Depends on: `RMI-OMNIAGENT-300`
   - Acceptance: any allowlisted user creates an agent and is its owner in one tx; unique slug
@@ -27,11 +27,11 @@
 ## Phase 2 — Per-Agent Roles & Authorization
 
 **Theme:** Owner/maintainer per agent; conversing never grants configuration.
-**Status:** Planned — 0 of 3 items completed
+**Status:** In progress — 1 of 3 items completed
 
-- [ ] `RMI-OMNIAGENT-303` `agent_roles` schema + RLS
+- [x] `RMI-OMNIAGENT-303` `agent_roles` schema + RLS
   - Depends on: `RMI-OMNIAGENT-300`
-  - Acceptance: owner manages maintainers; self-leave; superadmin visible; RLS owner-only writes
+  - Acceptance: owner manages maintainers; self-leave; superadmin visible; RLS owner-only writes. Ent schema `agent_role` (`role` owner|maintainer, unique `(agent_id, user_id)`, cascade with the agent) generates the table; `0002_policies.sql` binds `agent_roles` RLS: SELECT = editor OR superadmin OR system; INSERT = owner OR superadmin OR system OR the creator's bootstrap self-insert (`team_is_agent_creator` before any role row exists); DELETE = self-leave OR owner OR superadmin OR system. Proven by `team/store/agents_rls_test.go` (creator bootstraps as owner, owner adds maintainer, maintainer cannot add another maintainer, self-leave, owner-only removal, owner-only delete).
 - [ ] `RMI-OMNIAGENT-304` Role management API + superadmin admin override
   - Depends on: `RMI-OMNIAGENT-303`
   - Acceptance: owner adds/removes maintainers; maintainers cannot; superadmin can administer any agent's roles
