@@ -10,16 +10,21 @@ import (
 	"github.com/plexusone/omniagent/gateway"
 	"github.com/plexusone/omniagent/team"
 	"github.com/plexusone/omniagent/team/auth"
+	"github.com/plexusone/omniagent/team/chats"
 	"github.com/plexusone/omniagent/team/mail"
 	teamstore "github.com/plexusone/omniagent/team/store"
 )
 
-// setupTeamMode migrates the team database and builds the auth/admin HTTP
-// handler. The returned cleanup closes the store; call it on shutdown.
-func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*gateway.TeamHTTP, func(), error) {
+// setupTeamMode migrates the team database and builds the auth/admin and chat
+// HTTP handlers. The returned cleanup closes the store; call it on shutdown.
+//
+// The chat service is created without an agent: group messages are persisted
+// and fanned out with no agent turn, and private DMs echo. Binding a chat to
+// its agent's runtime (persona + skills + secrets) is RMI-113/RMI-309.
+func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*gateway.TeamHTTP, *gateway.TeamChatHTTP, func(), error) {
 	tc := cfg.Team
 	if err := tc.Validate(); err != nil {
-		return nil, nil, fmt.Errorf("team config: %w", err)
+		return nil, nil, nil, fmt.Errorf("team config: %w", err)
 	}
 
 	storeCfg := teamstore.Config{
@@ -29,12 +34,12 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		Logger:     logger,
 	}
 	if err := teamstore.Migrate(ctx, storeCfg); err != nil {
-		return nil, nil, fmt.Errorf("team database migration: %w", err)
+		return nil, nil, nil, fmt.Errorf("team database migration: %w", err)
 	}
 
 	st, err := teamstore.Open(ctx, storeCfg)
 	if err != nil {
-		return nil, nil, fmt.Errorf("open team database: %w", err)
+		return nil, nil, nil, fmt.Errorf("open team database: %w", err)
 	}
 	cleanup := func() {
 		if cerr := st.Close(); cerr != nil {
@@ -49,13 +54,13 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	})
 	if err != nil {
 		cleanup()
-		return nil, nil, fmt.Errorf("team service: %w", err)
+		return nil, nil, nil, fmt.Errorf("team service: %w", err)
 	}
 
 	mailer, err := buildMailer(tc.SMTP, "team mode", logger)
 	if err != nil {
 		cleanup()
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Cookies are Secure over https; plain-HTTP dev drops the __Host- prefix.
@@ -68,7 +73,7 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	})
 	if err != nil {
 		cleanup()
-		return nil, nil, fmt.Errorf("auth service: %w", err)
+		return nil, nil, nil, fmt.Errorf("auth service: %w", err)
 	}
 
 	teamHTTP := gateway.NewTeamHTTP(authSvc, teamSvc, gateway.TeamHTTPConfig{
@@ -78,9 +83,19 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		Logger:       logger,
 	})
 
+	chatSvc, err := chats.NewService(st, chats.Config{Logger: logger})
+	if err != nil {
+		cleanup()
+		return nil, nil, nil, fmt.Errorf("chats service: %w", err)
+	}
+	teamChatHTTP := gateway.NewTeamChatHTTP(gateway.TeamChatHTTPConfig{
+		Chats:  chatSvc,
+		Logger: logger,
+	})
+
 	logger.Info("team mode enabled: database migrated (schema + RLS)",
 		"superadmin_email", tc.SuperadminEmail, "cookie_secure", secure)
-	return teamHTTP, cleanup, nil
+	return teamHTTP, teamChatHTTP, cleanup, nil
 }
 
 // buildMailer returns a real SMTP mailer when configured, otherwise a log

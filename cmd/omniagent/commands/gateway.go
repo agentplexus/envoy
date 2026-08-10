@@ -67,13 +67,15 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	// migrations (schema + RLS policies), and build the auth/admin HTTP
 	// surface. Registered with the gateway mux after it is created.
 	var teamHTTP *gateway.TeamHTTP
+	var teamChatHTTP *gateway.TeamChatHTTP
 	if cfg.Team.Enabled {
-		th, cleanup, err := setupTeamMode(ctx, cfg, logger)
+		th, tch, cleanup, err := setupTeamMode(ctx, cfg, logger)
 		if err != nil {
 			return err
 		}
 		defer cleanup()
 		teamHTTP = th
+		teamChatHTTP = tch
 	}
 
 	// Embedded web UI: capability-driven SPA + GET /api/capabilities,
@@ -452,6 +454,21 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		gw.Handle("/api/", teamHTTP.Handler())
 		gw.SetConnectAuthorizer(teamHTTP.ConnectAuthorizer())
 		logger.Info("team mode: auth API mounted at /api/, WebSocket cookie-authenticated")
+	}
+
+	// Team-mode chat API: private DMs and group chats with membership fan-out
+	// (RMI-110/111/112). Mounted at the exact "/api/chats" and subtree
+	// "/api/chats/" patterns so they win over team mode's "/api/" subtree
+	// (ServeMux prefers the longer pattern). Every route is wrapped in
+	// RequireAuth so it runs with an authenticated principal, and the
+	// broadcaster is the membership-scoped BroadcastToUsers so a chat message
+	// reaches only its members' sockets.
+	if teamChatHTTP != nil && teamHTTP != nil {
+		teamChatHTTP.SetBroadcaster(gw.BroadcastToUsers)
+		chatAPI := teamHTTP.RequireAuth(teamChatHTTP.Handler())
+		gw.Handle("/api/chats", chatAPI)
+		gw.Handle("/api/chats/", chatAPI)
+		logger.Info("team chat API mounted at /api/chats (membership-scoped live delivery over WebSocket)")
 	}
 
 	// Web UI: capabilities is an exact pattern so it keeps resolving even
