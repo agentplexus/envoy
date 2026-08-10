@@ -4,132 +4,514 @@
   "repository": "https://github.com/plexusone/omniagent",
   "versioning": "semver",
   "commitConvention": "conventional",
-  "maintainers": ["plexusone", "johncwang@gmail.com"],
+  "maintainers": [
+    "plexusone",
+    "johncwang@gmail.com"
+  ],
   "releases": [
+    {
+      "version": "v0.17.0",
+      "date": "2026-08-10",
+      "highlights": [
+        {
+          "description": "Admin UI: allowlist and member management (disable/enable, rename) in the web UI"
+        },
+        {
+          "description": "Google OIDC and GitHub OAuth single sign-on, with identity linking by verified email"
+        },
+        {
+          "description": "Production Docker Compose hosted-deployment stack (Caddy automatic HTTPS, PostgreSQL never exposed) with CI-verified backup/restore"
+        },
+        {
+          "description": "Team Deployment guide covering Lightsail provisioning through day-2 operations"
+        },
+        {
+          "description": "OMNIAGENT_TEAM_* environment variables for every team.* config field"
+        }
+      ],
+      "added": [
+        {
+          "description": "Admin users API: list, disable/enable, and rename members",
+          "commit": "2ff6802"
+        },
+        {
+          "description": "Admin view (allowlist + members) in the web UI",
+          "commit": "f134250"
+        },
+        {
+          "description": "OMNIAGENT_TEAM_* environment variable bindings for team mode config",
+          "commit": "257b018"
+        },
+        {
+          "description": "Production Caddy + omniagent + PostgreSQL Docker Compose stack",
+          "commit": "f8ab540"
+        },
+        {
+          "description": "Team-mode backup/restore scripts",
+          "commit": "dd1e530"
+        },
+        {
+          "description": "Automated (CI) team backup/restore verification workflow",
+          "commit": "752b118"
+        },
+        {
+          "description": "team.sso config, environment variables, and capability flags",
+          "commit": "c3f94d0"
+        },
+        {
+          "description": "SSO identity resolution and Google/GitHub OAuth providers",
+          "commit": "4db4ece"
+        },
+        {
+          "description": "ListIdentities for the admin members view",
+          "commit": "374b99e"
+        },
+        {
+          "description": "Google/GitHub SSO routes",
+          "commit": "f2fd626"
+        },
+        {
+          "description": "Wire Google/GitHub SSO provider construction into team mode",
+          "commit": "cae68ec"
+        },
+        {
+          "description": "SSO login buttons, error messages, and identity badges in the web UI",
+          "commit": "7fb57d2"
+        }
+      ],
+      "documentation": [
+        {
+          "description": "OMNIAGENT_TEAM_* env vars documented; fixed a broken ${VAR} config example",
+          "commit": "830bea3"
+        },
+        {
+          "description": "Admin UI documented in the Team Mode guide",
+          "commit": "c4121dd"
+        },
+        {
+          "description": "Team Deployment guide (Lightsail, compose stack, operations)",
+          "commit": "c572590"
+        },
+        {
+          "description": "SSO setup, environment variables, and deployment docs",
+          "commit": "417c4cd"
+        }
+      ],
+      "dependencies": [
+        {
+          "description": "Add coreos/go-oidc/v3 for Google OIDC sign-in",
+          "commit": "8feaf52"
+        }
+      ]
+    },
     {
       "version": "v0.16.0",
       "date": "2026-08-10",
       "highlights": [
-        { "description": "Team mode: multi-user deployments with PostgreSQL row-level security, allowlist-closed magic-link authentication, and private/group chats" },
-        { "description": "Virtual agents: named personas with per-agent skills, owner/maintainer roles, and a private/listed + featured discovery catalog" },
-        { "description": "Per-agent runtime binding of skills and agent-scoped secrets, isolated so two agents load disjoint secrets with no cross-leak" },
-        { "description": "Embedded web UI for team chats, agent configuration, catalog browsing, and superadmin curation" },
-        { "description": "Gateway hardening: authentication, origin validation, per-sender rate limiting, escalating auth backoff, and a Prometheus metrics endpoint" },
-        { "description": "Automatic session rollover, per-session tool/model overrides, and lifecycle event hooks" }
+        {
+          "description": "Team mode: multi-user deployments with PostgreSQL row-level security, allowlist-closed magic-link authentication, and private/group chats"
+        },
+        {
+          "description": "Virtual agents: named personas with per-agent skills, owner/maintainer roles, and a private/listed + featured discovery catalog"
+        },
+        {
+          "description": "Per-agent runtime binding of skills and agent-scoped secrets, isolated so two agents load disjoint secrets with no cross-leak"
+        },
+        {
+          "description": "Embedded web UI for team chats, agent configuration, catalog browsing, and superadmin curation"
+        },
+        {
+          "description": "Gateway hardening: authentication, origin validation, per-sender rate limiting, escalating auth backoff, and a Prometheus metrics endpoint"
+        },
+        {
+          "description": "Automatic session rollover, per-session tool/model overrides, and lifecycle event hooks"
+        }
       ],
       "added": [
-        { "description": "Team (multi-user) mode with PostgreSQL row-level security, magic-link auth, and email delivery", "commit": "dd6e74a" },
-        { "description": "SQLite dialect support in the team store for local single-node deployments", "commit": "0ad868e" },
-        { "description": "Independent auth/web mode axes and a capability descriptor for the web UI", "commit": "9c19c41" },
-        { "description": "Personal single-account login (magic link)", "commit": "cfd96c3" },
-        { "description": "Personal-mode chat service and HTTP API", "commit": "fd05d85" },
-        { "description": "Group chat and membership service", "commit": "df58815" },
-        { "description": "Team-mode chat HTTP with keyset history and live fan-out", "commit": "1055d87" },
-        { "description": "Membership-scoped WebSocket fan-out so a message reaches only a chat's members", "commit": "6a7f2d1" },
-        { "description": "`authorUserId` exposed on chat messages for authorship attribution", "commit": "a4ea375" },
-        { "description": "Virtual agents service: permissive create and CRUD", "commit": "dbfe35b" },
-        { "description": "Enabled-skills subset with an available-skills catalog and operator deny-list", "commit": "9eed16a" },
-        { "description": "Per-agent role management API (owner/maintainer)", "commit": "50ae8ec" },
-        { "description": "`Can(actor, agent, capability)` per-agent authorization matrix", "commit": "0828045" },
-        { "description": "Agent visibility (private/listed) and superadmin featured registry controls", "commit": "68ed171" },
-        { "description": "Catalog discovery and start-chat authorization", "commit": "bf63097" },
-        { "description": "Chats bound to an agent, with creation gated on Can(CapCreateChat)", "commit": "c2d8374" },
-        { "description": "Group-chat @-mention policy and agent turn routing", "commit": "eb4e1e9" },
-        { "description": "Per-chat memory scoping so context never bleeds across chats", "commit": "cc1c1b5" },
-        { "description": "System-context runtime config loaders for agents", "commit": "a0c964c" },
-        { "description": "Lazy, bounded-LRU per-agent runtime instance cache", "commit": "4f52668" },
-        { "description": "Route agent-bound chat turns to the per-agent runtime instance", "commit": "cb47fd0" },
-        { "description": "Multi-tenant OmniVault secret store with per-agent namespaces (ScopedVault)", "commit": "ccd3ea0" },
-        { "description": "Inject agent-scoped secrets into secrets-aware skills (per-agent MCP env)", "commit": "8f5231c" },
-        { "description": "Bind per-agent secrets into runtime instances", "commit": "1f3f06a" },
-        { "description": "HTTP API for agent management, catalog, and superadmin curation", "commit": "2c91dc2" },
-        { "description": "Agent-bound chat start endpoints (DM and group)", "commit": "de123fa" },
-        { "description": "Embedded capability-driven SPA shell and its HTTP handlers", "commit": "eb7bfe5" },
-        { "description": "Serve the embedded web UI and personal chat API from the gateway", "commit": "82925c4" },
-        { "description": "Private chat UI with keyset scroll-back and live WebSocket replies", "commit": "8c56f36" },
-        { "description": "Team-mode group chat UI", "commit": "076b231" },
-        { "description": "Web UI views for the agents area, catalog, and curation", "commit": "8998e0f" },
-        { "description": "Gateway authentication and origin validation", "commit": "28d5097" },
-        { "description": "Per-sender rate limiting", "commit": "0eb2858" },
-        { "description": "Prometheus metrics endpoint", "commit": "4ccc9f4" },
-        { "description": "Escalating backoff on repeated auth failures", "commit": "974956f" },
-        { "description": "Session tool/model RPC with MCP-aware tool listing", "commit": "d41d2d8" },
-        { "description": "Per-session tool and model overrides", "commit": "ded976c" },
-        { "description": "Automatic session rollover", "commit": "6c77ed2" },
-        { "description": "Lifecycle, rollover, and pre-turn tool event hooks", "commit": "3d2c482" },
-        { "description": "Session-scoped runtime with lifecycle events on the agent", "commit": "37a7f87" },
-        { "description": "Propagate the configured timezone into temporal context", "commit": "410cdb4" },
-        { "description": "Gate scheduled (cron) execution on an authorizing principal", "commit": "b31bae7" },
-        { "description": "tiktoken-based token counting for context management", "commit": "f0a8474" },
-        { "description": "Conversation persistence for the OpenAI-compatible web UI", "commit": "1e46125" },
-        { "description": "Text-to-speech for assistant messages in the OpenAI web UI", "commit": "9b4c091" },
-        { "description": "Go template rendering for auto-reply responses", "commit": "9c06203" },
-        { "description": "Delegation executor for sub-agent orchestration in roles", "commit": "f4cc8e5" },
-        { "description": "Support Ollama without requiring an API key", "commit": "b9e6024" },
-        { "description": "Dockerfile for containerized deployment", "commit": "cabff27" },
-        { "description": "Discord single-replica deployment warning", "commit": "1bc47b9" }
+        {
+          "description": "Team (multi-user) mode with PostgreSQL row-level security, magic-link auth, and email delivery",
+          "commit": "dd6e74a"
+        },
+        {
+          "description": "SQLite dialect support in the team store for local single-node deployments",
+          "commit": "0ad868e"
+        },
+        {
+          "description": "Independent auth/web mode axes and a capability descriptor for the web UI",
+          "commit": "9c19c41"
+        },
+        {
+          "description": "Personal single-account login (magic link)",
+          "commit": "cfd96c3"
+        },
+        {
+          "description": "Personal-mode chat service and HTTP API",
+          "commit": "fd05d85"
+        },
+        {
+          "description": "Group chat and membership service",
+          "commit": "df58815"
+        },
+        {
+          "description": "Team-mode chat HTTP with keyset history and live fan-out",
+          "commit": "1055d87"
+        },
+        {
+          "description": "Membership-scoped WebSocket fan-out so a message reaches only a chat's members",
+          "commit": "6a7f2d1"
+        },
+        {
+          "description": "`authorUserId` exposed on chat messages for authorship attribution",
+          "commit": "a4ea375"
+        },
+        {
+          "description": "Virtual agents service: permissive create and CRUD",
+          "commit": "dbfe35b"
+        },
+        {
+          "description": "Enabled-skills subset with an available-skills catalog and operator deny-list",
+          "commit": "9eed16a"
+        },
+        {
+          "description": "Per-agent role management API (owner/maintainer)",
+          "commit": "50ae8ec"
+        },
+        {
+          "description": "`Can(actor, agent, capability)` per-agent authorization matrix",
+          "commit": "0828045"
+        },
+        {
+          "description": "Agent visibility (private/listed) and superadmin featured registry controls",
+          "commit": "68ed171"
+        },
+        {
+          "description": "Catalog discovery and start-chat authorization",
+          "commit": "bf63097"
+        },
+        {
+          "description": "Chats bound to an agent, with creation gated on Can(CapCreateChat)",
+          "commit": "c2d8374"
+        },
+        {
+          "description": "Group-chat @-mention policy and agent turn routing",
+          "commit": "eb4e1e9"
+        },
+        {
+          "description": "Per-chat memory scoping so context never bleeds across chats",
+          "commit": "cc1c1b5"
+        },
+        {
+          "description": "System-context runtime config loaders for agents",
+          "commit": "a0c964c"
+        },
+        {
+          "description": "Lazy, bounded-LRU per-agent runtime instance cache",
+          "commit": "4f52668"
+        },
+        {
+          "description": "Route agent-bound chat turns to the per-agent runtime instance",
+          "commit": "cb47fd0"
+        },
+        {
+          "description": "Multi-tenant OmniVault secret store with per-agent namespaces (ScopedVault)",
+          "commit": "ccd3ea0"
+        },
+        {
+          "description": "Inject agent-scoped secrets into secrets-aware skills (per-agent MCP env)",
+          "commit": "8f5231c"
+        },
+        {
+          "description": "Bind per-agent secrets into runtime instances",
+          "commit": "1f3f06a"
+        },
+        {
+          "description": "HTTP API for agent management, catalog, and superadmin curation",
+          "commit": "2c91dc2"
+        },
+        {
+          "description": "Agent-bound chat start endpoints (DM and group)",
+          "commit": "de123fa"
+        },
+        {
+          "description": "Embedded capability-driven SPA shell and its HTTP handlers",
+          "commit": "eb7bfe5"
+        },
+        {
+          "description": "Serve the embedded web UI and personal chat API from the gateway",
+          "commit": "82925c4"
+        },
+        {
+          "description": "Private chat UI with keyset scroll-back and live WebSocket replies",
+          "commit": "8c56f36"
+        },
+        {
+          "description": "Team-mode group chat UI",
+          "commit": "076b231"
+        },
+        {
+          "description": "Web UI views for the agents area, catalog, and curation",
+          "commit": "8998e0f"
+        },
+        {
+          "description": "Gateway authentication and origin validation",
+          "commit": "28d5097"
+        },
+        {
+          "description": "Per-sender rate limiting",
+          "commit": "0eb2858"
+        },
+        {
+          "description": "Prometheus metrics endpoint",
+          "commit": "4ccc9f4"
+        },
+        {
+          "description": "Escalating backoff on repeated auth failures",
+          "commit": "974956f"
+        },
+        {
+          "description": "Session tool/model RPC with MCP-aware tool listing",
+          "commit": "d41d2d8"
+        },
+        {
+          "description": "Per-session tool and model overrides",
+          "commit": "ded976c"
+        },
+        {
+          "description": "Automatic session rollover",
+          "commit": "6c77ed2"
+        },
+        {
+          "description": "Lifecycle, rollover, and pre-turn tool event hooks",
+          "commit": "3d2c482"
+        },
+        {
+          "description": "Session-scoped runtime with lifecycle events on the agent",
+          "commit": "37a7f87"
+        },
+        {
+          "description": "Propagate the configured timezone into temporal context",
+          "commit": "410cdb4"
+        },
+        {
+          "description": "Gate scheduled (cron) execution on an authorizing principal",
+          "commit": "b31bae7"
+        },
+        {
+          "description": "tiktoken-based token counting for context management",
+          "commit": "f0a8474"
+        },
+        {
+          "description": "Conversation persistence for the OpenAI-compatible web UI",
+          "commit": "1e46125"
+        },
+        {
+          "description": "Text-to-speech for assistant messages in the OpenAI web UI",
+          "commit": "9b4c091"
+        },
+        {
+          "description": "Go template rendering for auto-reply responses",
+          "commit": "9c06203"
+        },
+        {
+          "description": "Delegation executor for sub-agent orchestration in roles",
+          "commit": "f4cc8e5"
+        },
+        {
+          "description": "Support Ollama without requiring an API key",
+          "commit": "b9e6024"
+        },
+        {
+          "description": "Dockerfile for containerized deployment",
+          "commit": "cabff27"
+        },
+        {
+          "description": "Discord single-replica deployment warning",
+          "commit": "1bc47b9"
+        }
       ],
       "changed": [
-        { "description": "Implement Version() on the role skill adapter for omniskill compatibility", "commit": "85fb322" }
+        {
+          "description": "Implement Version() on the role skill adapter for omniskill compatibility",
+          "commit": "85fb322"
+        }
       ],
       "fixed": [
-        { "description": "Cascade-delete agent roles and skills with their agent", "commit": "8512071" },
-        { "description": "Rate-limit magic-link requests by email as well as by IP", "commit": "738ef90" },
-        { "description": "Eliminate a data race on DelegationRequest.Status", "commit": "99483e7" },
-        { "description": "Clone cron jobs on read and prevent overlapping runs", "commit": "e196fd2" },
-        { "description": "Inject fresh temporal context into the system prompt each turn", "commit": "2a4875f" },
-        { "description": "Preserve pre-tool assistant text in the final output", "commit": "a2b1375" },
-        { "description": "Release the in-memory session cache on store Close", "commit": "55f1443" },
-        { "description": "Add CompactionError for failed summarization", "commit": "af08c4e" },
-        { "description": "Use case-insensitive tool-name comparison in the shell tool", "commit": "152dca2" },
-        { "description": "Bound concurrent async hook dispatches to prevent resource exhaustion", "commit": "da4d4c1" },
-        { "description": "Require CGO for desktop credential providers", "commit": "c5e8878" }
+        {
+          "description": "Cascade-delete agent roles and skills with their agent",
+          "commit": "8512071"
+        },
+        {
+          "description": "Rate-limit magic-link requests by email as well as by IP",
+          "commit": "738ef90"
+        },
+        {
+          "description": "Eliminate a data race on DelegationRequest.Status",
+          "commit": "99483e7"
+        },
+        {
+          "description": "Clone cron jobs on read and prevent overlapping runs",
+          "commit": "e196fd2"
+        },
+        {
+          "description": "Inject fresh temporal context into the system prompt each turn",
+          "commit": "2a4875f"
+        },
+        {
+          "description": "Preserve pre-tool assistant text in the final output",
+          "commit": "a2b1375"
+        },
+        {
+          "description": "Release the in-memory session cache on store Close",
+          "commit": "55f1443"
+        },
+        {
+          "description": "Add CompactionError for failed summarization",
+          "commit": "af08c4e"
+        },
+        {
+          "description": "Use case-insensitive tool-name comparison in the shell tool",
+          "commit": "152dca2"
+        },
+        {
+          "description": "Bound concurrent async hook dispatches to prevent resource exhaustion",
+          "commit": "da4d4c1"
+        },
+        {
+          "description": "Require CGO for desktop credential providers",
+          "commit": "c5e8878"
+        }
       ],
       "documentation": [
-        { "description": "Team Mode guide and team configuration reference", "commit": "e258238" },
-        { "description": "Virtual Agents web UI guide", "commit": "fed2ff3" },
-        { "description": "Team mode and virtual agents in the README, plus a repo-root CLAUDE.md", "commit": "6b66235" },
-        { "description": "Engineering guide and initiative specs", "commit": "101417e" },
-        { "description": "Deployment guide update and parity sync plan", "commit": "32644c6" },
-        { "description": "Refreshed README screenshots", "commit": "b60bdee" }
+        {
+          "description": "Team Mode guide and team configuration reference",
+          "commit": "e258238"
+        },
+        {
+          "description": "Virtual Agents web UI guide",
+          "commit": "fed2ff3"
+        },
+        {
+          "description": "Team mode and virtual agents in the README, plus a repo-root CLAUDE.md",
+          "commit": "6b66235"
+        },
+        {
+          "description": "Engineering guide and initiative specs",
+          "commit": "101417e"
+        },
+        {
+          "description": "Deployment guide update and parity sync plan",
+          "commit": "32644c6"
+        },
+        {
+          "description": "Refreshed README screenshots",
+          "commit": "b60bdee"
+        }
       ],
       "dependencies": [
-        { "description": "Add Ent, pgx, and go-mail for team mode", "commit": "06adfca" },
-        { "description": "Add tiktoken-go and the Prometheus client", "commit": "cbb9fdc" },
-        { "description": "Switch to gogithub v0.16.1, dropping the direct go-github dependency", "commit": "1196dbe" },
-        { "description": "Updated Go module dependencies", "commit": "130f051" }
+        {
+          "description": "Add Ent, pgx, and go-mail for team mode",
+          "commit": "06adfca"
+        },
+        {
+          "description": "Add tiktoken-go and the Prometheus client",
+          "commit": "cbb9fdc"
+        },
+        {
+          "description": "Switch to gogithub v0.16.1, dropping the direct go-github dependency",
+          "commit": "1196dbe"
+        },
+        {
+          "description": "Updated Go module dependencies",
+          "commit": "130f051"
+        }
       ]
     },
     {
       "version": "v0.15.0",
       "date": "2026-07-13",
       "highlights": [
-        { "description": "HeyGen avatar integration for panel agents with lip-sync support" },
-        { "description": "JSON IR for panel scheduling and output capture" },
-        { "description": "Slide sharing with keyword-triggered automatic display" },
-        { "description": "Recording manager with LiveKit Egress and S3 upload" }
+        {
+          "description": "HeyGen avatar integration for panel agents with lip-sync support"
+        },
+        {
+          "description": "JSON IR for panel scheduling and output capture"
+        },
+        {
+          "description": "Slide sharing with keyword-triggered automatic display"
+        },
+        {
+          "description": "Recording manager with LiveKit Egress and S3 upload"
+        }
       ],
       "added": [
-        { "description": "HeyGen avatar configuration for panel moderator and panelists", "commit": "30c9e1e" },
-        { "description": "Avatar audio routing at 24kHz for lip-sync synchronization", "commit": "7c90021" },
-        { "description": "`GetAgent()` method on Panelist and Moderator for avatar detection", "commit": "140c102" },
-        { "description": "`Schedule` type for JSON-based panel definition with segments", "commit": "6bedef1" },
-        { "description": "`LoadSchedule()` for reading panel schedules from JSON files", "commit": "6bedef1" },
-        { "description": "Segment types: moderator_intro, panelist_backgrounds, discussion_round, open_discussion, closing", "commit": "6bedef1" },
-        { "description": "Response ordering options: relevance, rotation, random, fixed", "commit": "6bedef1" },
-        { "description": "`Output` type for structured panel transcripts with statistics", "commit": "c3ba48d" },
-        { "description": "`OutputMetadata`, `OutputSegment`, `OutputEntry` types for panel output", "commit": "c3ba48d" },
-        { "description": "`SlideManager` for dynamic slide sharing during panels", "commit": "74cd2d8" },
-        { "description": "Slide configuration with keywords for automatic display triggers", "commit": "0d180e1" },
-        { "description": "`RecordingManager` for LiveKit Egress-based panel recording", "commit": "1a7f999" },
-        { "description": "Recording integration in auto mode with S3 upload support", "commit": "9db97d4" }
+        {
+          "description": "HeyGen avatar configuration for panel moderator and panelists",
+          "commit": "30c9e1e"
+        },
+        {
+          "description": "Avatar audio routing at 24kHz for lip-sync synchronization",
+          "commit": "7c90021"
+        },
+        {
+          "description": "`GetAgent()` method on Panelist and Moderator for avatar detection",
+          "commit": "140c102"
+        },
+        {
+          "description": "`Schedule` type for JSON-based panel definition with segments",
+          "commit": "6bedef1"
+        },
+        {
+          "description": "`LoadSchedule()` for reading panel schedules from JSON files",
+          "commit": "6bedef1"
+        },
+        {
+          "description": "Segment types: moderator_intro, panelist_backgrounds, discussion_round, open_discussion, closing",
+          "commit": "6bedef1"
+        },
+        {
+          "description": "Response ordering options: relevance, rotation, random, fixed",
+          "commit": "6bedef1"
+        },
+        {
+          "description": "`Output` type for structured panel transcripts with statistics",
+          "commit": "c3ba48d"
+        },
+        {
+          "description": "`OutputMetadata`, `OutputSegment`, `OutputEntry` types for panel output",
+          "commit": "c3ba48d"
+        },
+        {
+          "description": "`SlideManager` for dynamic slide sharing during panels",
+          "commit": "74cd2d8"
+        },
+        {
+          "description": "Slide configuration with keywords for automatic display triggers",
+          "commit": "0d180e1"
+        },
+        {
+          "description": "`RecordingManager` for LiveKit Egress-based panel recording",
+          "commit": "1a7f999"
+        },
+        {
+          "description": "Recording integration in auto mode with S3 upload support",
+          "commit": "9db97d4"
+        }
       ],
       "documentation": [
-        { "description": "ASDM state-of-the-art panel schedule (Level 5-7 autonomous delivery)", "commit": "e86a494" },
-        { "description": "AI agents panel example schedule with HeyGen avatars", "commit": "75ab768" }
+        {
+          "description": "ASDM state-of-the-art panel schedule (Level 5-7 autonomous delivery)",
+          "commit": "e86a494"
+        },
+        {
+          "description": "AI agents panel example schedule with HeyGen avatars",
+          "commit": "75ab768"
+        }
       ],
       "dependencies": [
-        { "description": "Updated Go module dependencies", "commit": "2fada9e" }
+        {
+          "description": "Updated Go module dependencies",
+          "commit": "2fada9e"
+        }
       ]
     },
     {
@@ -137,499 +519,1325 @@
       "date": "2026-07-11",
       "commit": "edfc942",
       "highlights": [
-        { "description": "Multi-agent panel discussions with 2-4 AI panelists" },
-        { "description": "Unified avatar configuration with Tavus lip-sync support" },
-        { "description": "bitHuman avatar provider via omni-livekit v0.3.0" }
+        {
+          "description": "Multi-agent panel discussions with 2-4 AI panelists"
+        },
+        {
+          "description": "Unified avatar configuration with Tavus lip-sync support"
+        },
+        {
+          "description": "bitHuman avatar provider via omni-livekit v0.3.0"
+        }
       ],
       "added": [
-        { "description": "`livekit-agent-panel` command for multi-agent panel discussions", "commit": "e13ca60" },
-        { "description": "Panel coordinator with round-robin turn-taking", "commit": "e13ca60" },
-        { "description": "Configurable panelist personalities and voices", "commit": "e13ca60" },
-        { "description": "Shared transcript for contextual panelist responses", "commit": "e13ca60" },
-        { "description": "Unified avatar configuration via `AVATAR_PROVIDER` env var", "commit": "2339860" },
-        { "description": "Tavus lip-sync avatar support in livekit-agent", "commit": "2339860" },
-        { "description": "Legacy `AGENT_AVATAR` compatibility for static avatars", "commit": "2339860" }
+        {
+          "description": "`livekit-agent-panel` command for multi-agent panel discussions",
+          "commit": "e13ca60"
+        },
+        {
+          "description": "Panel coordinator with round-robin turn-taking",
+          "commit": "e13ca60"
+        },
+        {
+          "description": "Configurable panelist personalities and voices",
+          "commit": "e13ca60"
+        },
+        {
+          "description": "Shared transcript for contextual panelist responses",
+          "commit": "e13ca60"
+        },
+        {
+          "description": "Unified avatar configuration via `AVATAR_PROVIDER` env var",
+          "commit": "2339860"
+        },
+        {
+          "description": "Tavus lip-sync avatar support in livekit-agent",
+          "commit": "2339860"
+        },
+        {
+          "description": "Legacy `AGENT_AVATAR` compatibility for static avatars",
+          "commit": "2339860"
+        }
       ],
       "documentation": [
-        { "description": "Avatar configuration guide with static and Tavus modes", "commit": "d50371a" },
-        { "description": "Panel agent documentation in README", "commit": "d50371a" },
-        { "description": "Environment variables for Tavus configuration", "commit": "d50371a" }
+        {
+          "description": "Avatar configuration guide with static and Tavus modes",
+          "commit": "d50371a"
+        },
+        {
+          "description": "Panel agent documentation in README",
+          "commit": "d50371a"
+        },
+        {
+          "description": "Environment variables for Tavus configuration",
+          "commit": "d50371a"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omni-livekit` v0.2.0 → v0.3.0 (bitHuman provider)", "commit": "edfc942" },
-        { "description": "`github.com/go-chi/chi/v5` v5.3.0 → v5.3.1", "commit": "22fac24" },
-        { "description": "`golang.org/x/net` v0.56.0 → v0.57.0", "commit": "25d1b06" }
+        {
+          "description": "`github.com/plexusone/omni-livekit` v0.2.0 \u2192 v0.3.0 (bitHuman provider)",
+          "commit": "edfc942"
+        },
+        {
+          "description": "`github.com/go-chi/chi/v5` v5.3.0 \u2192 v5.3.1",
+          "commit": "22fac24"
+        },
+        {
+          "description": "`golang.org/x/net` v0.56.0 \u2192 v0.57.0",
+          "commit": "25d1b06"
+        }
       ]
     },
     {
       "version": "v0.13.0",
       "date": "2026-07-05",
       "highlights": [
-        { "description": "Realtime voice mode for LiveKit agents with ~100-300ms latency" },
-        { "description": "Deepgram Agent API as native voice-to-voice provider" },
-        { "description": "LiveKit voice agent commands (livekit-agent, livekit-agent-facilitator)" },
-        { "description": "Role manager integration for agent personas with policy enforcement" }
+        {
+          "description": "Realtime voice mode for LiveKit agents with ~100-300ms latency"
+        },
+        {
+          "description": "Deepgram Agent API as native voice-to-voice provider"
+        },
+        {
+          "description": "LiveKit voice agent commands (livekit-agent, livekit-agent-facilitator)"
+        },
+        {
+          "description": "Role manager integration for agent personas with policy enforcement"
+        }
       ],
       "added": [
-        { "description": "Realtime voice mode for `livekit-agent-facilitator` with Deepgram/OpenAI/Gemini support", "commit": "973ad49" },
-        { "description": "LiveKit voice agent commands: `cmd/livekit-agent` and `cmd/livekit-agent-facilitator`", "commit": "d4e8acd" },
-        { "description": "`agent/roles` package with `Manager` for role-based agent personas", "commit": "14219db" },
-        { "description": "Role manager integration in agent runtime", "commit": "09dbead" },
-        { "description": "WhatsApp integration screenshots for documentation", "commit": "ab69c02" }
+        {
+          "description": "Realtime voice mode for `livekit-agent-facilitator` with Deepgram/OpenAI/Gemini support",
+          "commit": "973ad49"
+        },
+        {
+          "description": "LiveKit voice agent commands: `cmd/livekit-agent` and `cmd/livekit-agent-facilitator`",
+          "commit": "d4e8acd"
+        },
+        {
+          "description": "`agent/roles` package with `Manager` for role-based agent personas",
+          "commit": "14219db"
+        },
+        {
+          "description": "Role manager integration in agent runtime",
+          "commit": "09dbead"
+        },
+        {
+          "description": "WhatsApp integration screenshots for documentation",
+          "commit": "ab69c02"
+        }
       ],
       "fixed": [
-        { "description": "G115 gosec warnings in PCM audio processing code with nolint annotations", "commit": "248c52d" }
+        {
+          "description": "G115 gosec warnings in PCM audio processing code with nolint annotations",
+          "commit": "248c52d"
+        }
       ],
       "documentation": [
-        { "description": "Deepgram realtime provider in voice integration guide", "commit": "328a60b" },
-        { "description": "LiveKit voice agents section in README with realtime mode examples", "commit": "60a0fa2" },
-        { "description": "v0.13.0 release notes", "commit": "b820630" },
-        { "description": "Roles guide and migration documentation", "commit": "74914e8" },
-        { "description": "Role system specifications (PRD, TRD, PLAN)", "commit": "3d54a62" },
-        { "description": "Roles section in README", "commit": "a628467" },
-        { "description": "LiveKit voice agents section in README", "commit": "641dbe2" },
-        { "description": "OmniAgent mascot and hero images", "commit": "3f4010e" }
+        {
+          "description": "Deepgram realtime provider in voice integration guide",
+          "commit": "328a60b"
+        },
+        {
+          "description": "LiveKit voice agents section in README with realtime mode examples",
+          "commit": "60a0fa2"
+        },
+        {
+          "description": "v0.13.0 release notes",
+          "commit": "b820630"
+        },
+        {
+          "description": "Roles guide and migration documentation",
+          "commit": "74914e8"
+        },
+        {
+          "description": "Role system specifications (PRD, TRD, PLAN)",
+          "commit": "3d54a62"
+        },
+        {
+          "description": "Roles section in README",
+          "commit": "a628467"
+        },
+        {
+          "description": "LiveKit voice agents section in README",
+          "commit": "641dbe2"
+        },
+        {
+          "description": "OmniAgent mascot and hero images",
+          "commit": "3f4010e"
+        }
       ],
       "test": [
-        { "description": "OmniMeet smoke test", "commit": "e0998f6" }
+        {
+          "description": "OmniMeet smoke test",
+          "commit": "e0998f6"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omni-livekit` v0.1.0 (new)" },
-        { "description": "`github.com/plexusone/omnimeet-core` v0.1.0 (new)" },
-        { "description": "`github.com/plexusone/omnivoice` v0.12.0 → v0.13.0" },
-        { "description": "`github.com/plexusone/omnillm` v0.16.1 → v0.17.0" },
-        { "description": "`github.com/plexusone/omnillm-core` v0.18.0" }
+        {
+          "description": "`github.com/plexusone/omni-livekit` v0.1.0 (new)"
+        },
+        {
+          "description": "`github.com/plexusone/omnimeet-core` v0.1.0 (new)"
+        },
+        {
+          "description": "`github.com/plexusone/omnivoice` v0.12.0 \u2192 v0.13.0"
+        },
+        {
+          "description": "`github.com/plexusone/omnillm` v0.16.1 \u2192 v0.17.0"
+        },
+        {
+          "description": "`github.com/plexusone/omnillm-core` v0.18.0"
+        }
       ]
     },
     {
       "version": "v0.12.0",
       "date": "2026-06-29",
       "highlights": [
-        { "description": "AI image generation via OmniImage with OpenAI-compatible API endpoints" },
-        { "description": "GitHub skill for searching issues, PRs, and code across repositories" },
-        { "description": "Web content skill for URL extraction and processing" },
-        { "description": "Auto-reply system for automatic message responses" },
-        { "description": "Interactive setup wizard and doctor command for CLI diagnostics" },
-        { "description": "Tool call visualization and usage statistics in web UI" }
+        {
+          "description": "AI image generation via OmniImage with OpenAI-compatible API endpoints"
+        },
+        {
+          "description": "GitHub skill for searching issues, PRs, and code across repositories"
+        },
+        {
+          "description": "Web content skill for URL extraction and processing"
+        },
+        {
+          "description": "Auto-reply system for automatic message responses"
+        },
+        {
+          "description": "Interactive setup wizard and doctor command for CLI diagnostics"
+        },
+        {
+          "description": "Tool call visualization and usage statistics in web UI"
+        }
       ],
       "added": [
-        { "description": "Image generation endpoints: `/openai/v1/images/generations`, `/edits`, `/variations`", "commit": "827dde6" },
-        { "description": "`ImageHandler` interface and `OmniImageHandler` implementation", "commit": "827dde6" },
-        { "description": "`ImageConfig` for image generation configuration", "commit": "827dde6" },
-        { "description": "`WithImageHandler()` server option for image operations", "commit": "827dde6" },
-        { "description": "GitHub skill with `github_search_issues`, `github_search_prs`, `github_search_code` tools", "commit": "a1a5023" },
-        { "description": "Web content skill with `web_fetch` tool for URL extraction", "commit": "2a9cbc2" },
-        { "description": "Auto-reply system with configurable triggers and responses", "commit": "ec831bf" },
-        { "description": "`omniagent setup` interactive setup wizard", "commit": "eebd8b5" },
-        { "description": "`omniagent doctor` command for configuration diagnostics", "commit": "95c1716" },
-        { "description": "`omniagent sessions` command for session management", "commit": "95c1716" },
-        { "description": "UTF-16 safe string truncation utility", "commit": "9f0a4bb" },
-        { "description": "`GET /api/v1/status` endpoint with gateway version and build info", "commit": "34f2e46" },
-        { "description": "`ToolUsageStore` for tracking tool call statistics", "commit": "34f2e46" },
-        { "description": "`GET /api/v1/tools/usage` endpoint for tool usage summary", "commit": "34f2e46" },
-        { "description": "`GET /api/v1/tools/{name}/stats` endpoint for per-tool statistics", "commit": "34f2e46" },
-        { "description": "Tool call visualization in web UI with expand/collapse blocks", "commit": "1e65a77" },
-        { "description": "Tool arguments display as formatted JSON in streaming responses", "commit": "1e65a77" },
-        { "description": "Tool status indicators (Running/Complete/Error) during execution", "commit": "1e65a77" },
-        { "description": "Gateway version display in web UI status bar", "commit": "1e65a77" },
-        { "description": "Tool call count and last used timestamp in tools panel", "commit": "1e65a77" }
+        {
+          "description": "Image generation endpoints: `/openai/v1/images/generations`, `/edits`, `/variations`",
+          "commit": "827dde6"
+        },
+        {
+          "description": "`ImageHandler` interface and `OmniImageHandler` implementation",
+          "commit": "827dde6"
+        },
+        {
+          "description": "`ImageConfig` for image generation configuration",
+          "commit": "827dde6"
+        },
+        {
+          "description": "`WithImageHandler()` server option for image operations",
+          "commit": "827dde6"
+        },
+        {
+          "description": "GitHub skill with `github_search_issues`, `github_search_prs`, `github_search_code` tools",
+          "commit": "a1a5023"
+        },
+        {
+          "description": "Web content skill with `web_fetch` tool for URL extraction",
+          "commit": "2a9cbc2"
+        },
+        {
+          "description": "Auto-reply system with configurable triggers and responses",
+          "commit": "ec831bf"
+        },
+        {
+          "description": "`omniagent setup` interactive setup wizard",
+          "commit": "eebd8b5"
+        },
+        {
+          "description": "`omniagent doctor` command for configuration diagnostics",
+          "commit": "95c1716"
+        },
+        {
+          "description": "`omniagent sessions` command for session management",
+          "commit": "95c1716"
+        },
+        {
+          "description": "UTF-16 safe string truncation utility",
+          "commit": "9f0a4bb"
+        },
+        {
+          "description": "`GET /api/v1/status` endpoint with gateway version and build info",
+          "commit": "34f2e46"
+        },
+        {
+          "description": "`ToolUsageStore` for tracking tool call statistics",
+          "commit": "34f2e46"
+        },
+        {
+          "description": "`GET /api/v1/tools/usage` endpoint for tool usage summary",
+          "commit": "34f2e46"
+        },
+        {
+          "description": "`GET /api/v1/tools/{name}/stats` endpoint for per-tool statistics",
+          "commit": "34f2e46"
+        },
+        {
+          "description": "Tool call visualization in web UI with expand/collapse blocks",
+          "commit": "1e65a77"
+        },
+        {
+          "description": "Tool arguments display as formatted JSON in streaming responses",
+          "commit": "1e65a77"
+        },
+        {
+          "description": "Tool status indicators (Running/Complete/Error) during execution",
+          "commit": "1e65a77"
+        },
+        {
+          "description": "Gateway version display in web UI status bar",
+          "commit": "1e65a77"
+        },
+        {
+          "description": "Tool call count and last used timestamp in tools panel",
+          "commit": "1e65a77"
+        }
       ],
       "fixed": [
-        { "description": "Process tree termination on exec timeout to prevent orphaned processes", "commit": "6247119" },
-        { "description": "Bounded HTTP response reads to prevent OOM from malicious responses", "commit": "e871655" }
+        {
+          "description": "Process tree termination on exec timeout to prevent orphaned processes",
+          "commit": "6247119"
+        },
+        {
+          "description": "Bounded HTTP response reads to prevent OOM from malicious responses",
+          "commit": "e871655"
+        }
       ],
       "documentation": [
-        { "description": "Image generation guide with provider setup and API examples", "commit": "4b43a96" },
-        { "description": "Web content skill guide", "commit": "9fa6014" },
-        { "description": "Auto-reply configuration guide", "commit": "9fa6014" },
-        { "description": "GitHub skill documentation", "commit": "96e4972" },
-        { "description": "CLI commands documentation (setup, doctor, sessions)", "commit": "96e4972" },
-        { "description": "Memory guide updated for short-term and long-term memory", "commit": "f3a0863" },
-        { "description": "OpenClaw feature parity roadmap", "commit": "5bae55c" },
-        { "description": "Control UI roadmap updated with implemented features", "commit": "1234ad8" }
+        {
+          "description": "Image generation guide with provider setup and API examples",
+          "commit": "4b43a96"
+        },
+        {
+          "description": "Web content skill guide",
+          "commit": "9fa6014"
+        },
+        {
+          "description": "Auto-reply configuration guide",
+          "commit": "9fa6014"
+        },
+        {
+          "description": "GitHub skill documentation",
+          "commit": "96e4972"
+        },
+        {
+          "description": "CLI commands documentation (setup, doctor, sessions)",
+          "commit": "96e4972"
+        },
+        {
+          "description": "Memory guide updated for short-term and long-term memory",
+          "commit": "f3a0863"
+        },
+        {
+          "description": "OpenClaw feature parity roadmap",
+          "commit": "5bae55c"
+        },
+        {
+          "description": "Control UI roadmap updated with implemented features",
+          "commit": "1234ad8"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omniimage` v0.1.0 (new)" }
+        {
+          "description": "`github.com/plexusone/omniimage` v0.1.0 (new)"
+        }
       ]
     },
     {
       "version": "v0.11.0",
       "date": "2026-06-28",
       "highlights": [
-        { "description": "OmniMemory integration for multi-backend semantic memory (PostgreSQL, KVS, Mem0, Twilio)" },
-        { "description": "Automatic memory recall injected into system prompt before LLM calls" },
-        { "description": "OAuth 2.0 SSO for web UI with GitHub and Google providers" },
-        { "description": "AgentAuth token validation for enterprise authentication" }
+        {
+          "description": "OmniMemory integration for multi-backend semantic memory (PostgreSQL, KVS, Mem0, Twilio)"
+        },
+        {
+          "description": "Automatic memory recall injected into system prompt before LLM calls"
+        },
+        {
+          "description": "OAuth 2.0 SSO for web UI with GitHub and Google providers"
+        },
+        {
+          "description": "AgentAuth token validation for enterprise authentication"
+        }
       ],
       "added": [
-        { "description": "OmniMemory client integration with automatic memory recall in ProcessWithSession", "commit": "3c87da0" },
-        { "description": "`WithMemory()` and `WithMemoryConfig()` agent options for semantic memory", "commit": "3c87da0" },
-        { "description": "`memory_recall` tool for contextual memory retrieval with summary", "commit": "ebc62a0" },
-        { "description": "Memory types: observation, fact, preference, summary, trait, relationship", "commit": "ebc62a0" },
-        { "description": "Memory scopes: user, agent, tenant, team, session, domain", "commit": "ebc62a0" },
-        { "description": "`MemoryConfig` and `EmbedderConfig` for memory configuration", "commit": "56c3fd3" },
-        { "description": "OAuth 2.0 SSO login for web UI with GitHub and Google providers", "commit": "4825e3c" },
-        { "description": "Email and domain-based access control (ACL) for OAuth", "commit": "4825e3c" },
-        { "description": "User profile section with avatar and logout in web UI sidebar", "commit": "386cb6e" },
-        { "description": "AAuth token verifier with JWKS support", "commit": "67b8fb8" },
-        { "description": "AgentAuth bearer token validation for OpenAI-compatible API", "commit": "68aafd6" },
-        { "description": "`WithAgentAuth()` and `WithAAuth()` server options", "commit": "68aafd6" },
-        { "description": "AAuth configuration via environment variables", "commit": "b335d90" }
+        {
+          "description": "OmniMemory client integration with automatic memory recall in ProcessWithSession",
+          "commit": "3c87da0"
+        },
+        {
+          "description": "`WithMemory()` and `WithMemoryConfig()` agent options for semantic memory",
+          "commit": "3c87da0"
+        },
+        {
+          "description": "`memory_recall` tool for contextual memory retrieval with summary",
+          "commit": "ebc62a0"
+        },
+        {
+          "description": "Memory types: observation, fact, preference, summary, trait, relationship",
+          "commit": "ebc62a0"
+        },
+        {
+          "description": "Memory scopes: user, agent, tenant, team, session, domain",
+          "commit": "ebc62a0"
+        },
+        {
+          "description": "`MemoryConfig` and `EmbedderConfig` for memory configuration",
+          "commit": "56c3fd3"
+        },
+        {
+          "description": "OAuth 2.0 SSO login for web UI with GitHub and Google providers",
+          "commit": "4825e3c"
+        },
+        {
+          "description": "Email and domain-based access control (ACL) for OAuth",
+          "commit": "4825e3c"
+        },
+        {
+          "description": "User profile section with avatar and logout in web UI sidebar",
+          "commit": "386cb6e"
+        },
+        {
+          "description": "AAuth token verifier with JWKS support",
+          "commit": "67b8fb8"
+        },
+        {
+          "description": "AgentAuth bearer token validation for OpenAI-compatible API",
+          "commit": "68aafd6"
+        },
+        {
+          "description": "`WithAgentAuth()` and `WithAAuth()` server options",
+          "commit": "68aafd6"
+        },
+        {
+          "description": "AAuth configuration via environment variables",
+          "commit": "b335d90"
+        }
       ],
       "changed": [
-        { "description": "Memory skill rewritten to use omnimemory client instead of omniretrieve manager", "commit": "ebc62a0" },
-        { "description": "Migrated to plexusone/agentauth from agent-protocols/agentauth", "commit": "a9a20af" },
-        { "description": "Extracted agent registration helper to eliminate command duplication", "commit": "09b875a" }
+        {
+          "description": "Memory skill rewritten to use omnimemory client instead of omniretrieve manager",
+          "commit": "ebc62a0"
+        },
+        {
+          "description": "Migrated to plexusone/agentauth from agent-protocols/agentauth",
+          "commit": "a9a20af"
+        },
+        {
+          "description": "Extracted agent registration helper to eliminate command duplication",
+          "commit": "09b875a"
+        }
       ],
       "fixed": [
-        { "description": "HTTP server timeouts to prevent resource exhaustion (G114)", "commit": "9c2ad56" }
+        {
+          "description": "HTTP server timeouts to prevent resource exhaustion (G114)",
+          "commit": "9c2ad56"
+        }
       ],
       "documentation": [
-        { "description": "Web UI authentication guide with OAuth setup instructions", "commit": "7d97dc4" },
-        { "description": "Deployment guide with containerization and AWS LightSail", "commit": "a570ffd" },
-        { "description": "Step-by-step deployment checklist", "commit": "99b7fee" },
-        { "description": "Observability integration guide for building hooks", "commit": "2cdbcc5" },
-        { "description": "v0.11.0 OmniMemory integration roadmap in ROADMAP.md", "commit": "c1d80bf" }
+        {
+          "description": "Web UI authentication guide with OAuth setup instructions",
+          "commit": "7d97dc4"
+        },
+        {
+          "description": "Deployment guide with containerization and AWS LightSail",
+          "commit": "a570ffd"
+        },
+        {
+          "description": "Step-by-step deployment checklist",
+          "commit": "99b7fee"
+        },
+        {
+          "description": "Observability integration guide for building hooks",
+          "commit": "2cdbcc5"
+        },
+        {
+          "description": "v0.11.0 OmniMemory integration roadmap in ROADMAP.md",
+          "commit": "c1d80bf"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omnimemory` v0.1.0 (new, replaces omniretrieve)" },
-        { "description": "`github.com/plexusone/omniretrieve` removed" },
-        { "description": "`github.com/plexusone/agentauth` v0.2.0 (new)" },
-        { "description": "`github.com/anthropics/anthropic-sdk-go` v1.51.0 → v1.52.0" },
-        { "description": "`google.golang.org/api` v0.285.0 → v0.286.0" },
-        { "description": "`google.golang.org/genai` v1.61.0 → v1.62.0" },
-        { "description": "`github.com/gorilla/sessions` v1.4.0 (new, for OAuth)" },
-        { "description": "`golang.org/x/oauth2` v0.36.0 (new)" }
+        {
+          "description": "`github.com/plexusone/omnimemory` v0.1.0 (new, replaces omniretrieve)"
+        },
+        {
+          "description": "`github.com/plexusone/omniretrieve` removed"
+        },
+        {
+          "description": "`github.com/plexusone/agentauth` v0.2.0 (new)"
+        },
+        {
+          "description": "`github.com/anthropics/anthropic-sdk-go` v1.51.0 \u2192 v1.52.0"
+        },
+        {
+          "description": "`google.golang.org/api` v0.285.0 \u2192 v0.286.0"
+        },
+        {
+          "description": "`google.golang.org/genai` v1.61.0 \u2192 v1.62.0"
+        },
+        {
+          "description": "`github.com/gorilla/sessions` v1.4.0 (new, for OAuth)"
+        },
+        {
+          "description": "`golang.org/x/oauth2` v0.36.0 (new)"
+        }
       ]
     },
     {
       "version": "v0.10.0",
       "date": "2026-06-15",
       "highlights": [
-        { "description": "Full-duplex voice gateway with Twilio and Telnyx support" },
-        { "description": "Semantic memory skill for long-term context via omniretrieve" },
-        { "description": "Auto-reply and commentary profile modes" },
-        { "description": "RCS messaging support via Twilio Messaging Service SID" }
+        {
+          "description": "Full-duplex voice gateway with Twilio and Telnyx support"
+        },
+        {
+          "description": "Semantic memory skill for long-term context via omniretrieve"
+        },
+        {
+          "description": "Auto-reply and commentary profile modes"
+        },
+        {
+          "description": "RCS messaging support via Twilio Messaging Service SID"
+        }
       ],
       "added": [
-        { "description": "Voice gateway with Twilio and Telnyx full-duplex phone support", "commit": "a242758" },
-        { "description": "Native voice-to-voice mode via OpenAI Realtime and Gemini Live APIs", "commit": "a242758" },
-        { "description": "Traditional pipeline mode with custom STT/TTS providers", "commit": "a242758" },
-        { "description": "Semantic memory skill with vector retrieval via omniretrieve", "commit": "120ba02" },
-        { "description": "Auto-reply profile mode for automated responses", "commit": "3032443" },
-        { "description": "Commentary profile mode for passive observation", "commit": "3032443" },
-        { "description": "Messaging service SID support for RCS with SMS/MMS fallback", "commit": "fa5183e" },
-        { "description": "`agent.Tools()` accessor for runtime tool access", "commit": "2e40eee" },
-        { "description": "OpenRouter LLM provider support", "commit": "2e40eee" },
-        { "description": "CLI commands: `voice serve`, `voice status`, `voice call`", "commit": "a242758" },
-        { "description": "ngrok integration for local voice development", "commit": "a242758" }
+        {
+          "description": "Voice gateway with Twilio and Telnyx full-duplex phone support",
+          "commit": "a242758"
+        },
+        {
+          "description": "Native voice-to-voice mode via OpenAI Realtime and Gemini Live APIs",
+          "commit": "a242758"
+        },
+        {
+          "description": "Traditional pipeline mode with custom STT/TTS providers",
+          "commit": "a242758"
+        },
+        {
+          "description": "Semantic memory skill with vector retrieval via omniretrieve",
+          "commit": "120ba02"
+        },
+        {
+          "description": "Auto-reply profile mode for automated responses",
+          "commit": "3032443"
+        },
+        {
+          "description": "Commentary profile mode for passive observation",
+          "commit": "3032443"
+        },
+        {
+          "description": "Messaging service SID support for RCS with SMS/MMS fallback",
+          "commit": "fa5183e"
+        },
+        {
+          "description": "`agent.Tools()` accessor for runtime tool access",
+          "commit": "2e40eee"
+        },
+        {
+          "description": "OpenRouter LLM provider support",
+          "commit": "2e40eee"
+        },
+        {
+          "description": "CLI commands: `voice serve`, `voice status`, `voice call`",
+          "commit": "a242758"
+        },
+        {
+          "description": "ngrok integration for local voice development",
+          "commit": "a242758"
+        }
       ],
       "changed": [
-        { "description": "Voice gateway uses omnivoice-core registry pattern", "commit": "e52b9b0" },
-        { "description": "Voice providers (omni-google, omni-openai, omni-telnyx, omni-twilio) are now transitive via omnivoice", "commit": "800d721" },
-        { "description": "Gateway configuration uses omnivoice re-exports for tools and handlers", "commit": "a93d40d" }
+        {
+          "description": "Voice gateway uses omnivoice-core registry pattern",
+          "commit": "e52b9b0"
+        },
+        {
+          "description": "Voice providers (omni-google, omni-openai, omni-telnyx, omni-twilio) are now transitive via omnivoice",
+          "commit": "800d721"
+        },
+        {
+          "description": "Gateway configuration uses omnivoice re-exports for tools and handlers",
+          "commit": "a93d40d"
+        }
       ],
       "documentation": [
-        { "description": "Voice integration guide with gateway setup", "commit": "231512a" },
-        { "description": "Memory skill guide with semantic retrieval examples", "commit": "231512a" },
-        { "description": "Updated provider documentation with OpenRouter", "commit": "231512a" },
-        { "description": "Pipeline configuration examples for voice gateway", "commit": "0cf9989" }
+        {
+          "description": "Voice integration guide with gateway setup",
+          "commit": "231512a"
+        },
+        {
+          "description": "Memory skill guide with semantic retrieval examples",
+          "commit": "231512a"
+        },
+        {
+          "description": "Updated provider documentation with OpenRouter",
+          "commit": "231512a"
+        },
+        {
+          "description": "Pipeline configuration examples for voice gateway",
+          "commit": "0cf9989"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omnivoice` v0.10.0 → v0.11.0 (gateway tool re-exports)" },
-        { "description": "`github.com/plexusone/omnillm` v0.15.5 → v0.16.0 (openrouter transitive)" },
-        { "description": "`github.com/plexusone/omnichat` v0.7.0 → v0.8.0" },
-        { "description": "`github.com/tetratelabs/wazero` v1.11.0 → v1.12.0" },
-        { "description": "`github.com/getkin/kin-openapi` v0.139.0 → v0.140.0" },
-        { "description": "`github.com/grokify/mogo` v0.74.5 → v0.74.6" }
+        {
+          "description": "`github.com/plexusone/omnivoice` v0.10.0 \u2192 v0.11.0 (gateway tool re-exports)"
+        },
+        {
+          "description": "`github.com/plexusone/omnillm` v0.15.5 \u2192 v0.16.0 (openrouter transitive)"
+        },
+        {
+          "description": "`github.com/plexusone/omnichat` v0.7.0 \u2192 v0.8.0"
+        },
+        {
+          "description": "`github.com/tetratelabs/wazero` v1.11.0 \u2192 v1.12.0"
+        },
+        {
+          "description": "`github.com/getkin/kin-openapi` v0.139.0 \u2192 v0.140.0"
+        },
+        {
+          "description": "`github.com/grokify/mogo` v0.74.5 \u2192 v0.74.6"
+        }
       ]
     },
     {
       "version": "v0.9.0",
       "date": "2026-05-25",
       "highlights": [
-        { "description": "Bootstrap profiles and lean mode for agent customization and resource optimization" },
-        { "description": "Per-sender tool and channel policy enforcement with rate limiting" },
-        { "description": "GPU passthrough for Docker sandbox and browser dialog handling" },
-        { "description": "Vault-backed credentials via 1Password, Bitwarden, and environment variables" }
+        {
+          "description": "Bootstrap profiles and lean mode for agent customization and resource optimization"
+        },
+        {
+          "description": "Per-sender tool and channel policy enforcement with rate limiting"
+        },
+        {
+          "description": "GPU passthrough for Docker sandbox and browser dialog handling"
+        },
+        {
+          "description": "Vault-backed credentials via 1Password, Bitwarden, and environment variables"
+        }
       ],
       "added": [
-        { "description": "Bootstrap profiles for customizing agent behavior per use case", "commit": "f34e16c" },
-        { "description": "Lean mode with configurable levels for memory/token reduction", "commit": "f34e16c" },
-        { "description": "Per-sender tool policy enforcement with rate limiting", "commit": "3e35bcd" },
-        { "description": "Channel conformance checker for message validation", "commit": "53f3802" },
-        { "description": "Gateway tools RPC endpoint for HTTP-based tool invocation", "commit": "89071a4" },
-        { "description": "Browser dialog handling (alert, confirm, prompt) with callback support", "commit": "57c58c7" },
-        { "description": "JavaScript evaluation action for browser tool", "commit": "57c58c7" },
-        { "description": "GPU passthrough support for Docker sandbox", "commit": "2b04f11" },
-        { "description": "Vault-backed credential resolution (op://, bw://, env://, file://)", "commit": "02dd9ae" },
-        { "description": "OAuth token management via omnitoken integration", "commit": "02dd9ae" },
-        { "description": "New packages: `agent/profiles`, `tools/policy`, `channels/policy`", "commit": "f34e16c" }
+        {
+          "description": "Bootstrap profiles for customizing agent behavior per use case",
+          "commit": "f34e16c"
+        },
+        {
+          "description": "Lean mode with configurable levels for memory/token reduction",
+          "commit": "f34e16c"
+        },
+        {
+          "description": "Per-sender tool policy enforcement with rate limiting",
+          "commit": "3e35bcd"
+        },
+        {
+          "description": "Channel conformance checker for message validation",
+          "commit": "53f3802"
+        },
+        {
+          "description": "Gateway tools RPC endpoint for HTTP-based tool invocation",
+          "commit": "89071a4"
+        },
+        {
+          "description": "Browser dialog handling (alert, confirm, prompt) with callback support",
+          "commit": "57c58c7"
+        },
+        {
+          "description": "JavaScript evaluation action for browser tool",
+          "commit": "57c58c7"
+        },
+        {
+          "description": "GPU passthrough support for Docker sandbox",
+          "commit": "2b04f11"
+        },
+        {
+          "description": "Vault-backed credential resolution (op://, bw://, env://, file://)",
+          "commit": "02dd9ae"
+        },
+        {
+          "description": "OAuth token management via omnitoken integration",
+          "commit": "02dd9ae"
+        },
+        {
+          "description": "New packages: `agent/profiles`, `tools/policy`, `channels/policy`",
+          "commit": "f34e16c"
+        }
       ],
       "fixed": [
-        { "description": "Windows CI build by excluding omnivault-desktop via build tags", "commit": "9df2ed2" },
-        { "description": "gosec G101 warnings in test fixtures with nolint directives", "commit": "154d2f2" },
-        { "description": "unparam warning for unused ctx in browser dismissDialog", "commit": "154d2f2" },
-        { "description": "errcheck and dupl issues in openapi skill tests", "commit": "a8d99b7" }
+        {
+          "description": "Windows CI build by excluding omnivault-desktop via build tags",
+          "commit": "9df2ed2"
+        },
+        {
+          "description": "gosec G101 warnings in test fixtures with nolint directives",
+          "commit": "154d2f2"
+        },
+        {
+          "description": "unparam warning for unused ctx in browser dismissDialog",
+          "commit": "154d2f2"
+        },
+        {
+          "description": "errcheck and dupl issues in openapi skill tests",
+          "commit": "a8d99b7"
+        }
       ],
       "documentation": [
-        { "description": "Agent profiles guide for bootstrap profiles and lean mode", "commit": "e62760e" },
-        { "description": "Access policies guide for tool and channel policies", "commit": "e62760e" },
-        { "description": "Browser automation guide with dialog handling", "commit": "e62760e" },
-        { "description": "GPU passthrough section in sandboxing guide", "commit": "e62760e" },
-        { "description": "Token management in configuration reference", "commit": "e62760e" },
-        { "description": "v0.9.0 release notes", "commit": "e62760e" }
+        {
+          "description": "Agent profiles guide for bootstrap profiles and lean mode",
+          "commit": "e62760e"
+        },
+        {
+          "description": "Access policies guide for tool and channel policies",
+          "commit": "e62760e"
+        },
+        {
+          "description": "Browser automation guide with dialog handling",
+          "commit": "e62760e"
+        },
+        {
+          "description": "GPU passthrough section in sandboxing guide",
+          "commit": "e62760e"
+        },
+        {
+          "description": "Token management in configuration reference",
+          "commit": "e62760e"
+        },
+        {
+          "description": "v0.9.0 release notes",
+          "commit": "e62760e"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/anthropics/anthropic-sdk-go` v1.44.1 → v1.45.0" },
-        { "description": "`github.com/plexusone/omnillm` v0.15.3 → v0.15.4" },
-        { "description": "`github.com/plexusone/omniobserve` v0.9.0 → v0.10.0" },
-        { "description": "`github.com/plexusone/omniskill` v0.7.0 → v0.8.0" },
-        { "description": "`github.com/plexusone/omnistorage-core` v0.3.0 → v0.4.0" },
-        { "description": "`github.com/getkin/kin-openapi` v0.137.0 → v0.139.0" },
-        { "description": "`github.com/modelcontextprotocol/go-sdk` v1.6.0 → v1.6.1" },
-        { "description": "`github.com/grokify/mogo` v0.74.4 → v0.74.5" },
-        { "description": "`github.com/plexusone/omnivault` v0.5.0 (new)" },
-        { "description": "`github.com/plexusone/omnivault-desktop` v0.1.0 (new)" },
-        { "description": "`github.com/plexusone/omnitoken` v0.1.0 (new)" },
-        { "description": "`github.com/invopop/jsonschema` pinned to v0.13.0 for anthropic-sdk-go compatibility" }
+        {
+          "description": "`github.com/anthropics/anthropic-sdk-go` v1.44.1 \u2192 v1.45.0"
+        },
+        {
+          "description": "`github.com/plexusone/omnillm` v0.15.3 \u2192 v0.15.4"
+        },
+        {
+          "description": "`github.com/plexusone/omniobserve` v0.9.0 \u2192 v0.10.0"
+        },
+        {
+          "description": "`github.com/plexusone/omniskill` v0.7.0 \u2192 v0.8.0"
+        },
+        {
+          "description": "`github.com/plexusone/omnistorage-core` v0.3.0 \u2192 v0.4.0"
+        },
+        {
+          "description": "`github.com/getkin/kin-openapi` v0.137.0 \u2192 v0.139.0"
+        },
+        {
+          "description": "`github.com/modelcontextprotocol/go-sdk` v1.6.0 \u2192 v1.6.1"
+        },
+        {
+          "description": "`github.com/grokify/mogo` v0.74.4 \u2192 v0.74.5"
+        },
+        {
+          "description": "`github.com/plexusone/omnivault` v0.5.0 (new)"
+        },
+        {
+          "description": "`github.com/plexusone/omnivault-desktop` v0.1.0 (new)"
+        },
+        {
+          "description": "`github.com/plexusone/omnitoken` v0.1.0 (new)"
+        },
+        {
+          "description": "`github.com/invopop/jsonschema` pinned to v0.13.0 for anthropic-sdk-go compatibility"
+        }
       ]
     },
     {
       "version": "v0.8.0",
       "date": "2026-05-03",
       "highlights": [
-        { "description": "OpenAPI remote skill support for connecting to any OpenAPI 3.x API" }
+        {
+          "description": "OpenAPI remote skill support for connecting to any OpenAPI 3.x API"
+        }
       ],
       "added": [
-        { "description": "`WithOpenAPISkill()` option for registering OpenAPI specs as agent tools", "commit": "5419ae8" },
-        { "description": "OpenAPI skill loader with kin-openapi for spec parsing", "commit": "5419ae8" },
-        { "description": "Auth support: API key (header/query), Bearer token, Basic auth", "commit": "5419ae8" },
-        { "description": "Operation filtering by ID, tags, or include/exclude lists", "commit": "5419ae8" }
+        {
+          "description": "`WithOpenAPISkill()` option for registering OpenAPI specs as agent tools",
+          "commit": "5419ae8"
+        },
+        {
+          "description": "OpenAPI skill loader with kin-openapi for spec parsing",
+          "commit": "5419ae8"
+        },
+        {
+          "description": "Auth support: API key (header/query), Bearer token, Basic auth",
+          "commit": "5419ae8"
+        },
+        {
+          "description": "Operation filtering by ID, tags, or include/exclude lists",
+          "commit": "5419ae8"
+        }
       ],
       "documentation": [
-        { "description": "Remote skills guide with MCP and OpenAPI documentation", "commit": "1d96e37" },
-        { "description": "Remote skills section in README", "commit": "c84c70d" },
-        { "description": "Skill packs usage documentation", "commit": "bdff390" }
+        {
+          "description": "Remote skills guide with MCP and OpenAPI documentation",
+          "commit": "1d96e37"
+        },
+        {
+          "description": "Remote skills section in README",
+          "commit": "c84c70d"
+        },
+        {
+          "description": "Skill packs usage documentation",
+          "commit": "bdff390"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omnichat` v0.6.0 → v0.6.1 (Gmail provider uses omni-google)" },
-        { "description": "`github.com/plexusone/omnivoice` v0.7.2 → v0.8.0 (migrates to omni-twilio, omni-deepgram, omni-telnyx)" },
-        { "description": "`github.com/plexusone/omniserp` v0.8.0 → v0.8.1 (omni-keyring migration)" },
-        { "description": "`github.com/modelcontextprotocol/go-sdk` v1.5.0 → v1.6.0" },
-        { "description": "`github.com/getkin/kin-openapi` v0.137.0 (new, for OpenAPI parsing)" }
+        {
+          "description": "`github.com/plexusone/omnichat` v0.6.0 \u2192 v0.6.1 (Gmail provider uses omni-google)"
+        },
+        {
+          "description": "`github.com/plexusone/omnivoice` v0.7.2 \u2192 v0.8.0 (migrates to omni-twilio, omni-deepgram, omni-telnyx)"
+        },
+        {
+          "description": "`github.com/plexusone/omniserp` v0.8.0 \u2192 v0.8.1 (omni-keyring migration)"
+        },
+        {
+          "description": "`github.com/modelcontextprotocol/go-sdk` v1.5.0 \u2192 v1.6.0"
+        },
+        {
+          "description": "`github.com/getkin/kin-openapi` v0.137.0 (new, for OpenAPI parsing)"
+        }
       ]
     },
     {
       "version": "v0.7.0",
       "date": "2026-04-27",
       "highlights": [
-        { "description": "Skill pack support for loading embedded markdown skills from fs.FS" },
-        { "description": "Configurable skill filtering with includes/excludes" }
+        {
+          "description": "Skill pack support for loading embedded markdown skills from fs.FS"
+        },
+        {
+          "description": "Configurable skill filtering with includes/excludes"
+        }
       ],
       "added": [
-        { "description": "`WithSkillPack(fs.FS)` option for registering embedded skill packs", "commit": "be5bb95" },
-        { "description": "`WithSkillDirs(...string)` option for setting skill directories", "commit": "be5bb95" },
-        { "description": "`WithSkillIncludes(...string)` option to only load named skills", "commit": "be5bb95" },
-        { "description": "`WithSkillExcludes(...string)` option to skip named skills", "commit": "be5bb95" },
-        { "description": "`WithSkillManager(*Manager)` option for custom skill manager", "commit": "be5bb95" },
-        { "description": "`skills.Manager` type for unified skill loading from packs and directories", "commit": "be5bb95" },
-        { "description": "`skills.DiscoverFromFS()` for loading skills from embedded filesystems", "commit": "be5bb95" },
-        { "description": "Config options: `skills.packs`, `skills.includes`, `skills.excludes`", "commit": "be5bb95" }
+        {
+          "description": "`WithSkillPack(fs.FS)` option for registering embedded skill packs",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "`WithSkillDirs(...string)` option for setting skill directories",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "`WithSkillIncludes(...string)` option to only load named skills",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "`WithSkillExcludes(...string)` option to skip named skills",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "`WithSkillManager(*Manager)` option for custom skill manager",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "`skills.Manager` type for unified skill loading from packs and directories",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "`skills.DiscoverFromFS()` for loading skills from embedded filesystems",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "Config options: `skills.packs`, `skills.includes`, `skills.excludes`",
+          "commit": "be5bb95"
+        }
       ],
       "changed": [
-        { "description": "Skills from directories override embedded pack skills with the same name", "commit": "be5bb95" },
-        { "description": "Config options merge with programmatically registered options", "commit": "be5bb95" }
+        {
+          "description": "Skills from directories override embedded pack skills with the same name",
+          "commit": "be5bb95"
+        },
+        {
+          "description": "Config options merge with programmatically registered options",
+          "commit": "be5bb95"
+        }
       ],
       "docs": [
-        { "description": "Skills system design documents (PRD, TRD, PLAN, TASKS)", "commit": "136c718" }
+        {
+          "description": "Skills system design documents (PRD, TRD, PLAN, TASKS)",
+          "commit": "136c718"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omniskill` v0.6.0 → v0.7.0 (adds pack/ package)" },
-        { "description": "`github.com/plexusone/omnillm` v0.15.2 → v0.15.3" }
+        {
+          "description": "`github.com/plexusone/omniskill` v0.6.0 \u2192 v0.7.0 (adds pack/ package)"
+        },
+        {
+          "description": "`github.com/plexusone/omnillm` v0.15.2 \u2192 v0.15.3"
+        }
       ]
     },
     {
       "version": "v0.6.0",
       "date": "2026-04-26",
       "highlights": [
-        { "description": "Persistent sessions with automatic history loading and saving" },
-        { "description": "Context engine for token-aware conversation management" },
-        { "description": "Event hook system for agent lifecycle events" },
-        { "description": "Cron scheduler for periodic job execution" },
-        { "description": "MCP remote skill support for external tool servers" },
-        { "description": "Migration from omnistorage to omnistorage-core/kvs" }
+        {
+          "description": "Persistent sessions with automatic history loading and saving"
+        },
+        {
+          "description": "Context engine for token-aware conversation management"
+        },
+        {
+          "description": "Event hook system for agent lifecycle events"
+        },
+        {
+          "description": "Cron scheduler for periodic job execution"
+        },
+        {
+          "description": "MCP remote skill support for external tool servers"
+        },
+        {
+          "description": "Migration from omnistorage to omnistorage-core/kvs"
+        }
       ],
       "breaking": [
-        { "description": "Storage imports changed from `github.com/plexusone/omnistorage` to `github.com/plexusone/omnistorage-core/kvs`", "commit": "ac1f5ab" },
-        { "description": "Local `storage/` package removed in favor of `omnistorage-core/kvs` backends", "commit": "74c36c5" },
-        { "description": "Compiled skill tools now use `skill.Tool` interface from omniskill", "commit": "3323e30" }
+        {
+          "description": "Storage imports changed from `github.com/plexusone/omnistorage` to `github.com/plexusone/omnistorage-core/kvs`",
+          "commit": "ac1f5ab"
+        },
+        {
+          "description": "Local `storage/` package removed in favor of `omnistorage-core/kvs` backends",
+          "commit": "74c36c5"
+        },
+        {
+          "description": "Compiled skill tools now use `skill.Tool` interface from omniskill",
+          "commit": "3323e30"
+        }
       ],
       "added": [
-        { "description": "`sessions/` package with persistent session storage and tool integrations", "commit": "755ca11" },
-        { "description": "`context/` package with token-aware context management and sliding window support", "commit": "763c61d" },
-        { "description": "`hooks/` package with event dispatcher, registry, and webhook support", "commit": "b2ad5ab" },
-        { "description": "`cron/` package with scheduler, persistent job store, and tool integrations", "commit": "176e6f8" },
-        { "description": "`platform/` package with standalone platform abstraction", "commit": "4ab3b29" },
-        { "description": "`skills/remote/mcp/` package for MCP server integration", "commit": "41ea36f" },
-        { "description": "Twilio SMS channel support with webhook handling", "commit": "0301051" },
-        { "description": "`RegisterAgentOption` for external compiled skill injection", "commit": "16f6fb3" },
-        { "description": "`ProcessWithSession` method for stateful conversation handling", "commit": "f0d0efc" }
+        {
+          "description": "`sessions/` package with persistent session storage and tool integrations",
+          "commit": "755ca11"
+        },
+        {
+          "description": "`context/` package with token-aware context management and sliding window support",
+          "commit": "763c61d"
+        },
+        {
+          "description": "`hooks/` package with event dispatcher, registry, and webhook support",
+          "commit": "b2ad5ab"
+        },
+        {
+          "description": "`cron/` package with scheduler, persistent job store, and tool integrations",
+          "commit": "176e6f8"
+        },
+        {
+          "description": "`platform/` package with standalone platform abstraction",
+          "commit": "4ab3b29"
+        },
+        {
+          "description": "`skills/remote/mcp/` package for MCP server integration",
+          "commit": "41ea36f"
+        },
+        {
+          "description": "Twilio SMS channel support with webhook handling",
+          "commit": "0301051"
+        },
+        {
+          "description": "`RegisterAgentOption` for external compiled skill injection",
+          "commit": "16f6fb3"
+        },
+        {
+          "description": "`ProcessWithSession` method for stateful conversation handling",
+          "commit": "f0d0efc"
+        }
       ],
       "changed": [
-        { "description": "Compiled skills now use `skill.Tool` interface from omniskill package", "commit": "3323e30" },
-        { "description": "Storage migrated from omnistorage to omnistorage-core/kvs", "commit": "ac1f5ab" },
-        { "description": "MCP skill updated to use omniskill client and types", "commit": "0f372c2" },
-        { "description": "Twilio webhook path changed to `/webhook/twilio/sms`", "commit": "41e210a" }
+        {
+          "description": "Compiled skills now use `skill.Tool` interface from omniskill package",
+          "commit": "3323e30"
+        },
+        {
+          "description": "Storage migrated from omnistorage to omnistorage-core/kvs",
+          "commit": "ac1f5ab"
+        },
+        {
+          "description": "MCP skill updated to use omniskill client and types",
+          "commit": "0f372c2"
+        },
+        {
+          "description": "Twilio webhook path changed to `/webhook/twilio/sms`",
+          "commit": "41e210a"
+        }
       ],
       "fixed": [
-        { "description": "gofmt linting compliance", "commit": "fccc23d" }
+        {
+          "description": "gofmt linting compliance",
+          "commit": "fccc23d"
+        }
       ],
       "docs": [
-        { "description": "Added guides for sessions, context, cron, and hooks", "commit": "f4555a8" },
-        { "description": "Added voice notes specification and case study", "commit": "975b3e3" },
-        { "description": "Added v0.6.0 release notes", "commit": "be22422" },
-        { "description": "Added Twilio SMS and environment variable documentation", "commit": "60d9efe" }
+        {
+          "description": "Added guides for sessions, context, cron, and hooks",
+          "commit": "f4555a8"
+        },
+        {
+          "description": "Added voice notes specification and case study",
+          "commit": "975b3e3"
+        },
+        {
+          "description": "Added v0.6.0 release notes",
+          "commit": "be22422"
+        },
+        {
+          "description": "Added Twilio SMS and environment variable documentation",
+          "commit": "60d9efe"
+        }
       ],
       "test": [
-        { "description": "Session integration tests for conversation continuity", "commit": "7cf19ba" },
-        { "description": "Updated tests for omniskill types", "commit": "60f31a1" }
+        {
+          "description": "Session integration tests for conversation continuity",
+          "commit": "7cf19ba"
+        },
+        {
+          "description": "Updated tests for omniskill types",
+          "commit": "60f31a1"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omnistorage-core` v0.3.0 (replaced omnistorage)" },
-        { "description": "`github.com/plexusone/omniskill` v0.6.0 (new)" },
-        { "description": "`github.com/robfig/cron/v3` v3.0.1 (new, for scheduling)" },
-        { "description": "`github.com/moby/moby/client` v0.4.0 → v0.4.1" }
+        {
+          "description": "`github.com/plexusone/omnistorage-core` v0.3.0 (replaced omnistorage)"
+        },
+        {
+          "description": "`github.com/plexusone/omniskill` v0.6.0 (new)"
+        },
+        {
+          "description": "`github.com/robfig/cron/v3` v3.0.1 (new, for scheduling)"
+        },
+        {
+          "description": "`github.com/moby/moby/client` v0.4.0 \u2192 v0.4.1"
+        }
       ]
     },
     {
       "version": "v0.5.0",
       "date": "2026-04-19",
       "highlights": [
-        { "description": "Compiled skills system with registry for Go-native tool implementations" },
-        { "description": "Storage abstraction layer with SQLite and in-memory backends" },
-        { "description": "Functional options pattern for agent configuration" }
+        {
+          "description": "Compiled skills system with registry for Go-native tool implementations"
+        },
+        {
+          "description": "Storage abstraction layer with SQLite and in-memory backends"
+        },
+        {
+          "description": "Functional options pattern for agent configuration"
+        }
       ],
       "added": [
-        { "description": "Compiled skills interface (`CompiledSkill`) and registry for registering Go functions as tools", "commit": "078fc4f" },
-        { "description": "Storage interface with `SQLiteBackend` and `MemoryBackend` implementations", "commit": "f2680b7" },
-        { "description": "Functional options (`WithCompiledSkills`, `WithStorage`, `WithObservability`) for agent creation", "commit": "1d1aedb" },
-        { "description": "PlexusOne unified navigation and theme for MkDocs documentation site", "commit": "fb5c661" },
-        { "description": "Testing & Debugging guide with WebSocket smoke test instructions" }
+        {
+          "description": "Compiled skills interface (`CompiledSkill`) and registry for registering Go functions as tools",
+          "commit": "078fc4f"
+        },
+        {
+          "description": "Storage interface with `SQLiteBackend` and `MemoryBackend` implementations",
+          "commit": "f2680b7"
+        },
+        {
+          "description": "Functional options (`WithCompiledSkills`, `WithStorage`, `WithObservability`) for agent creation",
+          "commit": "1d1aedb"
+        },
+        {
+          "description": "PlexusOne unified navigation and theme for MkDocs documentation site",
+          "commit": "fb5c661"
+        },
+        {
+          "description": "Testing & Debugging guide with WebSocket smoke test instructions"
+        }
       ],
       "fixed": [
-        { "description": "Docker container timeout handling in sandbox executor", "commit": "87dbcf6" },
-        { "description": "Linting errors for errcheck and gofmt compliance", "commit": "bbd5a9e" }
+        {
+          "description": "Docker container timeout handling in sandbox executor",
+          "commit": "87dbcf6"
+        },
+        {
+          "description": "Linting errors for errcheck and gofmt compliance",
+          "commit": "bbd5a9e"
+        }
       ],
       "build": [
-        { "description": "Switch to pure-Go SQLite driver (`modernc.org/sqlite`) for better cross-platform support", "commit": "50d7807" },
-        { "description": "Upgrade to omnillm v0.15.1 with thick provider support", "commit": "9864dfe" }
+        {
+          "description": "Switch to pure-Go SQLite driver (`modernc.org/sqlite`) for better cross-platform support",
+          "commit": "50d7807"
+        },
+        {
+          "description": "Upgrade to omnillm v0.15.1 with thick provider support",
+          "commit": "9864dfe"
+        }
       ],
       "test": [
-        { "description": "Add unit tests for compiled skills registry and storage backends", "commit": "82921a4" }
+        {
+          "description": "Add unit tests for compiled skills registry and storage backends",
+          "commit": "82921a4"
+        }
       ],
       "dependencies": [
-        { "description": "`github.com/plexusone/omnillm` v0.13.0 → v0.15.2" },
-        { "description": "`github.com/plexusone/omnivoice` v0.5.1 → v0.7.2" },
-        { "description": "`github.com/plexusone/omnichat` v0.3.0 → v0.6.0" },
-        { "description": "`github.com/plexusone/omniobserve` v0.7.0 → v0.8.0" },
-        { "description": "Now using `github.com/plexusone/omni-openai` v0.2.0 (consolidated OpenAI provider)" },
-        { "description": "Now using `github.com/plexusone/twilio-go` v0.4.0 (consolidated Twilio provider)" }
+        {
+          "description": "`github.com/plexusone/omnillm` v0.13.0 \u2192 v0.15.2"
+        },
+        {
+          "description": "`github.com/plexusone/omnivoice` v0.5.1 \u2192 v0.7.2"
+        },
+        {
+          "description": "`github.com/plexusone/omnichat` v0.3.0 \u2192 v0.6.0"
+        },
+        {
+          "description": "`github.com/plexusone/omniobserve` v0.7.0 \u2192 v0.8.0"
+        },
+        {
+          "description": "Now using `github.com/plexusone/omni-openai` v0.2.0 (consolidated OpenAI provider)"
+        },
+        {
+          "description": "Now using `github.com/plexusone/twilio-go` v0.4.0 (consolidated Twilio provider)"
+        }
       ]
     },
     {
       "version": "v0.4.0",
       "date": "2026-03-01",
       "highlights": [
-        { "description": "Module migration from agentplexus to plexusone organization" },
-        { "description": "Batteries-included omnivoice with provider registry pattern" }
+        {
+          "description": "Module migration from agentplexus to plexusone organization"
+        },
+        {
+          "description": "Batteries-included omnivoice with provider registry pattern"
+        }
       ],
       "changed": [
-        { "description": "Module path migrated from `github.com/agentplexus/omniagent` to `github.com/plexusone/omniagent`" },
-        { "description": "Voice processor refactored to use `omnivoice.GetSTTProvider()` and `omnivoice.GetTTSProvider()` registry pattern" },
-        { "description": "Removed direct `omnivoice-deepgram` import - now auto-registered via `providers/all`" }
+        {
+          "description": "Module path migrated from `github.com/agentplexus/omniagent` to `github.com/plexusone/omniagent`"
+        },
+        {
+          "description": "Voice processor refactored to use `omnivoice.GetSTTProvider()` and `omnivoice.GetTTSProvider()` registry pattern"
+        },
+        {
+          "description": "Removed direct `omnivoice-deepgram` import - now auto-registered via `providers/all`"
+        }
       ],
       "dependencies": [
-        { "description": "Upgrade `github.com/plexusone/omnivoice` to v0.5.1 (batteries-included with registry)" },
-        { "description": "Upgrade `github.com/plexusone/omnichat` to v0.3.0" },
-        { "description": "Upgrade `github.com/plexusone/omnillm` to v0.13.0" },
-        { "description": "Upgrade `github.com/plexusone/omniobserve` to v0.7.0" },
-        { "description": "Upgrade `github.com/plexusone/omniserp` to v0.8.0" }
+        {
+          "description": "Upgrade `github.com/plexusone/omnivoice` to v0.5.1 (batteries-included with registry)"
+        },
+        {
+          "description": "Upgrade `github.com/plexusone/omnichat` to v0.3.0"
+        },
+        {
+          "description": "Upgrade `github.com/plexusone/omnillm` to v0.13.0"
+        },
+        {
+          "description": "Upgrade `github.com/plexusone/omniobserve` to v0.7.0"
+        },
+        {
+          "description": "Upgrade `github.com/plexusone/omniserp` to v0.8.0"
+        }
       ]
     },
     {
       "version": "v0.3.0",
       "date": "2026-02-22",
       "highlights": [
-        { "description": "Skill system with OpenClaw/ClawHub compatibility" },
-        { "description": "WASM and Docker sandboxing for secure tool execution" }
+        {
+          "description": "Skill system with OpenClaw/ClawHub compatibility"
+        },
+        {
+          "description": "WASM and Docker sandboxing for secure tool execution"
+        }
       ],
       "added": [
-        { "description": "`skills/` package with SKILL.md parser supporting YAML frontmatter and metadata", "commit": "72b7281" },
-        { "description": "Skill discovery from multiple directories with deduplication", "commit": "72b7281" },
-        { "description": "Requirement checking for skills (bins, env vars) with install hints", "commit": "72b7281" },
-        { "description": "Skill injection into system prompt with emoji support", "commit": "72b7281" },
-        { "description": "CLI commands: `skills list`, `skills info`, `skills check`", "commit": "72b7281" },
-        { "description": "Agent integration with skill loading on startup", "commit": "72b7281" },
-        { "description": "`sandbox/` package with capability-based permission model", "commit": "f1d3781" },
-        { "description": "WASM runtime wrapper using wazero with memory limits and timeout enforcement", "commit": "f1d3781" },
-        { "description": "Host functions for sandboxed file, HTTP, and command execution", "commit": "f1d3781" },
-        { "description": "Docker sandbox with container isolation and security hardening", "commit": "f1d3781" },
-        { "description": "Path validation with symlink resolution for sandbox security", "commit": "f1d3781" },
-        { "description": "Command allowlist enforcement for exec operations", "commit": "f1d3781" }
+        {
+          "description": "`skills/` package with SKILL.md parser supporting YAML frontmatter and metadata",
+          "commit": "72b7281"
+        },
+        {
+          "description": "Skill discovery from multiple directories with deduplication",
+          "commit": "72b7281"
+        },
+        {
+          "description": "Requirement checking for skills (bins, env vars) with install hints",
+          "commit": "72b7281"
+        },
+        {
+          "description": "Skill injection into system prompt with emoji support",
+          "commit": "72b7281"
+        },
+        {
+          "description": "CLI commands: `skills list`, `skills info`, `skills check`",
+          "commit": "72b7281"
+        },
+        {
+          "description": "Agent integration with skill loading on startup",
+          "commit": "72b7281"
+        },
+        {
+          "description": "`sandbox/` package with capability-based permission model",
+          "commit": "f1d3781"
+        },
+        {
+          "description": "WASM runtime wrapper using wazero with memory limits and timeout enforcement",
+          "commit": "f1d3781"
+        },
+        {
+          "description": "Host functions for sandboxed file, HTTP, and command execution",
+          "commit": "f1d3781"
+        },
+        {
+          "description": "Docker sandbox with container isolation and security hardening",
+          "commit": "f1d3781"
+        },
+        {
+          "description": "Path validation with symlink resolution for sandbox security",
+          "commit": "f1d3781"
+        },
+        {
+          "description": "Command allowlist enforcement for exec operations",
+          "commit": "f1d3781"
+        }
       ],
       "fixed": [
-        { "description": "Config tests now clear environment variables to prevent interference", "commit": "467d9dc" }
+        {
+          "description": "Config tests now clear environment variables to prevent interference",
+          "commit": "467d9dc"
+        }
       ],
       "dependencies": [
-        { "description": "Add `github.com/tetratelabs/wazero` v1.11.0 for WASM runtime", "commit": "ec40405" },
-        { "description": "Add `github.com/moby/moby/client` v0.2.2 for Docker SDK", "commit": "ec40405" },
-        { "description": "Add `github.com/moby/moby/api` v1.53.0 for Docker API types", "commit": "ec40405" }
+        {
+          "description": "Add `github.com/tetratelabs/wazero` v1.11.0 for WASM runtime",
+          "commit": "ec40405"
+        },
+        {
+          "description": "Add `github.com/moby/moby/client` v0.2.2 for Docker SDK",
+          "commit": "ec40405"
+        },
+        {
+          "description": "Add `github.com/moby/moby/api` v1.53.0 for Docker API types",
+          "commit": "ec40405"
+        }
       ]
     },
     {
       "version": "v0.2.0",
       "date": "2026-02-22",
       "highlights": [
-        { "description": "Voice note support via OmniVoice integration for WhatsApp" }
+        {
+          "description": "Voice note support via OmniVoice integration for WhatsApp"
+        }
       ],
       "added": [
-        { "description": "`voice/` package with `Processor` implementing omnichat's `VoiceProcessor` interface", "commit": "b94f35e" },
-        { "description": "Voice configuration in `config.go` with STT/TTS provider settings", "commit": "b94f35e" },
-        { "description": "Environment variable support for voice config (`DEEPGRAM_API_KEY`, `OMNIAGENT_VOICE_*`)", "commit": "b94f35e" },
-        { "description": "Gateway integration with `ProcessWithVoice` handler for voice-enabled messaging", "commit": "b94f35e" },
-        { "description": "Deepgram provider support for both STT (nova-2) and TTS (aura-asteria-en)", "commit": "b94f35e" },
-        { "description": "Response mode options: `auto` (voice reply to voice input), `always`, `never`", "commit": "b94f35e" }
+        {
+          "description": "`voice/` package with `Processor` implementing omnichat's `VoiceProcessor` interface",
+          "commit": "b94f35e"
+        },
+        {
+          "description": "Voice configuration in `config.go` with STT/TTS provider settings",
+          "commit": "b94f35e"
+        },
+        {
+          "description": "Environment variable support for voice config (`DEEPGRAM_API_KEY`, `OMNIAGENT_VOICE_*`)",
+          "commit": "b94f35e"
+        },
+        {
+          "description": "Gateway integration with `ProcessWithVoice` handler for voice-enabled messaging",
+          "commit": "b94f35e"
+        },
+        {
+          "description": "Deepgram provider support for both STT (nova-2) and TTS (aura-asteria-en)",
+          "commit": "b94f35e"
+        },
+        {
+          "description": "Response mode options: `auto` (voice reply to voice input), `always`, `never`",
+          "commit": "b94f35e"
+        }
       ],
       "dependencies": [
-        { "description": "Add `github.com/plexusone/omnivoice` v0.4.3", "commit": "b94f35e" },
-        { "description": "Add `github.com/plexusone/omnivoice-deepgram` v0.3.1", "commit": "b94f35e" },
-        { "description": "Upgrade `github.com/plexusone/omnichat` to v0.2.0", "commit": "b94f35e" }
+        {
+          "description": "Add `github.com/plexusone/omnivoice` v0.4.3",
+          "commit": "b94f35e"
+        },
+        {
+          "description": "Add `github.com/plexusone/omnivoice-deepgram` v0.3.1",
+          "commit": "b94f35e"
+        },
+        {
+          "description": "Upgrade `github.com/plexusone/omnichat` to v0.2.0",
+          "commit": "b94f35e"
+        }
       ]
     },
     {
       "version": "v0.1.0",
       "date": "2026-02-22",
       "highlights": [
-        { "description": "Initial release with WebSocket gateway, AI agent runtime, and unified messaging via omnichat" }
+        {
+          "description": "Initial release with WebSocket gateway, AI agent runtime, and unified messaging via omnichat"
+        }
       ],
       "added": [
-        { "description": "WebSocket gateway with client management and health checks", "commit": "da77c73" },
-        { "description": "AI agent runtime with omnillm multi-provider support (OpenAI, Anthropic, Gemini)", "commit": "da77c73" },
-        { "description": "Unified messaging via omnichat (WhatsApp, Telegram, Discord)", "commit": "ac7b21f" },
-        { "description": "WhatsApp provider with QR code linking", "commit": "ac7b21f" },
-        { "description": "LLM observability integration via omniobserve", "commit": "ac7b21f" },
-        { "description": "Tool execution loop with max 5 iterations", "commit": "26e2cba" },
-        { "description": "Web search tool via omniserp", "commit": "26e2cba" },
-        { "description": "Browser automation tool using Rod", "commit": "da77c73" },
-        { "description": "Shell execution tool with allowlist security", "commit": "da77c73" },
-        { "description": "Cobra-based CLI with gateway, channels, config, and version commands", "commit": "da77c73" },
-        { "description": "YAML/JSON configuration with environment variable overrides", "commit": "6295af1" },
-        { "description": "CI/CD pipeline with multi-platform testing", "commit": "da77c73" }
+        {
+          "description": "WebSocket gateway with client management and health checks",
+          "commit": "da77c73"
+        },
+        {
+          "description": "AI agent runtime with omnillm multi-provider support (OpenAI, Anthropic, Gemini)",
+          "commit": "da77c73"
+        },
+        {
+          "description": "Unified messaging via omnichat (WhatsApp, Telegram, Discord)",
+          "commit": "ac7b21f"
+        },
+        {
+          "description": "WhatsApp provider with QR code linking",
+          "commit": "ac7b21f"
+        },
+        {
+          "description": "LLM observability integration via omniobserve",
+          "commit": "ac7b21f"
+        },
+        {
+          "description": "Tool execution loop with max 5 iterations",
+          "commit": "26e2cba"
+        },
+        {
+          "description": "Web search tool via omniserp",
+          "commit": "26e2cba"
+        },
+        {
+          "description": "Browser automation tool using Rod",
+          "commit": "da77c73"
+        },
+        {
+          "description": "Shell execution tool with allowlist security",
+          "commit": "da77c73"
+        },
+        {
+          "description": "Cobra-based CLI with gateway, channels, config, and version commands",
+          "commit": "da77c73"
+        },
+        {
+          "description": "YAML/JSON configuration with environment variable overrides",
+          "commit": "6295af1"
+        },
+        {
+          "description": "CI/CD pipeline with multi-platform testing",
+          "commit": "da77c73"
+        }
       ],
       "fixed": [
-        { "description": "Pin fetchup to v0.2.3 for go-rod/rod v0.116.2 compatibility", "commit": "de7f46d" },
-        { "description": "Nil interface gotcha for observability hook when disabled", "commit": "ac7b21f" }
+        {
+          "description": "Pin fetchup to v0.2.3 for go-rod/rod v0.116.2 compatibility",
+          "commit": "de7f46d"
+        },
+        {
+          "description": "Nil interface gotcha for observability hook when disabled",
+          "commit": "ac7b21f"
+        }
       ]
     }
   ]
