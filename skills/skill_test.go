@@ -115,6 +115,63 @@ Use sonos to control speakers.
 	}
 }
 
+func TestDeclaredSecrets(t *testing.T) {
+	content := `---
+name: github
+description: GitHub skill
+metadata:
+  {
+    "openclaw":
+      {
+        "requires":
+          {
+            "secrets":
+              [
+                { "name": "GITHUB_TOKEN", "description": "A PAT", "required": true },
+                { "name": "GITHUB_ENTERPRISE_URL", "env": "GH_ENTERPRISE_URL" },
+              ],
+          },
+      },
+  }
+---
+
+# GitHub
+`
+	skill, err := Parse(content)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	secrets := skill.DeclaredSecrets()
+	if len(secrets) != 2 {
+		t.Fatalf("DeclaredSecrets len = %d, want 2 (%+v)", len(secrets), secrets)
+	}
+
+	if secrets[0].Name != "GITHUB_TOKEN" || !secrets[0].Required || secrets[0].Description != "A PAT" {
+		t.Errorf("secret[0] = %+v", secrets[0])
+	}
+	// Env defaults to Name when unset.
+	if got := secrets[0].EnvVar(); got != "GITHUB_TOKEN" {
+		t.Errorf("secret[0].EnvVar() = %q, want GITHUB_TOKEN (defaults to Name)", got)
+	}
+	// Explicit Env wins.
+	if got := secrets[1].EnvVar(); got != "GH_ENTERPRISE_URL" {
+		t.Errorf("secret[1].EnvVar() = %q, want GH_ENTERPRISE_URL", got)
+	}
+	if secrets[1].Required {
+		t.Error("secret[1] should not be required")
+	}
+}
+
+func TestDeclaredSecrets_None(t *testing.T) {
+	skill, err := Parse("---\nname: bare\n---\n\n# Bare\n")
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if got := skill.DeclaredSecrets(); got != nil {
+		t.Errorf("DeclaredSecrets = %+v, want nil for a skill with no declarations", got)
+	}
+}
+
 func TestLoad(t *testing.T) {
 	// Get the testdata directory relative to this test file
 	testdataDir := filepath.Join("..", "testdata", "skills")

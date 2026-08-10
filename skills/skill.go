@@ -42,9 +42,45 @@ type OpenClawMeta struct {
 
 // Requires specifies skill prerequisites.
 type Requires struct {
-	Bins    []string `json:"bins,omitempty"`    // Required binaries on PATH
-	AnyBins []string `json:"anyBins,omitempty"` // At least one required
-	Env     []string `json:"env,omitempty"`     // Required environment variables
+	Bins    []string            `json:"bins,omitempty"`    // Required binaries on PATH
+	AnyBins []string            `json:"anyBins,omitempty"` // At least one required
+	Env     []string            `json:"env,omitempty"`     // Required environment variables
+	Secrets []SecretRequirement `json:"secrets,omitempty"` // Declared secrets (INIT-OMNIAGENT-004)
+}
+
+// SecretRequirement is a secret a skill declares it needs, GitHub-Actions
+// style. Declaration is the allowlist: a skill can only ever be injected with
+// secrets it declares here. The value is bound out-of-band (operator config or
+// the agent Secrets UI) and injected as an environment variable.
+type SecretRequirement struct {
+	// Name is the logical secret name (e.g. "GITHUB_TOKEN"). Shown in the UI.
+	Name string `json:"name"`
+	// Description is a human-readable hint shown alongside the input.
+	Description string `json:"description,omitempty"`
+	// Required gates skill availability: an unresolved required secret marks
+	// the skill unavailable with an actionable message.
+	Required bool `json:"required,omitempty"`
+	// Env is the environment variable the value is injected as; defaults to
+	// Name when empty.
+	Env string `json:"env,omitempty"`
+}
+
+// EnvVar returns the environment variable the secret is injected as, defaulting
+// to Name when Env is unset.
+func (r SecretRequirement) EnvVar() string {
+	if r.Env != "" {
+		return r.Env
+	}
+	return r.Name
+}
+
+// DeclaredSecrets returns the secrets a skill declares in its SKILL.md
+// frontmatter, or nil when it declares none.
+func (s *Skill) DeclaredSecrets() []SecretRequirement {
+	if s.Metadata.OpenClaw == nil || s.Metadata.OpenClaw.Requires == nil {
+		return nil
+	}
+	return s.Metadata.OpenClaw.Requires.Secrets
 }
 
 // Installer specifies how to install a dependency.
