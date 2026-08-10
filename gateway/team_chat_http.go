@@ -466,10 +466,11 @@ func (h *TeamChatHTTP) writeServiceError(w http.ResponseWriter, err error) {
 // to the right room.
 func teamChatMessageEvent(chatID uuid.UUID, m messageView) *Message {
 	return NewEventMessage("chat.message", chatID.String(), map[string]interface{}{
-		"chatId":     chatID,
-		"id":         m.ID,
-		"authorType": m.AuthorType,
-		"content":    m.Content,
-		"createdAt":  m.CreatedAt,
+		"chatId":       chatID,
+		"id":           m.ID,
+		"authorType":   m.AuthorType,
+		"authorUserId": m.AuthorUserID,
+		"content":      m.Content,
+		"createdAt":    m.CreatedAt,
 	})
 }

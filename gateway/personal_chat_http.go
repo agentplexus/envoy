@@ -63,8 +63,12 @@ func (h *PersonalChatHTTP) SetBroadcaster(b func(*Message)) { h.broadcast = b }
 type messageView struct {
 	ID         uuid.UUID `json:"id"`
 	AuthorType string    `json:"authorType"`
-	Content    string    `json:"content"`
-	CreatedAt  time.Time `json:"createdAt"`
+	// AuthorUserID identifies the human author of a "user" message (nil for
+	// agent messages). In a group chat the UI uses it to attribute each
+	// message to a specific member; personal mode ignores it.
+	AuthorUserID *uuid.UUID `json:"authorUserId,omitempty"`
+	Content      string     `json:"content"`
+	CreatedAt    time.Time  `json:"createdAt"`
 }
 
 type chatView struct {
@@ -92,7 +96,7 @@ type sendChatResponse struct {
 }
 
 func toMessageView(m *ent.Message) messageView {
-	return messageView{ID: m.ID, AuthorType: string(m.AuthorType), Content: m.Content, CreatedAt: m.CreatedAt}
+	return messageView{ID: m.ID, AuthorType: string(m.AuthorType), AuthorUserID: m.AuthorUserID, Content: m.Content, CreatedAt: m.CreatedAt}
 }
 
 // chatMessageEvent builds the WS event carrying an agent reply to live
