@@ -3620,6 +3620,8 @@ type ChatMutation struct {
 	messages        map[uuid.UUID]struct{}
 	removedmessages map[uuid.UUID]struct{}
 	clearedmessages bool
+	agent           *uuid.UUID
+	clearedagent    bool
 	done            bool
 	oldValue        func(context.Context) (*Chat, error)
 	predicates      []predicate.Chat
@@ -3850,6 +3852,55 @@ func (m *ChatMutation) ResetCreatedBy() {
 	m.creator = nil
 }
 
+// SetAgentID sets the "agent_id" field.
+func (m *ChatMutation) SetAgentID(u uuid.UUID) {
+	m.agent = &u
+}
+
+// AgentID returns the value of the "agent_id" field in the mutation.
+func (m *ChatMutation) AgentID() (r uuid.UUID, exists bool) {
+	v := m.agent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAgentID returns the old "agent_id" field's value of the Chat entity.
+// If the Chat object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChatMutation) OldAgentID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAgentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAgentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAgentID: %w", err)
+	}
+	return oldValue.AgentID, nil
+}
+
+// ClearAgentID clears the value of the "agent_id" field.
+func (m *ChatMutation) ClearAgentID() {
+	m.agent = nil
+	m.clearedFields[chat.FieldAgentID] = struct{}{}
+}
+
+// AgentIDCleared returns if the "agent_id" field was cleared in this mutation.
+func (m *ChatMutation) AgentIDCleared() bool {
+	_, ok := m.clearedFields[chat.FieldAgentID]
+	return ok
+}
+
+// ResetAgentID resets all changes to the "agent_id" field.
+func (m *ChatMutation) ResetAgentID() {
+	m.agent = nil
+	delete(m.clearedFields, chat.FieldAgentID)
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *ChatMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -4034,6 +4085,33 @@ func (m *ChatMutation) ResetMessages() {
 	m.removedmessages = nil
 }
 
+// ClearAgent clears the "agent" edge to the Agent entity.
+func (m *ChatMutation) ClearAgent() {
+	m.clearedagent = true
+	m.clearedFields[chat.FieldAgentID] = struct{}{}
+}
+
+// AgentCleared reports if the "agent" edge to the Agent entity was cleared.
+func (m *ChatMutation) AgentCleared() bool {
+	return m.AgentIDCleared() || m.clearedagent
+}
+
+// AgentIDs returns the "agent" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AgentID instead. It exists only for internal usage by the builders.
+func (m *ChatMutation) AgentIDs() (ids []uuid.UUID) {
+	if id := m.agent; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAgent resets all changes to the "agent" edge.
+func (m *ChatMutation) ResetAgent() {
+	m.agent = nil
+	m.clearedagent = false
+}
+
 // Where appends a list predicates to the ChatMutation builder.
 func (m *ChatMutation) Where(ps ...predicate.Chat) {
 	m.predicates = append(m.predicates, ps...)
@@ -4068,7 +4146,7 @@ func (m *ChatMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChatMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m._type != nil {
 		fields = append(fields, chat.FieldType)
 	}
@@ -4077,6 +4155,9 @@ func (m *ChatMutation) Fields() []string {
 	}
 	if m.creator != nil {
 		fields = append(fields, chat.FieldCreatedBy)
+	}
+	if m.agent != nil {
+		fields = append(fields, chat.FieldAgentID)
 	}
 	if m.created_at != nil {
 		fields = append(fields, chat.FieldCreatedAt)
@@ -4095,6 +4176,8 @@ func (m *ChatMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case chat.FieldCreatedBy:
 		return m.CreatedBy()
+	case chat.FieldAgentID:
+		return m.AgentID()
 	case chat.FieldCreatedAt:
 		return m.CreatedAt()
 	}
@@ -4112,6 +4195,8 @@ func (m *ChatMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case chat.FieldCreatedBy:
 		return m.OldCreatedBy(ctx)
+	case chat.FieldAgentID:
+		return m.OldAgentID(ctx)
 	case chat.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	}
@@ -4143,6 +4228,13 @@ func (m *ChatMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedBy(v)
+		return nil
+	case chat.FieldAgentID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAgentID(v)
 		return nil
 	case chat.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -4184,6 +4276,9 @@ func (m *ChatMutation) ClearedFields() []string {
 	if m.FieldCleared(chat.FieldName) {
 		fields = append(fields, chat.FieldName)
 	}
+	if m.FieldCleared(chat.FieldAgentID) {
+		fields = append(fields, chat.FieldAgentID)
+	}
 	return fields
 }
 
@@ -4200,6 +4295,9 @@ func (m *ChatMutation) ClearField(name string) error {
 	switch name {
 	case chat.FieldName:
 		m.ClearName()
+		return nil
+	case chat.FieldAgentID:
+		m.ClearAgentID()
 		return nil
 	}
 	return fmt.Errorf("unknown Chat nullable field %s", name)
@@ -4218,6 +4316,9 @@ func (m *ChatMutation) ResetField(name string) error {
 	case chat.FieldCreatedBy:
 		m.ResetCreatedBy()
 		return nil
+	case chat.FieldAgentID:
+		m.ResetAgentID()
+		return nil
 	case chat.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
@@ -4227,7 +4328,7 @@ func (m *ChatMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ChatMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.creator != nil {
 		edges = append(edges, chat.EdgeCreator)
 	}
@@ -4236,6 +4337,9 @@ func (m *ChatMutation) AddedEdges() []string {
 	}
 	if m.messages != nil {
 		edges = append(edges, chat.EdgeMessages)
+	}
+	if m.agent != nil {
+		edges = append(edges, chat.EdgeAgent)
 	}
 	return edges
 }
@@ -4260,13 +4364,17 @@ func (m *ChatMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case chat.EdgeAgent:
+		if id := m.agent; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ChatMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedmembers != nil {
 		edges = append(edges, chat.EdgeMembers)
 	}
@@ -4298,7 +4406,7 @@ func (m *ChatMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ChatMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedcreator {
 		edges = append(edges, chat.EdgeCreator)
 	}
@@ -4307,6 +4415,9 @@ func (m *ChatMutation) ClearedEdges() []string {
 	}
 	if m.clearedmessages {
 		edges = append(edges, chat.EdgeMessages)
+	}
+	if m.clearedagent {
+		edges = append(edges, chat.EdgeAgent)
 	}
 	return edges
 }
@@ -4321,6 +4432,8 @@ func (m *ChatMutation) EdgeCleared(name string) bool {
 		return m.clearedmembers
 	case chat.EdgeMessages:
 		return m.clearedmessages
+	case chat.EdgeAgent:
+		return m.clearedagent
 	}
 	return false
 }
@@ -4331,6 +4444,9 @@ func (m *ChatMutation) ClearEdge(name string) error {
 	switch name {
 	case chat.EdgeCreator:
 		m.ClearCreator()
+		return nil
+	case chat.EdgeAgent:
+		m.ClearAgent()
 		return nil
 	}
 	return fmt.Errorf("unknown Chat unique edge %s", name)
@@ -4348,6 +4464,9 @@ func (m *ChatMutation) ResetEdge(name string) error {
 		return nil
 	case chat.EdgeMessages:
 		m.ResetMessages()
+		return nil
+	case chat.EdgeAgent:
+		m.ResetAgent()
 		return nil
 	}
 	return fmt.Errorf("unknown Chat edge %s", name)

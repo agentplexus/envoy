@@ -158,6 +158,7 @@ var (
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"private", "group"}},
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "agent_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "created_by", Type: field.TypeUUID},
 	}
 	// ChatsTable holds the schema information for the "chats" table.
@@ -167,17 +168,23 @@ var (
 		PrimaryKey: []*schema.Column{ChatsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "chats_users_chats_created",
+				Symbol:     "chats_agents_agent",
 				Columns:    []*schema.Column{ChatsColumns[4]},
+				RefColumns: []*schema.Column{AgentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "chats_users_chats_created",
+				Columns:    []*schema.Column{ChatsColumns[5]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "chat_created_by",
+				Name:    "chat_created_by_agent_id",
 				Unique:  true,
-				Columns: []*schema.Column{ChatsColumns[4]},
+				Columns: []*schema.Column{ChatsColumns[5], ChatsColumns[4]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "type = 'private'",
 				},
@@ -349,7 +356,8 @@ func init() {
 		Table: "allowlist",
 	}
 	AuthSessionsTable.ForeignKeys[0].RefTable = UsersTable
-	ChatsTable.ForeignKeys[0].RefTable = UsersTable
+	ChatsTable.ForeignKeys[0].RefTable = AgentsTable
+	ChatsTable.ForeignKeys[1].RefTable = UsersTable
 	ChatMembersTable.ForeignKeys[0].RefTable = ChatsTable
 	ChatMembersTable.ForeignKeys[1].RefTable = UsersTable
 	IdentitiesTable.ForeignKeys[0].RefTable = UsersTable

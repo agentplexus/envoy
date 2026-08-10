@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/plexusone/omniagent/team/ent/agent"
 	"github.com/plexusone/omniagent/team/ent/chat"
 	"github.com/plexusone/omniagent/team/ent/user"
 )
@@ -25,6 +26,8 @@ type Chat struct {
 	Name string `json:"name,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy uuid.UUID `json:"created_by,omitempty"`
+	// AgentID holds the value of the "agent_id" field.
+	AgentID *uuid.UUID `json:"agent_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -41,9 +44,11 @@ type ChatEdges struct {
 	Members []*ChatMember `json:"members,omitempty"`
 	// Messages holds the value of the messages edge.
 	Messages []*Message `json:"messages,omitempty"`
+	// Agent holds the value of the agent edge.
+	Agent *Agent `json:"agent,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // CreatorOrErr returns the Creator value or an error if the edge
@@ -75,11 +80,24 @@ func (e ChatEdges) MessagesOrErr() ([]*Message, error) {
 	return nil, &NotLoadedError{edge: "messages"}
 }
 
+// AgentOrErr returns the Agent value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ChatEdges) AgentOrErr() (*Agent, error) {
+	if e.Agent != nil {
+		return e.Agent, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: agent.Label}
+	}
+	return nil, &NotLoadedError{edge: "agent"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Chat) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case chat.FieldAgentID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case chat.FieldType, chat.FieldName:
 			values[i] = new(sql.NullString)
 		case chat.FieldCreatedAt:
@@ -125,6 +143,13 @@ func (_m *Chat) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.CreatedBy = *value
 			}
+		case chat.FieldAgentID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field agent_id", values[i])
+			} else if value.Valid {
+				_m.AgentID = new(uuid.UUID)
+				*_m.AgentID = *value.S.(*uuid.UUID)
+			}
 		case chat.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -159,6 +184,11 @@ func (_m *Chat) QueryMessages() *MessageQuery {
 	return NewChatClient(_m.config).QueryMessages(_m)
 }
 
+// QueryAgent queries the "agent" edge of the Chat entity.
+func (_m *Chat) QueryAgent() *AgentQuery {
+	return NewChatClient(_m.config).QueryAgent(_m)
+}
+
 // Update returns a builder for updating this Chat.
 // Note that you need to call Chat.Unwrap() before calling this method if this Chat
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -190,6 +220,11 @@ func (_m *Chat) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_by=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CreatedBy))
+	builder.WriteString(", ")
+	if v := _m.AgentID; v != nil {
+		builder.WriteString("agent_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

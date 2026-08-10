@@ -102,3 +102,11 @@ func (s *Service) Catalog(ctx context.Context, actor Actor) (*Catalog, error) {
 func (s *Service) CanStartChat(ctx context.Context, actor Actor, agentID uuid.UUID) (bool, error) {
 	return s.Can(ctx, actor, agentID, CapCreateChat)
 }
+
+// AuthorizeStartChat is the primitive-signature adapter that satisfies the
+// chats package's AgentGate interface, so the chats service can gate
+// agent-bound chat creation on Can(CapCreateChat) without importing the agents
+// package (the composition root wires *agents.Service in as the gate).
+func (s *Service) AuthorizeStartChat(ctx context.Context, userID uuid.UUID, superadmin bool, agentID uuid.UUID) (bool, error) {
+	return s.CanStartChat(ctx, Actor{UserID: userID, Superadmin: superadmin}, agentID)
+}

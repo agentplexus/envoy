@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/plexusone/omniagent/team/ent/agent"
 	"github.com/plexusone/omniagent/team/ent/chat"
 	"github.com/plexusone/omniagent/team/ent/chatmember"
 	"github.com/plexusone/omniagent/team/ent/message"
@@ -30,6 +31,7 @@ type ChatQuery struct {
 	withCreator  *UserQuery
 	withMembers  *ChatMemberQuery
 	withMessages *MessageQuery
+	withAgent    *AgentQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,6 +127,28 @@ func (_q *ChatQuery) QueryMessages() *MessageQuery {
 			sqlgraph.From(chat.Table, chat.FieldID, selector),
 			sqlgraph.To(message.Table, message.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, chat.MessagesTable, chat.MessagesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAgent chains the current query on the "agent" edge.
+func (_q *ChatQuery) QueryAgent() *AgentQuery {
+	query := (&AgentClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(chat.Table, chat.FieldID, selector),
+			sqlgraph.To(agent.Table, agent.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, chat.AgentTable, chat.AgentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -327,6 +351,7 @@ func (_q *ChatQuery) Clone() *ChatQuery {
 		withCreator:  _q.withCreator.Clone(),
 		withMembers:  _q.withMembers.Clone(),
 		withMessages: _q.withMessages.Clone(),
+		withAgent:    _q.withAgent.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -363,6 +388,17 @@ func (_q *ChatQuery) WithMessages(opts ...func(*MessageQuery)) *ChatQuery {
 		opt(query)
 	}
 	_q.withMessages = query
+	return _q
+}
+
+// WithAgent tells the query-builder to eager-load the nodes that are connected to
+// the "agent" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ChatQuery) WithAgent(opts ...func(*AgentQuery)) *ChatQuery {
+	query := (&AgentClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAgent = query
 	return _q
 }
 
@@ -444,10 +480,11 @@ func (_q *ChatQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chat, e
 	var (
 		nodes       = []*Chat{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withCreator != nil,
 			_q.withMembers != nil,
 			_q.withMessages != nil,
+			_q.withAgent != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -485,6 +522,12 @@ func (_q *ChatQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Chat, e
 		if err := _q.loadMessages(ctx, query, nodes,
 			func(n *Chat) { n.Edges.Messages = []*Message{} },
 			func(n *Chat, e *Message) { n.Edges.Messages = append(n.Edges.Messages, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAgent; query != nil {
+		if err := _q.loadAgent(ctx, query, nodes, nil,
+			func(n *Chat, e *Agent) { n.Edges.Agent = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -580,6 +623,38 @@ func (_q *ChatQuery) loadMessages(ctx context.Context, query *MessageQuery, node
 	}
 	return nil
 }
+func (_q *ChatQuery) loadAgent(ctx context.Context, query *AgentQuery, nodes []*Chat, init func(*Chat), assign func(*Chat, *Agent)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Chat)
+	for i := range nodes {
+		if nodes[i].AgentID == nil {
+			continue
+		}
+		fk := *nodes[i].AgentID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(agent.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "agent_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *ChatQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -608,6 +683,9 @@ func (_q *ChatQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withCreator != nil {
 			_spec.Node.AddColumnOnce(chat.FieldCreatedBy)
+		}
+		if _q.withAgent != nil {
+			_spec.Node.AddColumnOnce(chat.FieldAgentID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/plexusone/omniagent/team/ent/agent"
 	"github.com/plexusone/omniagent/team/ent/chat"
 	"github.com/plexusone/omniagent/team/ent/chatmember"
 	"github.com/plexusone/omniagent/team/ent/message"
@@ -47,6 +48,20 @@ func (_c *ChatCreate) SetNillableName(v *string) *ChatCreate {
 // SetCreatedBy sets the "created_by" field.
 func (_c *ChatCreate) SetCreatedBy(v uuid.UUID) *ChatCreate {
 	_c.mutation.SetCreatedBy(v)
+	return _c
+}
+
+// SetAgentID sets the "agent_id" field.
+func (_c *ChatCreate) SetAgentID(v uuid.UUID) *ChatCreate {
+	_c.mutation.SetAgentID(v)
+	return _c
+}
+
+// SetNillableAgentID sets the "agent_id" field if the given value is not nil.
+func (_c *ChatCreate) SetNillableAgentID(v *uuid.UUID) *ChatCreate {
+	if v != nil {
+		_c.SetAgentID(*v)
+	}
 	return _c
 }
 
@@ -117,6 +132,11 @@ func (_c *ChatCreate) AddMessages(v ...*Message) *ChatCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMessageIDs(ids...)
+}
+
+// SetAgent sets the "agent" edge to the Agent entity.
+func (_c *ChatCreate) SetAgent(v *Agent) *ChatCreate {
+	return _c.SetAgentID(v.ID)
 }
 
 // Mutation returns the ChatMutation object of the builder.
@@ -277,6 +297,23 @@ func (_c *ChatCreate) createSpec() (*Chat, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AgentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   chat.AgentTable,
+			Columns: []string{chat.AgentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AgentID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

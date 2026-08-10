@@ -1239,6 +1239,22 @@ func (c *ChatClient) QueryMessages(_m *Chat) *MessageQuery {
 	return query
 }
 
+// QueryAgent queries the agent edge of a Chat.
+func (c *ChatClient) QueryAgent(_m *Chat) *AgentQuery {
+	query := (&AgentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(chat.Table, chat.FieldID, id),
+			sqlgraph.To(agent.Table, agent.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, chat.AgentTable, chat.AgentColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ChatClient) Hooks() []Hook {
 	return c.hooks.Chat

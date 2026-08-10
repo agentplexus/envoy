@@ -24,7 +24,9 @@ func (a *echoAgent) Process(_ context.Context, _, content string) (string, error
 	return "echo: " + content, nil
 }
 
-func setupChats(t *testing.T, agent AgentProcessor) (*Service, uuid.UUID) {
+// openTestStore migrates and opens a fresh SQLite store, seeds a single
+// superadmin user, and returns both. Shared by the chats setups.
+func openTestStore(t *testing.T) (*store.Store, uuid.UUID) {
 	t.Helper()
 	ctx := context.Background()
 	dsn := filepath.Join(t.TempDir(), "chats.db")
@@ -55,7 +57,12 @@ func setupChats(t *testing.T, agent AgentProcessor) (*Service, uuid.UUID) {
 	}); err != nil {
 		t.Fatalf("seed user: %v", err)
 	}
+	return st, userID
+}
 
+func setupChats(t *testing.T, agent AgentProcessor) (*Service, uuid.UUID) {
+	t.Helper()
+	st, userID := openTestStore(t)
 	svc, err := NewService(st, Config{Agent: agent})
 	if err != nil {
 		t.Fatalf("NewService: %v", err)

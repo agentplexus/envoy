@@ -107,7 +107,7 @@ func init() {
 	chatFields := schema.Chat{}.Fields()
 	_ = chatFields
 	// chatDescCreatedAt is the schema descriptor for created_at field.
-	chatDescCreatedAt := chatFields[4].Descriptor()
+	chatDescCreatedAt := chatFields[5].Descriptor()
 	// chat.DefaultCreatedAt holds the default value on creation for the created_at field.
 	chat.DefaultCreatedAt = chatDescCreatedAt.Default.(func() time.Time)
 	// chatDescID is the schema descriptor for id field.

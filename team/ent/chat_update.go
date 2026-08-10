@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/plexusone/omniagent/team/ent/agent"
 	"github.com/plexusone/omniagent/team/ent/chat"
 	"github.com/plexusone/omniagent/team/ent/chatmember"
 	"github.com/plexusone/omniagent/team/ent/message"
@@ -79,6 +80,26 @@ func (_u *ChatUpdate) SetNillableCreatedBy(v *uuid.UUID) *ChatUpdate {
 	return _u
 }
 
+// SetAgentID sets the "agent_id" field.
+func (_u *ChatUpdate) SetAgentID(v uuid.UUID) *ChatUpdate {
+	_u.mutation.SetAgentID(v)
+	return _u
+}
+
+// SetNillableAgentID sets the "agent_id" field if the given value is not nil.
+func (_u *ChatUpdate) SetNillableAgentID(v *uuid.UUID) *ChatUpdate {
+	if v != nil {
+		_u.SetAgentID(*v)
+	}
+	return _u
+}
+
+// ClearAgentID clears the value of the "agent_id" field.
+func (_u *ChatUpdate) ClearAgentID() *ChatUpdate {
+	_u.mutation.ClearAgentID()
+	return _u
+}
+
 // SetCreatorID sets the "creator" edge to the User entity by ID.
 func (_u *ChatUpdate) SetCreatorID(id uuid.UUID) *ChatUpdate {
 	_u.mutation.SetCreatorID(id)
@@ -118,6 +139,11 @@ func (_u *ChatUpdate) AddMessages(v ...*Message) *ChatUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMessageIDs(ids...)
+}
+
+// SetAgent sets the "agent" edge to the Agent entity.
+func (_u *ChatUpdate) SetAgent(v *Agent) *ChatUpdate {
+	return _u.SetAgentID(v.ID)
 }
 
 // Mutation returns the ChatMutation object of the builder.
@@ -171,6 +197,12 @@ func (_u *ChatUpdate) RemoveMessages(v ...*Message) *ChatUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMessageIDs(ids...)
+}
+
+// ClearAgent clears the "agent" edge to the Agent entity.
+func (_u *ChatUpdate) ClearAgent() *ChatUpdate {
+	_u.mutation.ClearAgent()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -353,6 +385,35 @@ func (_u *ChatUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.AgentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   chat.AgentTable,
+			Columns: []string{chat.AgentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   chat.AgentTable,
+			Columns: []string{chat.AgentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{chat.Label}
@@ -421,6 +482,26 @@ func (_u *ChatUpdateOne) SetNillableCreatedBy(v *uuid.UUID) *ChatUpdateOne {
 	return _u
 }
 
+// SetAgentID sets the "agent_id" field.
+func (_u *ChatUpdateOne) SetAgentID(v uuid.UUID) *ChatUpdateOne {
+	_u.mutation.SetAgentID(v)
+	return _u
+}
+
+// SetNillableAgentID sets the "agent_id" field if the given value is not nil.
+func (_u *ChatUpdateOne) SetNillableAgentID(v *uuid.UUID) *ChatUpdateOne {
+	if v != nil {
+		_u.SetAgentID(*v)
+	}
+	return _u
+}
+
+// ClearAgentID clears the value of the "agent_id" field.
+func (_u *ChatUpdateOne) ClearAgentID() *ChatUpdateOne {
+	_u.mutation.ClearAgentID()
+	return _u
+}
+
 // SetCreatorID sets the "creator" edge to the User entity by ID.
 func (_u *ChatUpdateOne) SetCreatorID(id uuid.UUID) *ChatUpdateOne {
 	_u.mutation.SetCreatorID(id)
@@ -460,6 +541,11 @@ func (_u *ChatUpdateOne) AddMessages(v ...*Message) *ChatUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMessageIDs(ids...)
+}
+
+// SetAgent sets the "agent" edge to the Agent entity.
+func (_u *ChatUpdateOne) SetAgent(v *Agent) *ChatUpdateOne {
+	return _u.SetAgentID(v.ID)
 }
 
 // Mutation returns the ChatMutation object of the builder.
@@ -513,6 +599,12 @@ func (_u *ChatUpdateOne) RemoveMessages(v ...*Message) *ChatUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMessageIDs(ids...)
+}
+
+// ClearAgent clears the "agent" edge to the Agent entity.
+func (_u *ChatUpdateOne) ClearAgent() *ChatUpdateOne {
+	_u.mutation.ClearAgent()
+	return _u
 }
 
 // Where appends a list predicates to the ChatUpdate builder.
@@ -718,6 +810,35 @@ func (_u *ChatUpdateOne) sqlSave(ctx context.Context) (_node *Chat, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(message.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AgentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   chat.AgentTable,
+			Columns: []string{chat.AgentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AgentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   chat.AgentTable,
+			Columns: []string{chat.AgentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(agent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

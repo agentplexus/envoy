@@ -43,6 +43,9 @@ var (
 	// ErrLastOwner is returned when the sole owner tries to leave a group
 	// that still has other members (which would orphan it).
 	ErrLastOwner = errors.New("cannot leave: you are the group's only owner")
+	// ErrNoAgentRegistry is returned when an agent-bound chat operation is
+	// attempted but no AgentGate is configured (personal mode).
+	ErrNoAgentRegistry = errors.New("agent registry not configured")
 )
 
 // MaxMessageBytes caps a single message's length (TRD §5).
@@ -66,11 +69,24 @@ type AgentProcessor interface {
 	Process(ctx context.Context, sessionID, content string) (string, error)
 }
 
+// AgentGate authorizes starting a chat with a registered agent
+// (INIT-OMNIAGENT-005). It is defined here — with a primitive signature — so
+// the chats service stays decoupled from the agents package; *agents.Service
+// satisfies it via AuthorizeStartChat. Nil in personal mode, where chats carry
+// no agent binding.
+type AgentGate interface {
+	AuthorizeStartChat(ctx context.Context, userID uuid.UUID, superadmin bool, agentID uuid.UUID) (bool, error)
+}
+
 // Config configures the chats service.
 type Config struct {
 	// Agent runs the agent's turn on each user message. Nil echoes the
 	// message back instead (matches the gateway's no-API-key fallback).
 	Agent AgentProcessor
+	// Agents gates agent-bound chat creation on Can(CapCreateChat). Nil in
+	// personal mode (StartAgentDM / CreateGroupWithAgent then return
+	// ErrNoAgentRegistry).
+	Agents AgentGate
 	// Logger defaults to slog.Default().
 	Logger *slog.Logger
 }
@@ -79,6 +95,7 @@ type Config struct {
 type Service struct {
 	store  *store.Store
 	agent  AgentProcessor
+	agents AgentGate
 	logger *slog.Logger
 }
 
@@ -90,7 +107,7 @@ func NewService(st *store.Store, cfg Config) (*Service, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
-	return &Service{store: st, agent: cfg.Agent, logger: cfg.Logger}, nil
+	return &Service{store: st, agent: cfg.Agent, agents: cfg.Agents, logger: cfg.Logger}, nil
 }
 
 // SessionID returns the agent session key for a chat (TRD §5): one session
@@ -311,16 +328,14 @@ func (s *Service) reply(ctx context.Context, chatID uuid.UUID, content string) (
 // CreateGroup creates a group chat owned by the actor, inserting the actor's
 // owner membership in the same transaction. Group members added later via
 // Invite join as conversants (role "member") with no configuration rights.
+// The chat carries no agent binding (see CreateGroupWithAgent for INIT-005).
 func (s *Service) CreateGroup(ctx context.Context, actor Actor, name string) (*ent.Chat, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return nil, ErrEmptyName
-	}
-	if len(name) > MaxChatNameBytes {
-		return nil, fmt.Errorf("group name exceeds %d bytes", MaxChatNameBytes)
+	name, err := validateGroupName(name)
+	if err != nil {
+		return nil, err
 	}
 	var c *ent.Chat
-	err := s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
+	err = s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
 		var err error
 		c, err = tx.Chat.Create().
 			SetType(chat.TypeGroup).SetName(name).SetCreatedBy(actor.UserID).Save(ctx)
@@ -333,6 +348,101 @@ func (s *Service) CreateGroup(ctx context.Context, actor Actor, name string) (*e
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create group: %w", err)
+	}
+	return c, nil
+}
+
+// validateGroupName trims and bounds a group chat name.
+func validateGroupName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", ErrEmptyName
+	}
+	if len(name) > MaxChatNameBytes {
+		return "", fmt.Errorf("group name exceeds %d bytes", MaxChatNameBytes)
+	}
+	return name, nil
+}
+
+// ---- Agent-bound chats (RMI-308, INIT-OMNIAGENT-005) --------------------
+
+// StartAgentDM returns the actor's private (DM) chat with a specific agent,
+// creating it on first use — one per user per agent. Creation is gated on the
+// agents registry's Can(CapCreateChat) (listed agents are startable by any
+// allowlisted user; private agents only by editors/superadmin). Requires an
+// AgentGate (team mode); returns ErrNoAgentRegistry otherwise.
+func (s *Service) StartAgentDM(ctx context.Context, actor Actor, agentID uuid.UUID) (*ent.Chat, error) {
+	if s.agents == nil {
+		return nil, ErrNoAgentRegistry
+	}
+	ok, err := s.agents.AuthorizeStartChat(ctx, actor.UserID, actor.Superadmin, agentID)
+	if err != nil {
+		return nil, fmt.Errorf("authorize start chat: %w", err)
+	}
+	if !ok {
+		return nil, ErrForbidden
+	}
+
+	var c *ent.Chat
+	err = s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
+		existing, err := tx.Chat.Query().
+			Where(chat.TypeEQ(chat.TypePrivate), chat.CreatedByEQ(actor.UserID), chat.AgentIDEQ(agentID)).
+			Only(ctx)
+		if err == nil {
+			c = existing
+			return nil
+		}
+		if !ent.IsNotFound(err) {
+			return err
+		}
+		c, err = tx.Chat.Create().
+			SetType(chat.TypePrivate).SetCreatedBy(actor.UserID).SetAgentID(agentID).Save(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = tx.ChatMember.Create().
+			SetChatID(c.ID).SetUserID(actor.UserID).SetRole(chatmember.RoleOwner).Save(ctx)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("start agent dm: %w", err)
+	}
+	return c, nil
+}
+
+// CreateGroupWithAgent creates a group chat bound to an agent, gated on
+// Can(CapCreateChat). Otherwise identical to CreateGroup. Requires an
+// AgentGate (team mode); returns ErrNoAgentRegistry otherwise.
+func (s *Service) CreateGroupWithAgent(ctx context.Context, actor Actor, name string, agentID uuid.UUID) (*ent.Chat, error) {
+	if s.agents == nil {
+		return nil, ErrNoAgentRegistry
+	}
+	name, err := validateGroupName(name)
+	if err != nil {
+		return nil, err
+	}
+	ok, err := s.agents.AuthorizeStartChat(ctx, actor.UserID, actor.Superadmin, agentID)
+	if err != nil {
+		return nil, fmt.Errorf("authorize start chat: %w", err)
+	}
+	if !ok {
+		return nil, ErrForbidden
+	}
+
+	var c *ent.Chat
+	err = s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
+		var err error
+		c, err = tx.Chat.Create().
+			SetType(chat.TypeGroup).SetName(name).SetCreatedBy(actor.UserID).SetAgentID(agentID).Save(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = tx.ChatMember.Create().
+			SetChatID(c.ID).SetUserID(actor.UserID).SetRole(chatmember.RoleOwner).Save(ctx)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create group with agent: %w", err)
 	}
 	return c, nil
 }

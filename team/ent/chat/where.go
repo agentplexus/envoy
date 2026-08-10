@@ -66,6 +66,11 @@ func CreatedBy(v uuid.UUID) predicate.Chat {
 	return predicate.Chat(sql.FieldEQ(FieldCreatedBy, v))
 }
 
+// AgentID applies equality check predicate on the "agent_id" field. It's identical to AgentIDEQ.
+func AgentID(v uuid.UUID) predicate.Chat {
+	return predicate.Chat(sql.FieldEQ(FieldAgentID, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Chat {
 	return predicate.Chat(sql.FieldEQ(FieldCreatedAt, v))
@@ -186,6 +191,36 @@ func CreatedByNotIn(vs ...uuid.UUID) predicate.Chat {
 	return predicate.Chat(sql.FieldNotIn(FieldCreatedBy, vs...))
 }
 
+// AgentIDEQ applies the EQ predicate on the "agent_id" field.
+func AgentIDEQ(v uuid.UUID) predicate.Chat {
+	return predicate.Chat(sql.FieldEQ(FieldAgentID, v))
+}
+
+// AgentIDNEQ applies the NEQ predicate on the "agent_id" field.
+func AgentIDNEQ(v uuid.UUID) predicate.Chat {
+	return predicate.Chat(sql.FieldNEQ(FieldAgentID, v))
+}
+
+// AgentIDIn applies the In predicate on the "agent_id" field.
+func AgentIDIn(vs ...uuid.UUID) predicate.Chat {
+	return predicate.Chat(sql.FieldIn(FieldAgentID, vs...))
+}
+
+// AgentIDNotIn applies the NotIn predicate on the "agent_id" field.
+func AgentIDNotIn(vs ...uuid.UUID) predicate.Chat {
+	return predicate.Chat(sql.FieldNotIn(FieldAgentID, vs...))
+}
+
+// AgentIDIsNil applies the IsNil predicate on the "agent_id" field.
+func AgentIDIsNil() predicate.Chat {
+	return predicate.Chat(sql.FieldIsNull(FieldAgentID))
+}
+
+// AgentIDNotNil applies the NotNil predicate on the "agent_id" field.
+func AgentIDNotNil() predicate.Chat {
+	return predicate.Chat(sql.FieldNotNull(FieldAgentID))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Chat {
 	return predicate.Chat(sql.FieldEQ(FieldCreatedAt, v))
@@ -287,6 +322,29 @@ func HasMessages() predicate.Chat {
 func HasMessagesWith(preds ...predicate.Message) predicate.Chat {
 	return predicate.Chat(func(s *sql.Selector) {
 		step := newMessagesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAgent applies the HasEdge predicate on the "agent" edge.
+func HasAgent() predicate.Chat {
+	return predicate.Chat(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, AgentTable, AgentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAgentWith applies the HasEdge predicate on the "agent" edge with a given conditions (other predicates).
+func HasAgentWith(preds ...predicate.Agent) predicate.Chat {
+	return predicate.Chat(func(s *sql.Selector) {
+		step := newAgentStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
