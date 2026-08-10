@@ -16,6 +16,7 @@ import (
 	"github.com/plexusone/omniagent/team"
 	"github.com/plexusone/omniagent/team/ent"
 	"github.com/plexusone/omniagent/team/ent/authsession"
+	"github.com/plexusone/omniagent/team/ent/identity"
 	"github.com/plexusone/omniagent/team/ent/magiclinktoken"
 	entuser "github.com/plexusone/omniagent/team/ent/user"
 	"github.com/plexusone/omniagent/team/mail"
@@ -201,6 +202,9 @@ func (s *Service) VerifyMagicLink(ctx context.Context, rawToken string) (session
 	}
 	if u.Status == entuser.StatusDisabled {
 		return "", nil, ErrInvalidToken
+	}
+	if err := s.linkIdentity(ctx, u.ID, identity.ProviderMagicLink, email, email); err != nil {
+		return "", nil, fmt.Errorf("link identity: %w", err)
 	}
 
 	sessionToken, err = s.createSession(ctx, u.ID, "", "")
