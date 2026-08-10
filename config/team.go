@@ -36,6 +36,30 @@ type TeamConfig struct {
 	// injected into secrets-aware skills (per-agent MCP subprocess env). When
 	// unset, agents run without injected secrets.
 	Secrets TeamSecretsConfig `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+
+	// SSO configures optional OAuth/OIDC sign-in providers, additive to
+	// magic-link email. Each provider is independent; a provider is
+	// "configured" when both its client ID and secret are set. Redirect URIs
+	// are not configurable — derived as
+	// {base_url}/api/auth/{provider}/callback.
+	SSO TeamSSOConfig `json:"sso,omitempty" yaml:"sso,omitempty"`
+}
+
+// TeamSSOConfig configures optional Google OIDC and GitHub OAuth sign-in.
+type TeamSSOConfig struct {
+	Google TeamOAuthProviderConfig `json:"google,omitempty" yaml:"google,omitempty"`
+	GitHub TeamOAuthProviderConfig `json:"github,omitempty" yaml:"github,omitempty"`
+}
+
+// TeamOAuthProviderConfig holds one SSO provider's OAuth client credentials.
+type TeamOAuthProviderConfig struct {
+	ClientID     string `json:"client_id,omitempty" yaml:"client_id,omitempty"`
+	ClientSecret string `json:"client_secret,omitempty" yaml:"client_secret,omitempty"` //nolint:gosec // G117: loaded from config file
+}
+
+// configured reports whether both client ID and secret are set.
+func (c TeamOAuthProviderConfig) configured() bool {
+	return c.ClientID != "" && c.ClientSecret != ""
 }
 
 // TeamSecretsConfig configures the OmniVault-backed team secret store. Secrets
@@ -119,6 +143,15 @@ func (c *TeamConfig) Validate() error {
 		if c.Secrets.Provider == "file" && c.Secrets.Dir == "" {
 			return fmt.Errorf("team.secrets.dir is required when team.secrets.provider is file")
 		}
+	}
+	if (c.SSO.Google.ClientID != "") != (c.SSO.Google.ClientSecret != "") {
+		return fmt.Errorf("team.sso.google requires both client_id and client_secret when configured")
+	}
+	if (c.SSO.GitHub.ClientID != "") != (c.SSO.GitHub.ClientSecret != "") {
+		return fmt.Errorf("team.sso.github requires both client_id and client_secret when configured")
+	}
+	if (c.SSO.Google.configured() || c.SSO.GitHub.configured()) && c.BaseURL == "" {
+		return fmt.Errorf("team.base_url is required when an SSO provider is configured (used to build the redirect URI)")
 	}
 	return nil
 }

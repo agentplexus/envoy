@@ -204,6 +204,18 @@ func loadEnv(cfg *Config) {
 	if v := os.Getenv("OMNIAGENT_TEAM_SMTP_FROM"); v != "" {
 		cfg.Team.SMTP.From = v
 	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_ID"); v != "" {
+		cfg.Team.SSO.Google.ClientID = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_SECRET"); v != "" {
+		cfg.Team.SSO.Google.ClientSecret = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_ID"); v != "" {
+		cfg.Team.SSO.GitHub.ClientID = v
+	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_SECRET"); v != "" {
+		cfg.Team.SSO.GitHub.ClientSecret = v
+	}
 
 	// Observability
 	if v := os.Getenv("OMNIAGENT_OBSERVABILITY_PROVIDER"); v != "" {

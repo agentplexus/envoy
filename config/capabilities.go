@@ -17,6 +17,11 @@ type Capabilities struct {
 	GroupChats bool `json:"groupChats"`
 	Admin      bool `json:"admin"`
 	Catalog    bool `json:"catalog"`
+	// GoogleSSO and GitHubSSO tell the login screen which SSO buttons to
+	// render — true only in team mode when the corresponding provider has
+	// both a client ID and secret configured.
+	GoogleSSO bool `json:"googleSso"`
+	GitHubSSO bool `json:"githubSso"`
 }
 
 // Capabilities derives the active capability set from the team and auth
@@ -30,5 +35,7 @@ func (c *Config) Capabilities() Capabilities {
 		GroupChats:   multiUser,
 		Admin:        multiUser,
 		Catalog:      multiUser,
+		GoogleSSO:    multiUser && c.Team.SSO.Google.configured(),
+		GitHubSSO:    multiUser && c.Team.SSO.GitHub.configured(),
 	}
 }
