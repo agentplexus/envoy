@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/plexusone/omniagent/team/chats"
+	"github.com/plexusone/omniagent/team/ent"
 )
 
 // TeamChatHTTP serves the multi-user (team-mode) chat surface: private DMs and
@@ -20,10 +21,12 @@ import (
 // principal (set on the context by TeamHTTP.RequireAuth, which must wrap this
 // handler) and enforced again by row-level security in the store.
 //
-// The @-mention agent policy and per-agent runtime binding (RMI-113/114) are
-// out of scope: group messages are persisted and fanned out, but no agent turn
-// runs for them here. Private DMs still get the baseline "always responds"
-// agent reply (shipped in personal mode) so team-mode DMs are usable now.
+// The agent turn follows the RMI-113 mention policy (chats.Service.AgentTurn):
+// private chats always respond; group chats respond only when the message
+// @-mentions the bound agent's slug. The reply runs on the chat's bound agent
+// runtime and is persisted then broadcast. Per-agent runtime construction
+// (persona + skills + secrets) is supplied by INIT-005 RMI-309; until a runtime
+// is wired, agent-bound chats stay silent and agent-less DMs use the fallback.
 type TeamChatHTTP struct {
 	chats  *chats.Service
 	logger *slog.Logger
@@ -227,8 +230,8 @@ func (h *TeamChatHTTP) handleSend(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	// GetChat both membership-checks the actor and tells us the chat type
-	// (private DMs get an agent reply; groups do not until RMI-113).
+	// GetChat both membership-checks the actor and gives us the chat (its type
+	// and agent binding) that AgentTurn needs to apply the mention policy.
 	c, err := h.chats.GetChat(ctx, actor, chatID)
 	if err != nil {
 		h.writeServiceError(w, err)
@@ -248,11 +251,10 @@ func (h *TeamChatHTTP) handleSend(w http.ResponseWriter, r *http.Request) {
 	recipients := h.recipients(ctx, actor, chatID)
 	h.fanout(recipients, teamChatMessageEvent(chatID, toMessageView(userMsg)))
 
-	// Private DMs always get an agent reply; run it out-of-band on a detached
-	// context and fan the reply out when it lands.
-	if c.Type.String() == "private" {
-		go h.generateReply(context.WithoutCancel(ctx), chatID, userMsg.Content, recipients)
-	}
+	// Run the agent turn out-of-band on a detached context: private chats
+	// always respond; group chats respond only when the message @-mentions the
+	// bound agent (RMI-113). AgentTurn decides and stays silent otherwise.
+	go h.generateReply(context.WithoutCancel(ctx), c, userMsg.Content, recipients)
 
 	writeJSON(w, http.StatusAccepted, sendChatResponse{User: toMessageView(userMsg)})
 }
@@ -375,17 +377,22 @@ func (h *TeamChatHTTP) page(ctx context.Context, userID, chatID uuid.UUID, befor
 	return views, hasMore, nil
 }
 
-// generateReply runs the agent turn for a private DM and fans the reply (or an
-// error event) out to the chat's members. Runs in its own goroutine on a
-// detached context (see handleSend).
-func (h *TeamChatHTTP) generateReply(ctx context.Context, chatID uuid.UUID, content string, recipients []string) {
-	agentMsg, err := h.chats.GenerateReply(ctx, chatID, content)
+// generateReply runs the agent turn for a chat and fans the reply out to the
+// chat's members. The mention policy lives in AgentTurn: when the agent stays
+// silent (a group message with no @-mention, or an agent-bound chat with no
+// runtime wired) it reports responded=false and nothing is broadcast. Runs in
+// its own goroutine on a detached context (see handleSend).
+func (h *TeamChatHTTP) generateReply(ctx context.Context, c *ent.Chat, content string, recipients []string) {
+	agentMsg, responded, err := h.chats.AgentTurn(ctx, c, content)
 	if err != nil {
-		h.logger.Error("team chat agent turn failed", "error", err, "chat", chatID)
+		h.logger.Error("team chat agent turn failed", "error", err, "chat", c.ID)
 		h.fanout(recipients, NewErrorMessage("", "agent reply failed"))
 		return
 	}
-	h.fanout(recipients, teamChatMessageEvent(chatID, toMessageView(agentMsg)))
+	if !responded {
+		return
+	}
+	h.fanout(recipients, teamChatMessageEvent(c.ID, toMessageView(agentMsg)))
 }
 
 // recipients returns the string user IDs of a chat's members, for fan-out.

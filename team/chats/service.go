@@ -78,6 +78,21 @@ type AgentGate interface {
 	AuthorizeStartChat(ctx context.Context, userID uuid.UUID, superadmin bool, agentID uuid.UUID) (bool, error)
 }
 
+// AgentRuntime resolves a chat's bound agent (RMI-113): its slug, for
+// @-mention matching in group chats, and a processor bound to that agent's
+// runtime — persona + enabled skills + agent-scoped secrets. Splitting the two
+// lets a group turn check the (cheap) slug and build the (heavier) runtime only
+// when the agent is actually mentioned. It is the seam RMI-OMNIAGENT-309 fills
+// with a lazy, bounded per-agent instance cache; chats stays decoupled from the
+// agents package. Nil until a runtime is wired, in which case an agent-bound
+// chat takes no turn — silence beats answering as the wrong agent.
+type AgentRuntime interface {
+	// Slug returns the bound agent's slug (for @-mention matching).
+	Slug(ctx context.Context, agentID uuid.UUID) (string, error)
+	// Processor returns a processor bound to the agent's runtime.
+	Processor(ctx context.Context, agentID uuid.UUID) (AgentProcessor, error)
+}
+
 // Config configures the chats service.
 type Config struct {
 	// Agent runs the agent's turn on each user message. Nil echoes the
@@ -87,16 +102,21 @@ type Config struct {
 	// personal mode (StartAgentDM / CreateGroupWithAgent then return
 	// ErrNoAgentRegistry).
 	Agents AgentGate
+	// Runtime resolves an agent-bound chat's slug + runtime processor for the
+	// agent turn (RMI-113). Nil when no per-agent runtime is wired: agent-bound
+	// chats then take no turn (see AgentRuntime).
+	Runtime AgentRuntime
 	// Logger defaults to slog.Default().
 	Logger *slog.Logger
 }
 
 // Service exposes chat operations over the store.
 type Service struct {
-	store  *store.Store
-	agent  AgentProcessor
-	agents AgentGate
-	logger *slog.Logger
+	store   *store.Store
+	agent   AgentProcessor
+	agents  AgentGate
+	runtime AgentRuntime
+	logger  *slog.Logger
 }
 
 // NewService creates the chats service.
@@ -107,7 +127,7 @@ func NewService(st *store.Store, cfg Config) (*Service, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
-	return &Service{store: st, agent: cfg.Agent, agents: cfg.Agents, logger: cfg.Logger}, nil
+	return &Service{store: st, agent: cfg.Agent, agents: cfg.Agents, runtime: cfg.Runtime, logger: cfg.Logger}, nil
 }
 
 // SessionID returns the agent session key for a chat (TRD §5): one session
@@ -294,13 +314,104 @@ func (s *Service) PostUserMessage(ctx context.Context, userID, chatID uuid.UUID,
 
 // GenerateReply runs the agent's turn for content and persists the reply as
 // an agent-authored message (no membership check — the caller already
-// validated it via PostUserMessage). The reply row is written AsSystem
-// because the agent is not a user principal.
+// validated it via PostUserMessage). It always responds, on the service-wide
+// fallback processor, and applies no mention policy: it is the personal-mode /
+// agent-less path (one implicit agent, always answers). Team chats bound to a
+// registered agent use AgentTurn, which applies the RMI-113 mention policy and
+// routes to the bound agent's runtime.
 func (s *Service) GenerateReply(ctx context.Context, chatID uuid.UUID, content string) (*ent.Message, error) {
-	reply, aerr := s.reply(ctx, chatID, content)
+	reply, aerr := s.runTurn(ctx, s.agent, chatID, content)
 	if aerr != nil {
 		return nil, fmt.Errorf("agent turn: %w", aerr)
 	}
+	return s.persistAgentReply(ctx, chatID, reply)
+}
+
+// AgentTurn applies the RMI-113 mention policy and, when the bound agent should
+// respond, runs its turn on the agent's runtime, persists the reply as an
+// agent-authored message, and returns it. The bool reports whether the agent
+// responded: a group message that does not @-mention the bound agent — or an
+// agent-bound chat with no runtime wired — yields (nil, false, nil), and the
+// caller broadcasts nothing.
+//
+// Policy: a private chat always gets a turn; a group chat gets one only when
+// the message @-mentions the bound agent's slug. The turn never self-replies —
+// it runs only on a user message and persists its reply as author_type=agent,
+// which no user can post, so no reply can re-trigger it. The caller must have
+// membership-validated the message (e.g. via PostUserMessage); the reply row is
+// written AsSystem because the agent is not a user principal.
+func (s *Service) AgentTurn(ctx context.Context, c *ent.Chat, content string) (*ent.Message, bool, error) {
+	respond, proc, err := s.resolveTurn(ctx, c, content)
+	if err != nil {
+		return nil, false, err
+	}
+	if !respond {
+		return nil, false, nil
+	}
+	reply, aerr := s.runTurn(ctx, proc, c.ID, content)
+	if aerr != nil {
+		return nil, false, fmt.Errorf("agent turn: %w", aerr)
+	}
+	agentMsg, perr := s.persistAgentReply(ctx, c.ID, reply)
+	if perr != nil {
+		return nil, false, perr
+	}
+	return agentMsg, true, nil
+}
+
+// resolveTurn applies the mention policy and resolves the processor for a
+// chat's turn, returning respond=false (and a nil processor) when the agent
+// should stay silent. For a group chat it first checks the (cheap) slug and
+// only builds the runtime processor when the agent is actually mentioned.
+func (s *Service) resolveTurn(ctx context.Context, c *ent.Chat, content string) (bool, AgentProcessor, error) {
+	// Agent-less chat (personal mode): a private DM always responds on the
+	// fallback processor; a group with no bound agent has no responder.
+	if c.AgentID == nil {
+		if c.Type == chat.TypePrivate {
+			return true, s.agent, nil
+		}
+		return false, nil, nil
+	}
+	// Agent-bound chat: without a runtime wired (RMI-309), do not answer —
+	// silence beats a wrong-agent reply.
+	if s.runtime == nil {
+		return false, nil, nil
+	}
+	switch c.Type {
+	case chat.TypePrivate:
+		// Private: always respond.
+	case chat.TypeGroup:
+		slug, err := s.runtime.Slug(ctx, *c.AgentID)
+		if err != nil {
+			return false, nil, fmt.Errorf("resolve agent slug: %w", err)
+		}
+		if !mentionsAgent(content, slug) {
+			return false, nil, nil
+		}
+	default:
+		return false, nil, nil
+	}
+	proc, err := s.runtime.Processor(ctx, *c.AgentID)
+	if err != nil {
+		return false, nil, fmt.Errorf("resolve agent runtime: %w", err)
+	}
+	return true, proc, nil
+}
+
+// runTurn runs the processor's turn for a chat, echoing the message when no
+// processor is configured (the agent-less fallback, matching the gateway's
+// no-API-key behavior). The session is keyed chat:<id> (one session per chat,
+// shared by every member — TRD §5).
+func (s *Service) runTurn(ctx context.Context, proc AgentProcessor, chatID uuid.UUID, content string) (string, error) {
+	if proc == nil {
+		return "Message received: " + content, nil
+	}
+	return proc.Process(ctx, SessionID(chatID), content)
+}
+
+// persistAgentReply writes an agent-authored reply row. Written AsSystem
+// because the agent is not a user principal.
+func (s *Service) persistAgentReply(ctx context.Context, chatID uuid.UUID, reply string) (*ent.Message, error) {
 	var agentMsg *ent.Message
 	err := s.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
 		var err error
@@ -312,15 +423,6 @@ func (s *Service) GenerateReply(ctx context.Context, chatID uuid.UUID, content s
 		return nil, fmt.Errorf("persist agent reply: %w", err)
 	}
 	return agentMsg, nil
-}
-
-// reply runs the agent's turn, echoing the message when no agent is
-// configured (matches the gateway's no-API-key fallback).
-func (s *Service) reply(ctx context.Context, chatID uuid.UUID, content string) (string, error) {
-	if s.agent == nil {
-		return "Message received: " + content, nil
-	}
-	return s.agent.Process(ctx, SessionID(chatID), content)
 }
 
 // ---- Group chats & membership (RMI-110) ---------------------------------
