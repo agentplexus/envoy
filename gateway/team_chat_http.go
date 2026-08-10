@@ -70,6 +70,11 @@ func (h *TeamChatHTTP) routes() {
 	h.mux.HandleFunc("GET /api/chats", h.handleList)
 	h.mux.HandleFunc("POST /api/chats", h.handleCreateGroup)
 	h.mux.HandleFunc("GET /api/chats/dm", h.handleDM)
+	// Agent-bound starts (RMI-308/312): the catalog's "start chat" actions.
+	// These paths have more segments than "/api/chats/{id}", so they never
+	// collide with it.
+	h.mux.HandleFunc("POST /api/chats/agents/{agentId}/dm", h.handleStartAgentDM)
+	h.mux.HandleFunc("POST /api/chats/agents/{agentId}/group", h.handleCreateAgentGroup)
 	h.mux.HandleFunc("GET /api/chats/{id}", h.handleChat)
 	h.mux.HandleFunc("GET /api/chats/{id}/messages", h.handleHistory)
 	h.mux.HandleFunc("POST /api/chats/{id}/messages", h.handleSend)
@@ -155,6 +160,56 @@ func (h *TeamChatHTTP) handleDM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, chatDetail{ID: c.ID, Type: c.Type.String(), Name: c.Name, Messages: views, HasMore: hasMore})
+}
+
+// handleStartAgentDM get-or-creates the caller's private DM with a specific
+// agent (RMI-312 catalog "chat with agent") and returns its newest page. The
+// start is gated by the agents registry's Can(CapCreateChat) inside the chats
+// service.
+func (h *TeamChatHTTP) handleStartAgentDM(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.actorCSRF(w, r)
+	if !ok {
+		return
+	}
+	agentID, ok := h.agentID(w, r)
+	if !ok {
+		return
+	}
+	c, err := h.chats.StartAgentDM(r.Context(), actor, agentID)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	views, hasMore, err := h.page(r.Context(), actor.UserID, c.ID, nil, defaultChatPageSize)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, chatDetail{ID: c.ID, Type: c.Type.String(), Name: c.Name, Messages: views, HasMore: hasMore})
+}
+
+// handleCreateAgentGroup creates a group chat bound to a specific agent
+// (RMI-312 catalog "new group with agent"). Gated by Can(CapCreateChat).
+func (h *TeamChatHTTP) handleCreateAgentGroup(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.actorCSRF(w, r)
+	if !ok {
+		return
+	}
+	agentID, ok := h.agentID(w, r)
+	if !ok {
+		return
+	}
+	var req createGroupRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	c, err := h.chats.CreateGroupWithAgent(r.Context(), actor, req.Name, agentID)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, chatSummary{ID: c.ID, Type: c.Type.String(), Name: c.Name, CreatedAt: c.CreatedAt})
 }
 
 func (h *TeamChatHTTP) handleChat(w http.ResponseWriter, r *http.Request) {
@@ -446,6 +501,15 @@ func (h *TeamChatHTTP) chatID(w http.ResponseWriter, r *http.Request) (uuid.UUID
 	return id, true
 }
 
+func (h *TeamChatHTTP) agentID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
+	id, err := uuid.Parse(r.PathValue("agentId"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid agent id")
+		return uuid.UUID{}, false
+	}
+	return id, true
+}
+
 func (h *TeamChatHTTP) writeServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, chats.ErrForbidden):
@@ -462,6 +526,8 @@ func (h *TeamChatHTTP) writeServiceError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusNotFound, "user not found")
 	case errors.Is(err, chats.ErrLastOwner):
 		writeError(w, http.StatusConflict, "you are the group's only owner")
+	case errors.Is(err, chats.ErrNoAgentRegistry):
+		writeError(w, http.StatusServiceUnavailable, "agent chats are not available")
 	default:
 		h.logger.Error("team chat request failed", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal error")
