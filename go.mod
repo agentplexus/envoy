@@ -15,8 +15,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
-	github.com/grokify/echartify v0.2.1
-	github.com/grokify/mogo v0.74.6
+	github.com/grokify/echartify v0.2.3
+	github.com/grokify/mogo v0.74.7
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/livekit/protocol v1.50.4
 	github.com/livekit/server-sdk-go/v2 v2.18.1
@@ -38,7 +38,7 @@ require (
 	github.com/plexusone/omniobserve v0.12.0
 	github.com/plexusone/omnirole-facilitator v0.1.1
 	github.com/plexusone/omniserp v0.9.0
-	github.com/plexusone/omniskill v0.11.0
+	github.com/plexusone/omniskill v0.12.0
 	github.com/plexusone/omnistorage-core v0.5.1
 	github.com/plexusone/omnitoken v0.1.0
 	github.com/plexusone/omnivault v0.5.0
@@ -72,9 +72,9 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/1password/onepassword-sdk-go v0.4.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/OpenRouterTeam/go-sdk v0.7.31 // indirect
+	github.com/OpenRouterTeam/go-sdk v0.7.32 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
-	github.com/aistandardsio/agent-protocols v0.6.1 // indirect
+	github.com/aistandardsio/agent-protocols v0.7.0 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.62.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
@@ -213,7 +213,7 @@ require (
 	github.com/plexusone/omni-deepgram v0.7.0 // indirect
 	github.com/plexusone/omni-google v0.7.0 // indirect
 	github.com/plexusone/omni-onepassword v0.4.0 // indirect
-	github.com/plexusone/omni-openai v0.6.0 // indirect
+	github.com/plexusone/omni-openai v0.6.1 // indirect
 	github.com/plexusone/omni-openrouter v0.2.0 // indirect
 	github.com/plexusone/omni-telnyx v0.4.0 // indirect
 	github.com/plexusone/omni-twilio v0.9.0 // indirect
@@ -302,7 +302,7 @@ require (
 	gopkg.in/telebot.v3 v3.3.8 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
-	modernc.org/libc v1.75.2 // indirect
+	modernc.org/libc v1.75.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.0 // indirect
 	modernc.org/sqlite v1.56.0
