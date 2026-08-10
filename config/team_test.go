@@ -47,6 +47,25 @@ func TestTeamConfig_Validate(t *testing.T) {
 		{name: "secrets file provider with dir ok", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{Provider: "file", Dir: "/var/secrets"} }},
 		{name: "secrets unknown provider", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{Provider: "vault"} }, wantErr: "secrets.provider"},
 		{name: "secrets empty provider ok", mutate: func(c *TeamConfig) { c.Secrets = TeamSecretsConfig{} }},
+		{name: "sso google configured ok", mutate: func(c *TeamConfig) {
+			c.SSO.Google = TeamOAuthProviderConfig{ClientID: "id", ClientSecret: "secret"}
+		}},
+		{name: "sso google missing secret", mutate: func(c *TeamConfig) {
+			c.SSO.Google = TeamOAuthProviderConfig{ClientID: "id"}
+		}, wantErr: "team.sso.google"},
+		{name: "sso google missing id", mutate: func(c *TeamConfig) {
+			c.SSO.Google = TeamOAuthProviderConfig{ClientSecret: "secret"}
+		}, wantErr: "team.sso.google"},
+		{name: "sso github configured ok", mutate: func(c *TeamConfig) {
+			c.SSO.GitHub = TeamOAuthProviderConfig{ClientID: "id", ClientSecret: "secret"}
+		}},
+		{name: "sso github missing secret", mutate: func(c *TeamConfig) {
+			c.SSO.GitHub = TeamOAuthProviderConfig{ClientID: "id"}
+		}, wantErr: "team.sso.github"},
+		{name: "sso configured requires base_url", mutate: func(c *TeamConfig) {
+			c.BaseURL = ""
+			c.SSO.Google = TeamOAuthProviderConfig{ClientID: "id", ClientSecret: "secret"}
+		}, wantErr: "team.base_url is required"},
 	}
 
 	for _, tt := range tests {

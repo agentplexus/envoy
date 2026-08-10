@@ -447,6 +447,37 @@ func TestLoadEnv_Team(t *testing.T) {
 	}
 }
 
+func TestLoadEnv_TeamSSO(t *testing.T) {
+	os.Setenv("OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_ID", "google-id")
+	os.Setenv("OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_SECRET", "google-secret")
+	os.Setenv("OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_ID", "github-id")
+	os.Setenv("OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_SECRET", "github-secret")
+	defer func() {
+		os.Unsetenv("OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_ID")
+		os.Unsetenv("OMNIAGENT_TEAM_SSO_GOOGLE_CLIENT_SECRET")
+		os.Unsetenv("OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_ID")
+		os.Unsetenv("OMNIAGENT_TEAM_SSO_GITHUB_CLIENT_SECRET")
+	}()
+
+	cfg, err := Load("")
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+
+	if cfg.Team.SSO.Google.ClientID != "google-id" {
+		t.Errorf("Team.SSO.Google.ClientID = %s, want google-id", cfg.Team.SSO.Google.ClientID)
+	}
+	if cfg.Team.SSO.Google.ClientSecret != "google-secret" {
+		t.Errorf("Team.SSO.Google.ClientSecret = %s, want google-secret", cfg.Team.SSO.Google.ClientSecret)
+	}
+	if cfg.Team.SSO.GitHub.ClientID != "github-id" {
+		t.Errorf("Team.SSO.GitHub.ClientID = %s, want github-id", cfg.Team.SSO.GitHub.ClientID)
+	}
+	if cfg.Team.SSO.GitHub.ClientSecret != "github-secret" {
+		t.Errorf("Team.SSO.GitHub.ClientSecret = %s, want github-secret", cfg.Team.SSO.GitHub.ClientSecret)
+	}
+}
+
 func TestLoadEnv_AgentProviderSpecificKeys(t *testing.T) {
 	tests := []struct {
 		provider string
