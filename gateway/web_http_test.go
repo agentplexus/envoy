@@ -20,7 +20,7 @@ func TestWebHTTP_CapabilitiesHandler(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", rec.Code)
 	}
-	want := `{"multiUser":true,"authRequired":true,"groupChats":true,"admin":true,"catalog":true}` + "\n"
+	want := `{"multiUser":true,"authRequired":true,"groupChats":true,"admin":true,"catalog":true,"googleSso":false,"githubSso":false}` + "\n"
 	if rec.Body.String() != want {
 		t.Errorf("body = %q, want %q", rec.Body.String(), want)
 	}

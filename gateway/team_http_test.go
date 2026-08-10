@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -59,14 +60,23 @@ func setupTeamHTTP(t *testing.T) *teamHTTPFixture {
 // the same fixture and helpers.
 func setupTeamHTTPMode(t *testing.T, personal bool) *teamHTTPFixture {
 	t.Helper()
+	return setupTeamHTTPWithConfig(t, TeamHTTPConfig{CookieSecure: false, Personal: personal})
+}
+
+// setupTeamHTTPWithConfig is the full fixture builder; other setup helpers
+// fill in a TeamHTTPConfig and delegate here. CookieSecure/Personal are
+// taken from cfg as given; the caller sets whichever fields the test needs
+// (e.g. GoogleProvider/GitHubProvider for SSO tests).
+func setupTeamHTTPWithConfig(t *testing.T, cfg TeamHTTPConfig) *teamHTTPFixture {
+	t.Helper()
 	ownerDSN, appDSN := pgtest.DSNs(t)
 	ctx := context.Background()
 
-	cfg := store.Config{AppDSN: appDSN, MigrateDSN: ownerDSN}
-	if err := store.Migrate(ctx, cfg); err != nil {
+	storeCfg := store.Config{AppDSN: appDSN, MigrateDSN: ownerDSN}
+	if err := store.Migrate(ctx, storeCfg); err != nil {
 		t.Fatalf("Migrate: %v", err)
 	}
-	st, err := store.Open(ctx, cfg)
+	st, err := store.Open(ctx, storeCfg)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -86,8 +96,7 @@ func setupTeamHTTPMode(t *testing.T, personal bool) *teamHTTPFixture {
 		t.Fatalf("auth.NewService: %v", err)
 	}
 
-	// Plain HTTP in tests → CookieSecure=false (unprefixed cookie).
-	h := NewTeamHTTP(authSvc, teamSvc, TeamHTTPConfig{CookieSecure: false, Personal: personal})
+	h := NewTeamHTTP(authSvc, teamSvc, cfg)
 	// Speed up the anti-enumeration delay so tests are fast.
 	h.limiter.baseDelay = 0
 	h.limiter.maxDelay = 0
@@ -573,3 +582,188 @@ func TestTeamHTTP_PersonalModeHidesAdminUsers(t *testing.T) {
 	}
 	resp.Body.Close()
 }
+
+// ---- SSO ---------------------------------------------------------------
+
+// fakeSSOProvider implements SSOProvider without any real network access,
+// so the gateway's state/nonce/redirect/error-routing logic is fully
+// testable independent of real Google/GitHub connectivity.
+type fakeSSOProvider struct {
+	authURL       string
+	exchangeSub   string
+	exchangeEmail string
+	exchangeErr   error
+}
+
+func (f *fakeSSOProvider) AuthURL(state, nonce string) string {
+	return f.authURL + "?state=" + state + "&nonce=" + nonce
+}
+
+func (f *fakeSSOProvider) Exchange(_ context.Context, _, _ string) (string, string, error) {
+	if f.exchangeErr != nil {
+		return "", "", f.exchangeErr
+	}
+	return f.exchangeSub, f.exchangeEmail, nil
+}
+
+func setupTeamHTTPWithGoogle(t *testing.T, p SSOProvider) *teamHTTPFixture {
+	t.Helper()
+	return setupTeamHTTPWithConfig(t, TeamHTTPConfig{CookieSecure: false, GoogleProvider: p})
+}
+
+func TestTeamHTTP_SSORoutesAbsentWhenNotConfigured(t *testing.T) {
+	f := setupTeamHTTP(t) // no providers configured
+
+	for _, path := range []string{"/api/auth/google", "/api/auth/google/callback", "/api/auth/github", "/api/auth/github/callback"} {
+		resp := f.get(t, path)
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("%s = %d, want 404 (not registered)", path, resp.StatusCode)
+		}
+		resp.Body.Close()
+	}
+}
+
+func TestTeamHTTP_SSOStart_SetsCookiesAndRedirects(t *testing.T) {
+	fake := &fakeSSOProvider{authURL: "https://fake-provider.example/authorize"}
+	f := setupTeamHTTPWithGoogle(t, fake)
+
+	resp := f.get(t, "/api/auth/google")
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("start status = %d, want 302", resp.StatusCode)
+	}
+	loc := resp.Header.Get("Location")
+	if !strings.HasPrefix(loc, fake.authURL) {
+		t.Errorf("redirect location = %q, want prefix %q", loc, fake.authURL)
+	}
+	var sawState, sawNonce bool
+	for _, c := range resp.Cookies() {
+		switch c.Name {
+		case ssoCookieName("google", "state", false):
+			sawState = true
+		case ssoCookieName("google", "nonce", false):
+			sawNonce = true
+		}
+	}
+	if !sawState || !sawNonce {
+		t.Errorf("cookies = %v, want state and nonce cookies set", resp.Cookies())
+	}
+	resp.Body.Close()
+}
+
+func TestTeamHTTP_SSOCallback_MissingStateCookie(t *testing.T) {
+	fake := &fakeSSOProvider{authURL: "https://fake-provider.example/authorize"}
+	f := setupTeamHTTPWithGoogle(t, fake)
+
+	// Hitting the callback directly, with no prior /api/auth/google visit,
+	// means no state/nonce cookie exists.
+	resp := f.get(t, "/api/auth/google/callback?state=bogus&code=abc")
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(resp.Header.Get("Location"), "error=sso_state") {
+		t.Fatalf("status=%d location=%q, want 303 with error=sso_state", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	resp.Body.Close()
+}
+
+func TestTeamHTTP_SSOCallback_StateMismatch(t *testing.T) {
+	fake := &fakeSSOProvider{authURL: "https://fake-provider.example/authorize"}
+	f := setupTeamHTTPWithGoogle(t, fake)
+
+	// Real start sets the cookies in the client's jar...
+	f.get(t, "/api/auth/google").Body.Close()
+	// ...but the callback is hit with a different state query param.
+	resp := f.get(t, "/api/auth/google/callback?state=not-the-real-state&code=abc")
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(resp.Header.Get("Location"), "error=sso_state") {
+		t.Fatalf("status=%d location=%q, want 303 with error=sso_state", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	resp.Body.Close()
+
+	// No session was granted.
+	resp = f.get(t, "/api/auth/me")
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("me after state mismatch = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+// ssoStart performs a real start request and extracts the state query param
+// from the redirect Location, for use as a valid callback ?state=.
+func ssoStart(t *testing.T, f *teamHTTPFixture, provider string) string {
+	t.Helper()
+	resp := f.get(t, "/api/auth/"+provider)
+	defer resp.Body.Close()
+	loc := resp.Header.Get("Location")
+	u, err := url.Parse(loc)
+	if err != nil {
+		t.Fatalf("parse redirect location %q: %v", loc, err)
+	}
+	return u.Query().Get("state")
+}
+
+func TestTeamHTTP_SSOCallback_ExchangeError(t *testing.T) {
+	fake := &fakeSSOProvider{authURL: "https://fake-provider.example/authorize", exchangeErr: errTestExchange}
+	f := setupTeamHTTPWithGoogle(t, fake)
+
+	state := ssoStart(t, f, "google")
+	resp := f.get(t, "/api/auth/google/callback?state="+state+"&code=abc")
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(resp.Header.Get("Location"), "error=sso_failed") {
+		t.Fatalf("status=%d location=%q, want 303 with error=sso_failed", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	resp.Body.Close()
+}
+
+func TestTeamHTTP_SSOCallback_NotAllowlisted(t *testing.T) {
+	fake := &fakeSSOProvider{authURL: "https://fake-provider.example/authorize", exchangeSub: "sub-1", exchangeEmail: "stranger@example.com"}
+	f := setupTeamHTTPWithGoogle(t, fake)
+
+	state := ssoStart(t, f, "google")
+	resp := f.get(t, "/api/auth/google/callback?state="+state+"&code=abc")
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(resp.Header.Get("Location"), "error=not_allowed") {
+		t.Fatalf("status=%d location=%q, want 303 with error=not_allowed", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	resp.Body.Close()
+}
+
+func TestTeamHTTP_SSOCallback_HappyPath(t *testing.T) {
+	fake := &fakeSSOProvider{authURL: "https://fake-provider.example/authorize", exchangeSub: "sub-1", exchangeEmail: "root@example.com"}
+	f := setupTeamHTTPWithGoogle(t, fake)
+
+	// root@example.com is the configured superadmin — always allowed.
+	state := ssoStart(t, f, "google")
+	resp := f.get(t, "/api/auth/google/callback?state="+state+"&code=abc")
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != f.h.appURL("/") {
+		t.Fatalf("status=%d location=%q, want 303 to /", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	resp.Body.Close()
+
+	me := f.me(t)
+	if me.Email != "root@example.com" || !me.Superadmin {
+		t.Fatalf("me after SSO login = %+v, want root superadmin", me)
+	}
+}
+
+func TestTeamHTTP_SSOCallback_LandsInExistingMagicLinkAccount(t *testing.T) {
+	fake := &fakeSSOProvider{authURL: "https://fake-provider.example/authorize", exchangeSub: "sub-1", exchangeEmail: "kid@example.com"}
+	f := setupTeamHTTPWithGoogle(t, fake)
+	loginSuperadmin(t, f)
+
+	// The superadmin allowlists kid, then kid logs in via magic link first.
+	kid := loginKid(t, f, "kid@example.com")
+	magicUserID := kid.me(t).UserID
+
+	// kid's second client authenticates via (fake) Google SSO, same email.
+	jar, _ := newJar()
+	sso := &teamHTTPFixture{server: f.server, mailer: f.mailer, client: &http.Client{
+		Jar:           jar,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}}
+
+	state := ssoStart(t, sso, "google")
+	resp := sso.get(t, "/api/auth/google/callback?state="+state+"&code=abc")
+	resp.Body.Close()
+
+	ssoUserID := sso.me(t).UserID
+	if ssoUserID != magicUserID {
+		t.Fatalf("SSO login user id = %s, want %s (same account as magic-link)", ssoUserID, magicUserID)
+	}
+}
+
+var errTestExchange = errors.New("fake exchange failure")
