@@ -123,7 +123,29 @@
     }
   }
 
-  function renderLogin() {
+  // ssoErrorMessage maps a ?error= query param (set by the magic-link and
+  // SSO callback redirects) to a human-readable message. Unknown codes are
+  // shown as-is so a future error code is never silently swallowed.
+  var SSO_ERROR_MESSAGES = {
+    invalid_link: "That sign-in link is invalid or has expired.",
+    sso_state: "Sign-in could not be verified — please try again.",
+    sso_failed: "Sign-in failed — please try again.",
+    not_allowed: "That account is not permitted to sign in.",
+    disabled: "That account has been disabled.",
+  };
+
+  function consumeLoginError() {
+    var params = new URLSearchParams(location.search);
+    var code = params.get("error");
+    if (!code) return null;
+    // Strip it so a reload doesn't re-show a stale error.
+    params.delete("error");
+    var qs = params.toString();
+    history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
+    return SSO_ERROR_MESSAGES[code] || code;
+  }
+
+  function renderLogin(caps) {
     var section = document.createElement("section");
     var heading = document.createElement("p");
     heading.textContent = "Sign in with a magic link:";
@@ -159,6 +181,25 @@
     section.appendChild(heading);
     section.appendChild(form);
     section.appendChild(status);
+
+    var loginError = consumeLoginError();
+    if (loginError) {
+      section.appendChild(el("p", { className: "error", text: loginError }));
+    }
+
+    if (caps && (caps.googleSso || caps.githubSso)) {
+      var sso = el("div", { className: "sso-links" });
+      // Real top-level navigations, not fetch — OAuth requires a full-page
+      // redirect to the provider's consent screen.
+      if (caps.googleSso) {
+        sso.appendChild(el("a", { className: "sso-link", href: "/api/auth/google", text: "Sign in with Google" }));
+      }
+      if (caps.githubSso) {
+        sso.appendChild(el("a", { className: "sso-link", href: "/api/auth/github", text: "Sign in with GitHub" }));
+      }
+      section.appendChild(sso);
+    }
+
     return section;
   }
 
@@ -1559,6 +1600,9 @@
             el("span", { className: "badge", text: u.role }),
             el("span", { className: "badge " + u.status, text: u.status }),
           ];
+          (u.identities || []).forEach(function (provider) {
+            row.push(el("span", { className: "badge identity", text: provider }));
+          });
           if (!isMe) {
             var willDisable = u.status === "active";
             row.push(el("button", { type: "button", className: "member-remove", text: willDisable ? "Disable" : "Enable", onclick: function () {
@@ -1598,7 +1642,7 @@
           if (!me) teamView = "chat"; // reset the active surface across logout
           renderNav(caps, me);
           if (showLogin && !me) {
-            app.appendChild(renderLogin());
+            app.appendChild(renderLogin(caps));
             return;
           }
           if (!caps.multiUser) {

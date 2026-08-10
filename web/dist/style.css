@@ -105,6 +105,25 @@ form.login button {
   cursor: pointer;
 }
 
+.sso-links {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.sso-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.sso-link:hover {
+  background: var(--bg);
+}
+
 .chat {
   display: flex;
   flex-direction: column;
@@ -459,6 +478,7 @@ form.invite button {
 .badge.private { color: var(--muted); }
 .badge.active { color: #1e8e3e; border-color: #1e8e3e; }
 .badge.disabled { color: #c0392b; border-color: #c0392b; }
+.badge.identity { color: var(--muted); }
 
 /* ---- Agents area: bar, forms, panels (RMI-311) ---- */
 
