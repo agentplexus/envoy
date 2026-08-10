@@ -2,8 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-003`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** v1 (Phases 1–4 + 6) completed — 25 of 29 items completed; only
-Phase 5 (SSO, v2) remains
+**Status:** Complete — 29 of 29 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the
 > trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member
@@ -125,13 +124,66 @@ Phase 5 (SSO, v2) remains
 ## Phase 5 — SSO (v2)
 
 **Theme:** Google/GitHub sign-in resolving to the same allowlisted accounts.
-**Status:** Planned — 0 of 4 items completed
+**Status:** Completed — 4 of 4 items completed
 
-- [ ] `RMI-OMNIAGENT-120` Google OIDC login
-- [ ] `RMI-OMNIAGENT-121` GitHub OAuth login
-- [ ] `RMI-OMNIAGENT-122` Identity linking by verified email
+> The `identities` table (schema, migration, RLS policies) was already fully
+> in place from Phase 1 with zero consuming code; this phase built the OAuth
+> client code, identity-resolution logic, HTTP routes, and docs on top of it
+> — no ent/migration/RLS changes were needed.
+
+- [x] `RMI-OMNIAGENT-120` Google OIDC login
+  - Acceptance: Google sign-in creates/logs into the allowlisted account;
+    non-allowlisted verified email is rejected uniformly. `team/auth/google.go`'s
+    `GoogleProvider` (`coreos/go-oidc/v3`) performs OIDC discovery against
+    `accounts.google.com` at construction (fatal on failure — see Phase 5
+    theme note below), verifies the ID token, and rejects an unverified
+    email before it is ever trusted (`extractGoogleIdentity`, unit-tested).
+    Verified live against Google's real OAuth endpoint (discovery + a real
+    `/api/auth/google` redirect) during implementation.
+- [x] `RMI-OMNIAGENT-121` GitHub OAuth login
+  - Acceptance: GitHub sign-in works for allowlisted verified primary emails
+    only. `team/auth/github.go`'s `GitHubProvider` fetches `/user` +
+    `/user/emails` and picks the `Primary && Verified` entry
+    (`selectVerifiedPrimaryEmail`), erroring if none exists — an unverified
+    or non-primary email is never trusted.
+- [x] `RMI-OMNIAGENT-122` Identity linking by verified email
   - Depends on: `RMI-OMNIAGENT-120`, `RMI-OMNIAGENT-121`
-- [ ] `RMI-OMNIAGENT-123` SSO configuration + docs
+  - Acceptance: a magic-link user later signing in with Google lands in the
+    same account; identities are listed per user. `team/auth/sso.go`'s
+    `CompleteSSOLogin` resolves an existing `(provider, subject)` identity
+    first (no allowlist re-check for a returning SSO user); on a first-time
+    identity it allowlist-checks the verified email, then resolves the user
+    by email via the existing `team.Service.EnsureUser` — this is what makes
+    a magic-link user's later Google/GitHub sign-in land in their existing
+    account, not a duplicate. `VerifyMagicLink` now also backfills a
+    `magic_link` identity row on every login, so "identities per user" is
+    populated for the common case too. `team.Service.ListIdentities` +
+    `userView.Identities` surface each user's linked providers as badges on
+    the RMI-119 Admin tab's Members card. Covered by Postgres-backed tests
+    (new-user, lands-in-existing-account, non-allowlisted rejection with
+    zero rows created, disabled-account rejection, idempotent re-login,
+    two-providers-one-account) and gateway-layer tests with a fake
+    `SSOProvider` covering the full state/nonce CSRF flow, error-code
+    routing, and the same account-linking behavior over real HTTP.
+- [x] `RMI-OMNIAGENT-123` SSO configuration + docs
+  - Acceptance: following the docs from scratch yields working SSO on a
+    fresh deployment. `team.sso.google`/`team.sso.github` config
+    (`config/team.go`) plus matching `OMNIAGENT_TEAM_SSO_*` env vars
+    (`config/loader.go`); redirect URI is fixed
+    (`{base_url}/api/auth/{provider}/callback}`), not configurable. New "SSO
+    (Google, GitHub)" section in `docs/guides/team-mode.md` documents exact
+    Google Cloud Console / GitHub OAuth App registration steps; the smoke
+    checklist and troubleshooting table in `docs/guides/team-deployment.md`
+    and the `deploy/team/prod/` compose assets (`.env.example`,
+    `docker-compose.yaml`) were extended with the SSO variables.
+
+> **Boot behavior:** Google SSO performs real OIDC discovery at `gateway run`
+> startup; a discovery failure is **fatal** (verified live against both a
+> real and an unreachable discovery host during implementation) — an
+> operator who configured Google SSO intends it to work, not silently never
+> offer the button. GitHub's plain OAuth2 flow makes no such call and never
+> fails at boot. No SSO configured (the default) has no effect on startup —
+> verified via a live no-SSO boot showing unchanged capabilities.
 
 ## Phase 6 — Hosted Deployment
 
