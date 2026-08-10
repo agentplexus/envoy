@@ -70,6 +70,7 @@
     if (caps.multiUser && me) {
       var tabs = [["chat", "Chats"], ["catalog", "Catalog"], ["agents", "My Agents"]];
       if (me.superadmin) tabs.push(["curation", "Curation"]);
+      if (me.superadmin) tabs.push(["admin", "Admin"]);
       tabs.forEach(function (t) {
         nav.appendChild(el("button", {
           type: "button",
@@ -114,6 +115,8 @@
       app.appendChild(renderAgents(me));
     } else if (teamView === "curation" && me && me.superadmin) {
       app.appendChild(renderCuration(me));
+    } else if (teamView === "admin" && me && me.superadmin) {
+      app.appendChild(renderAdmin(me));
     } else {
       teamView = "chat";
       app.appendChild(renderTeamChat(me));
@@ -1484,6 +1487,99 @@
     }
 
     load();
+    return section;
+  }
+
+  // ---- Superadmin admin: allowlist + members (RMI-119) ------------------
+
+  function renderAdmin() {
+    function setErr(node, err) {
+      if (err.message === "unauthenticated") return;
+      node.className = "error";
+      node.textContent = err.message;
+    }
+
+    function allowlistCard() {
+      var status = el("p", { className: "error" });
+      var list = el("ul", { className: "member-list" });
+      var email = el("input", { type: "email", placeholder: "email to allow", autocomplete: "off" });
+      var note = el("input", { type: "text", placeholder: "note (optional)", autocomplete: "off" });
+      var addBtn = el("button", { type: "submit", text: "Add" });
+      var invite = el("form", { className: "invite" }, [email, note, addBtn]);
+
+      function reload() {
+        jsonFetch("/api/admin/allowlist")
+          .then(function (r) { renderList(r.allowlist || []); })
+          .catch(function (err) { setErr(status, err); });
+      }
+      function renderList(entries) {
+        list.innerHTML = "";
+        entries.forEach(function (e) {
+          list.appendChild(el("li", {}, [
+            el("span", { text: e.email }),
+            e.note ? el("span", { className: "member-role", text: e.note }) : null,
+            el("button", { type: "button", className: "member-remove", text: "Remove", onclick: function () {
+              jsonFetch("/api/admin/allowlist?email=" + encodeURIComponent(e.email), {
+                method: "DELETE", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+              }).then(reload).catch(function (err) { setErr(status, err); });
+            } }),
+          ]));
+        });
+      }
+      invite.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var e = email.value.trim();
+        if (!e) return;
+        status.className = "error"; status.textContent = "";
+        jsonFetch("/api/admin/allowlist", {
+          method: "POST", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+          body: JSON.stringify({ email: e, note: note.value.trim() }),
+        }).then(function () { email.value = ""; note.value = ""; reload(); }).catch(function (err) { setErr(status, err); });
+      });
+
+      reload();
+      return card("Allowlist", el("div", {}, [list, invite, status]));
+    }
+
+    function membersCard() {
+      var status = el("p", { className: "error" });
+      var list = el("ul", { className: "member-list" });
+
+      function reload() {
+        jsonFetch("/api/admin/users")
+          .then(function (r) { renderList(r.users || []); })
+          .catch(function (err) { setErr(status, err); });
+      }
+      function renderList(users) {
+        list.innerHTML = "";
+        users.forEach(function (u) {
+          var isMe = currentMe && u.id === currentMe.user_id;
+          var row = [
+            el("span", { text: u.displayName || u.username }),
+            el("span", { className: "badge", text: u.role }),
+            el("span", { className: "badge " + u.status, text: u.status }),
+          ];
+          if (!isMe) {
+            var willDisable = u.status === "active";
+            row.push(el("button", { type: "button", className: "member-remove", text: willDisable ? "Disable" : "Enable", onclick: function () {
+              jsonFetch("/api/admin/users/" + encodeURIComponent(u.id), {
+                method: "PATCH", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+                body: JSON.stringify({ status: willDisable ? "disabled" : "active" }),
+              }).then(reload).catch(function (err) { setErr(status, err); });
+            } }));
+          }
+          list.appendChild(el("li", {}, row));
+        });
+      }
+
+      reload();
+      return card("Members", el("div", {}, [list, status]));
+    }
+
+    var section = el("section", { className: "admin-area" });
+    section.appendChild(el("h2", { className: "view-title", text: "Admin" }));
+    section.appendChild(allowlistCard());
+    section.appendChild(membersCard());
     return section;
   }
 

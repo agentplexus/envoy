@@ -457,6 +457,8 @@ form.invite button {
 .badge.featured { color: #b8860b; border-color: #b8860b; }
 .badge.listed { color: #1e8e3e; border-color: #1e8e3e; }
 .badge.private { color: var(--muted); }
+.badge.active { color: #1e8e3e; border-color: #1e8e3e; }
+.badge.disabled { color: #c0392b; border-color: #c0392b; }
 
 /* ---- Agents area: bar, forms, panels (RMI-311) ---- */
 
