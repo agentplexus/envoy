@@ -49,7 +49,7 @@
 ## Phase 3 — Private & Group Chats
 
 **Theme:** Agent-anchored chats with membership fan-out and @-mention agent policy.
-**Status:** In progress — 4 of 5 items completed
+**Status:** Complete — 5 of 5 items completed
 
 > **Cross-initiative dependency:** rescoped onto `INIT-OMNIAGENT-005` (Virtual
 > Agents, Roles & Registry) — a chat attaches to an `agent_id` and creation is
@@ -59,8 +59,11 @@
 > INIT-005 dependency and are complete; **RMI-113** (mention policy + agent
 > turns) is complete on top of INIT-005 RMI-308 — the per-agent runtime is
 > reached through the `chats.AgentRuntime` seam that INIT-005 **RMI-309** fills
-> (until then agent-bound chats stay silent). **RMI-114** remains blocked on
-> RMI-113 + per-chat memory scoping.
+> (until then agent-bound chats stay silent). **RMI-114** (per-chat memory
+> scoping via the `memscope` seam) is complete; like RMI-113 it is wired at the
+> seam and takes runtime effect once RMI-309 supplies a real processor. Phase 3
+> is complete; the only remaining gap to fully live agent-in-chat behavior is
+> INIT-005 RMI-309/310 (per-agent runtime + agent-scoped secrets).
 
 - [x] `RMI-OMNIAGENT-110` Chat + membership service
   - Acceptance: DM (private) with an agent created on demand for permitted users, one per user per agent; group create/invite/leave/remove with chat owner/superadmin rules; invitees join as conversants with no agent-config rights. Implemented in `team/chats`: `CreateGroup`, `Invite` (by username, resolved in system context since RLS hides other users; idempotent; owner/superadmin only), `Leave` (self-leave with sole-owner orphan guard), `RemoveMember` (owner/superadmin; owners not removable, no self-remove), `ListChats`/`GetChat`/`Members`/`MembersDetailed` (member/superadmin scoped). Backstopped by the existing chats/chat_members RLS policies (Postgres) and enforced at the service layer for the SQLite path.
@@ -73,9 +76,9 @@
 - [x] `RMI-OMNIAGENT-113` Mention policy + agent turns
   - Depends on: `RMI-OMNIAGENT-111`, `RMI-OMNIAGENT-112`, `INIT-OMNIAGENT-005` (agent entity + `Can()` + runtime binding)
   - Acceptance: group = respond only on `@<agent-slug>`; private = always; chat runs on the bound agent's runtime (persona + enabled skills + agent secrets); agent session keyed `chat:<id>`; reply persisted then broadcast; never self-replies. `chats.Service.AgentTurn` applies the policy: a private chat always takes a turn; a group chat takes one only when the user message @-mentions the bound agent's slug (`mentionsAgent` — whole-token, case-insensitive, honoring hyphen/underscore slug chars, so `@helperbot`/`me@helper` do not match `helper`). Routing goes through the `AgentRuntime` seam (`Slug` for the cheap mention check, `Processor` built only when the agent actually responds) which INIT-005 **RMI-309** fills with the per-agent runtime (persona + enabled skills + agent secrets); until a runtime is wired an agent-bound chat stays silent rather than answering as the wrong agent, and agent-less DMs use the fallback processor (personal mode). The session is keyed `chat:<id>` (`SessionID`); the reply is persisted `author_type=agent` (AsSystem) then fanned out to members. No self-replies: the turn runs only on a user message and its reply is agent-authored, which no user can post. Covered by sqlite-backed tests (mention table + private/group × mention/no-mention × runtime/no-runtime/agent-less).
-- [ ] `RMI-OMNIAGENT-114` Memory/tool scoping per chat
+- [x] `RMI-OMNIAGENT-114` Memory/tool scoping per chat
   - Depends on: `RMI-OMNIAGENT-113`
-  - Acceptance: TenantID=team, SubjectID=chat; skills/model/persona are agent config (owner/maintainer-managed via INIT-005), not per-chat overrides; rollover works per chat
+  - Acceptance: TenantID=team, SubjectID=chat; skills/model/persona are agent config (owner/maintainer-managed via INIT-005), not per-chat overrides; rollover works per chat. A turn's memory scope travels via a new neutral `memscope` package: the chats service stamps `{TenantID: "team", SubjectID: "chat:<id>"}` onto the turn context (`Config.MemoryTenant`, set to `MemoryTenantTeam` by the team composition root; empty in personal mode leaves scoping unchanged). Both the agent's automatic recall + rollover-persist (`processInternal`, `saveRolloverMemory` resolve tenant/subject from the stamped scope, falling back to `config.TenantID` + session ID) and the memory skill's tools (`memoryContext` defaults subject/tenant from the scope; an explicit `subject_id` still wins) honor it — so a chat's memories are isolated to that chat regardless of the processor path (this matters because the `AgentProcessor.Process` fallback path is stateless and otherwise drops the session subject). The scope carries **memory attribution only** — never model, tools, or persona — so a chat cannot override its agent's config; those stay owner/maintainer-managed (INIT-005), and team chats apply no per-session model/tool overrides. Rollover is per session, and each chat is its own session (`chat:<id>`), so rollover is per chat. Because no per-agent runtime runs chat turns yet (RMI-309), this is wired at the seam and unit-tested (memscope round-trip/resolve, agent rollover redirect under a stamped scope, memory-skill scope resolution, chats stamping via the private/group turn paths); it takes runtime effect once RMI-309 supplies a real processor.
 
 ## Phase 4 — Embedded Web UI
 
