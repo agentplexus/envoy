@@ -18,6 +18,7 @@ import (
 	"github.com/plexusone/omnistorage-core/kvs/backend/memory"
 
 	"github.com/plexusone/omniagent/hooks"
+	"github.com/plexusone/omniagent/memscope"
 	"github.com/plexusone/omniagent/sessions"
 )
 
@@ -700,6 +701,65 @@ func TestRollover_WritesExactlyOneMemory(t *testing.T) {
 	}
 	if len(list.Memories) != 1 {
 		t.Fatalf("got %d memories after no-op check, want still 1", len(list.Memories))
+	}
+}
+
+// TestRollover_HonorsMemoryScope verifies a memory scope stamped on the turn
+// context (e.g. a chat turn — RMI-OMNIAGENT-114) redirects the rolled-over
+// conversation to that scope's tenant/subject instead of the agent's configured
+// tenant and the session ID. The memory lands under {team, chat:1}, and nothing
+// is written under the agent's default {tenant-1, roll-mem} scope.
+func TestRollover_HonorsMemoryScope(t *testing.T) {
+	ctx := context.Background()
+
+	memClient, err := core.NewClient(core.ClientConfig{
+		Providers: []core.ProviderConfig{{
+			Name:    core.ProviderNameKVS,
+			Options: map[string]any{"store": memory.New()},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("core.NewClient: %v", err)
+	}
+	defer memClient.Close()
+
+	a, store, _ := rolloverTestAgent(t, sessions.RolloverPolicy{IdleTimeout: time.Hour})
+	a.memory = memClient
+	a.config.TenantID = "tenant-1"
+	a.config.AgentID = "agent-1"
+	a.hooks.RegisterHandler(hooks.EventSessionRollover, "session-memory", a.saveRolloverMemory)
+
+	session, err := store.Get(ctx, "roll-mem")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	session.AddMessage(provider.RoleUser, "remember: ship v0.13 on Friday")
+	session.AddMessage(provider.RoleAssistant, "will do")
+	session.UpdatedAt = time.Now().Add(-2 * time.Hour)
+
+	scoped := memscope.NewContext(ctx, memscope.Scope{TenantID: "team", SubjectID: "chat:1"})
+	a.maybeRolloverSession(scoped, session)
+
+	// The memory is under the stamped scope.
+	list, err := memClient.List(ctx, &core.ListRequest{
+		Context: core.Context{TenantID: "team", SubjectID: "chat:1", AgentID: "agent-1", SessionID: "roll-mem"},
+	})
+	if err != nil {
+		t.Fatalf("List (scoped): %v", err)
+	}
+	if len(list.Memories) != 1 {
+		t.Fatalf("got %d memories under the chat scope, want 1", len(list.Memories))
+	}
+
+	// Nothing under the agent's default scope — the scope redirected the write.
+	def, err := memClient.List(ctx, &core.ListRequest{
+		Context: core.Context{TenantID: "tenant-1", SubjectID: "roll-mem", AgentID: "agent-1", SessionID: "roll-mem"},
+	})
+	if err != nil {
+		t.Fatalf("List (default): %v", err)
+	}
+	if len(def.Memories) != 0 {
+		t.Fatalf("got %d memories under the default scope, want 0 (scope should redirect)", len(def.Memories))
 	}
 }
 
