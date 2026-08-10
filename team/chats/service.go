@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/plexusone/omniagent/team/ent/chat"
 	"github.com/plexusone/omniagent/team/ent/chatmember"
 	"github.com/plexusone/omniagent/team/ent/message"
+	entuser "github.com/plexusone/omniagent/team/ent/user"
 	"github.com/plexusone/omniagent/team/store"
 )
 
@@ -31,10 +33,32 @@ var (
 	ErrNotFound = errors.New("not found")
 	// ErrEmptyMessage is returned for blank message content.
 	ErrEmptyMessage = errors.New("message content is empty")
+	// ErrNotGroup is returned when a group-only operation targets a chat
+	// that is not a group (e.g. inviting into a private DM).
+	ErrNotGroup = errors.New("chat is not a group")
+	// ErrEmptyName is returned when a group chat is created without a name.
+	ErrEmptyName = errors.New("group name is empty")
+	// ErrUserNotFound is returned when an invitee username resolves to no user.
+	ErrUserNotFound = errors.New("user not found")
+	// ErrLastOwner is returned when the sole owner tries to leave a group
+	// that still has other members (which would orphan it).
+	ErrLastOwner = errors.New("cannot leave: you are the group's only owner")
 )
 
 // MaxMessageBytes caps a single message's length (TRD §5).
 const MaxMessageBytes = 32 << 10
+
+// MaxChatNameBytes caps a group chat's name.
+const MaxChatNameBytes = 200
+
+// Actor identifies the authenticated caller of a group operation. The
+// Superadmin flag flows into the store so owner/superadmin administration
+// rules resolve correctly under row-level security (a superadmin may
+// administer any group's membership, but is not content-privileged).
+type Actor struct {
+	UserID     uuid.UUID
+	Superadmin bool
+}
 
 // AgentProcessor runs one conversational turn. *agent.Agent satisfies this
 // structurally; chats stays decoupled from the agent package.
@@ -280,4 +304,324 @@ func (s *Service) reply(ctx context.Context, chatID uuid.UUID, content string) (
 		return "Message received: " + content, nil
 	}
 	return s.agent.Process(ctx, SessionID(chatID), content)
+}
+
+// ---- Group chats & membership (RMI-110) ---------------------------------
+
+// CreateGroup creates a group chat owned by the actor, inserting the actor's
+// owner membership in the same transaction. Group members added later via
+// Invite join as conversants (role "member") with no configuration rights.
+func (s *Service) CreateGroup(ctx context.Context, actor Actor, name string) (*ent.Chat, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, ErrEmptyName
+	}
+	if len(name) > MaxChatNameBytes {
+		return nil, fmt.Errorf("group name exceeds %d bytes", MaxChatNameBytes)
+	}
+	var c *ent.Chat
+	err := s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
+		var err error
+		c, err = tx.Chat.Create().
+			SetType(chat.TypeGroup).SetName(name).SetCreatedBy(actor.UserID).Save(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = tx.ChatMember.Create().
+			SetChatID(c.ID).SetUserID(actor.UserID).SetRole(chatmember.RoleOwner).Save(ctx)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create group: %w", err)
+	}
+	return c, nil
+}
+
+// ListChats returns the chats the actor is a member of, newest first. RLS (and
+// the service's membership scoping) ensures no chat the actor cannot see is
+// returned; a superadmin is not content-privileged, so this lists only the
+// superadmin's own chats.
+func (s *Service) ListChats(ctx context.Context, actor Actor) ([]*ent.Chat, error) {
+	var chats []*ent.Chat
+	err := s.store.AsUser(ctx, actor.UserID, false, func(ctx context.Context, tx *ent.Tx) error {
+		var err error
+		// Filter to the actor's memberships explicitly: RLS scopes this on
+		// postgres, but the personal-mode SQLite store has no policies.
+		chats, err = tx.Chat.Query().
+			Where(chat.HasMembersWith(chatmember.UserIDEQ(actor.UserID))).
+			Order(ent.Desc(chat.FieldCreatedAt)).All(ctx)
+		return err
+	})
+	return chats, err
+}
+
+// GetChat returns a chat the actor is a member of, or ErrForbidden.
+func (s *Service) GetChat(ctx context.Context, actor Actor, chatID uuid.UUID) (*ent.Chat, error) {
+	var c *ent.Chat
+	err := s.store.AsUser(ctx, actor.UserID, false, func(ctx context.Context, tx *ent.Tx) error {
+		if err := s.membership(ctx, tx, actor.UserID, chatID); err != nil {
+			return err
+		}
+		var err error
+		c, err = tx.Chat.Get(ctx, chatID)
+		return err
+	})
+	if errors.Is(err, ErrForbidden) || ent.IsNotFound(err) {
+		return nil, ErrForbidden
+	}
+	return c, err
+}
+
+// Members lists a chat's members (oldest membership first). The actor must be
+// a member, or a superadmin (who may administer membership without joining).
+func (s *Service) Members(ctx context.Context, actor Actor, chatID uuid.UUID) ([]*ent.ChatMember, error) {
+	var members []*ent.ChatMember
+	err := s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
+		if err := s.membership(ctx, tx, actor.UserID, chatID); err != nil {
+			if !actor.Superadmin {
+				return err
+			}
+		}
+		var err error
+		members, err = tx.ChatMember.Query().
+			Where(chatmember.ChatIDEQ(chatID)).
+			Order(ent.Asc(chatmember.FieldJoinedAt)).All(ctx)
+		return err
+	})
+	if errors.Is(err, ErrForbidden) {
+		return nil, ErrForbidden
+	}
+	return members, err
+}
+
+// MemberView pairs a membership with the member's username, for display in a
+// group's member list (RMI-110/111). Usernames are resolved via system context
+// because RLS hides other users' rows from a non-superadmin member; within a
+// shared chat, revealing co-members' usernames is expected.
+type MemberView struct {
+	UserID   uuid.UUID `json:"userId"`
+	Username string    `json:"username"`
+	Role     string    `json:"role"`
+	JoinedAt time.Time `json:"joinedAt"`
+}
+
+// MembersDetailed lists a chat's members with their usernames. The actor must
+// be a member (or superadmin).
+func (s *Service) MembersDetailed(ctx context.Context, actor Actor, chatID uuid.UUID) ([]MemberView, error) {
+	members, err := s.Members(ctx, actor, chatID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]uuid.UUID, len(members))
+	for i, m := range members {
+		ids[i] = m.UserID
+	}
+	names := make(map[uuid.UUID]string, len(ids))
+	if len(ids) > 0 {
+		if err := s.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
+			users, err := tx.User.Query().Where(entuser.IDIn(ids...)).All(ctx)
+			if err != nil {
+				return err
+			}
+			for _, u := range users {
+				names[u.ID] = u.Username
+			}
+			return nil
+		}); err != nil {
+			return nil, fmt.Errorf("resolve member usernames: %w", err)
+		}
+	}
+	out := make([]MemberView, len(members))
+	for i, m := range members {
+		out[i] = MemberView{UserID: m.UserID, Username: names[m.UserID], Role: m.Role.String(), JoinedAt: m.JoinedAt}
+	}
+	return out, nil
+}
+
+// MemberUserIDs returns the user IDs of a chat's members — the fan-out
+// recipient set for a message broadcast. The actor must be a member.
+func (s *Service) MemberUserIDs(ctx context.Context, actor Actor, chatID uuid.UUID) ([]uuid.UUID, error) {
+	members, err := s.Members(ctx, actor, chatID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]uuid.UUID, len(members))
+	for i, m := range members {
+		ids[i] = m.UserID
+	}
+	return ids, nil
+}
+
+// Invite adds a user (by username) to a group chat as a conversant (member).
+// Owner or superadmin only. Idempotent: re-inviting an existing member returns
+// the existing membership without change.
+func (s *Service) Invite(ctx context.Context, actor Actor, chatID uuid.UUID, username string) (*ent.ChatMember, error) {
+	username = strings.ToLower(strings.TrimSpace(username))
+	if username == "" {
+		return nil, ErrUserNotFound
+	}
+	if err := s.requireOwner(ctx, actor, chatID); err != nil {
+		return nil, err
+	}
+
+	// Resolve the invitee via system context: RLS hides other users from a
+	// non-superadmin owner, so the owner cannot look them up in their own
+	// scope. Only the resolved user ID crosses back — no user data is exposed.
+	var inviteeID uuid.UUID
+	if err := s.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
+		u, err := tx.User.Query().Where(entuser.UsernameEQ(username)).Only(ctx)
+		if err != nil {
+			return err
+		}
+		inviteeID = u.ID
+		return nil
+	}); err != nil {
+		if ent.IsNotFound(err) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("resolve invitee: %w", err)
+	}
+
+	var m *ent.ChatMember
+	err := s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
+		existing, err := tx.ChatMember.Query().
+			Where(chatmember.ChatIDEQ(chatID), chatmember.UserIDEQ(inviteeID)).Only(ctx)
+		if err == nil {
+			m = existing
+			return nil
+		}
+		if !ent.IsNotFound(err) {
+			return err
+		}
+		m, err = tx.ChatMember.Create().
+			SetChatID(chatID).SetUserID(inviteeID).SetRole(chatmember.RoleMember).Save(ctx)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("invite: %w", err)
+	}
+	return m, nil
+}
+
+// Leave removes the actor's own membership from a group chat (self-leave). The
+// sole owner cannot leave while other members remain (it would orphan the
+// group); remove the others or the group first.
+func (s *Service) Leave(ctx context.Context, actor Actor, chatID uuid.UUID) error {
+	err := s.store.AsUser(ctx, actor.UserID, false, func(ctx context.Context, tx *ent.Tx) error {
+		self, err := tx.ChatMember.Query().
+			Where(chatmember.ChatIDEQ(chatID), chatmember.UserIDEQ(actor.UserID)).Only(ctx)
+		if err != nil {
+			return err // NotFound → not a member → ErrForbidden below
+		}
+		c, err := tx.Chat.Get(ctx, chatID)
+		if err != nil {
+			return err
+		}
+		if c.Type != chat.TypeGroup {
+			return ErrNotGroup
+		}
+		if self.Role == chatmember.RoleOwner {
+			otherOwner, err := tx.ChatMember.Query().
+				Where(chatmember.ChatIDEQ(chatID), chatmember.RoleEQ(chatmember.RoleOwner), chatmember.UserIDNEQ(actor.UserID)).Exist(ctx)
+			if err != nil {
+				return err
+			}
+			if !otherOwner {
+				otherMember, err := tx.ChatMember.Query().
+					Where(chatmember.ChatIDEQ(chatID), chatmember.UserIDNEQ(actor.UserID)).Exist(ctx)
+				if err != nil {
+					return err
+				}
+				if otherMember {
+					return ErrLastOwner
+				}
+			}
+		}
+		_, err = tx.ChatMember.Delete().
+			Where(chatmember.ChatIDEQ(chatID), chatmember.UserIDEQ(actor.UserID)).Exec(ctx)
+		return err
+	})
+	if ent.IsNotFound(err) {
+		return ErrForbidden
+	}
+	return err
+}
+
+// RemoveMember removes another member from a group chat. Owner or superadmin
+// only. Owners are not removable this way (they leave themselves); use Leave
+// to remove yourself.
+func (s *Service) RemoveMember(ctx context.Context, actor Actor, chatID, memberID uuid.UUID) error {
+	if memberID == actor.UserID {
+		return fmt.Errorf("use Leave to remove yourself: %w", ErrForbidden)
+	}
+	if err := s.requireOwner(ctx, actor, chatID); err != nil {
+		return err
+	}
+	err := s.store.AsUser(ctx, actor.UserID, actor.Superadmin, func(ctx context.Context, tx *ent.Tx) error {
+		target, err := tx.ChatMember.Query().
+			Where(chatmember.ChatIDEQ(chatID), chatmember.UserIDEQ(memberID)).Only(ctx)
+		if err != nil {
+			return err
+		}
+		if target.Role == chatmember.RoleOwner {
+			return fmt.Errorf("cannot remove an owner: %w", ErrForbidden)
+		}
+		_, err = tx.ChatMember.Delete().
+			Where(chatmember.ChatIDEQ(chatID), chatmember.UserIDEQ(memberID)).Exec(ctx)
+		return err
+	})
+	if ent.IsNotFound(err) {
+		return ErrForbidden
+	}
+	return err
+}
+
+// requireOwner verifies the chat is a group and the actor may administer its
+// membership: an owner, or a superadmin (who administers via RLS without being
+// a member and thus without content access — hence the system-context lookup).
+func (s *Service) requireOwner(ctx context.Context, actor Actor, chatID uuid.UUID) error {
+	if actor.Superadmin {
+		return s.requireGroupSystem(ctx, chatID)
+	}
+	err := s.store.AsUser(ctx, actor.UserID, false, func(ctx context.Context, tx *ent.Tx) error {
+		c, err := tx.Chat.Get(ctx, chatID)
+		if err != nil {
+			return err // NotFound → not visible → ErrForbidden below
+		}
+		if c.Type != chat.TypeGroup {
+			return ErrNotGroup
+		}
+		isOwner, err := tx.ChatMember.Query().
+			Where(chatmember.ChatIDEQ(chatID), chatmember.UserIDEQ(actor.UserID), chatmember.RoleEQ(chatmember.RoleOwner)).Exist(ctx)
+		if err != nil {
+			return err
+		}
+		if !isOwner {
+			return ErrForbidden
+		}
+		return nil
+	})
+	if ent.IsNotFound(err) {
+		return ErrForbidden
+	}
+	return err
+}
+
+// requireGroupSystem confirms a chat exists and is a group, using system
+// context so a superadmin (not content-privileged) can administer it.
+func (s *Service) requireGroupSystem(ctx context.Context, chatID uuid.UUID) error {
+	err := s.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
+		c, err := tx.Chat.Get(ctx, chatID)
+		if err != nil {
+			return err
+		}
+		if c.Type != chat.TypeGroup {
+			return ErrNotGroup
+		}
+		return nil
+	})
+	if ent.IsNotFound(err) {
+		return ErrForbidden
+	}
+	return err
 }

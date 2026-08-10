@@ -216,6 +216,231 @@ func TestHistoryBefore_NonMemberForbidden(t *testing.T) {
 	}
 }
 
+// createUser inserts an additional user (system context) and returns its ID,
+// so group tests can exercise multi-member membership.
+func createUser(t *testing.T, svc *Service, username string) uuid.UUID {
+	t.Helper()
+	ctx := context.Background()
+	var id uuid.UUID
+	if err := svc.store.AsSystem(ctx, func(ctx context.Context, tx *ent.Tx) error {
+		u, err := tx.User.Create().
+			SetEmail(username + "@example.com").SetUsername(username).
+			SetRole(entuser.RoleMember).Save(ctx)
+		if err != nil {
+			return err
+		}
+		id = u.ID
+		return nil
+	}); err != nil {
+		t.Fatalf("createUser %s: %v", username, err)
+	}
+	return id
+}
+
+func TestCreateGroup_OwnerMembership(t *testing.T) {
+	svc, ownerID := setupChats(t, nil)
+	ctx := context.Background()
+	owner := Actor{UserID: ownerID}
+
+	c, err := svc.CreateGroup(ctx, owner, "  Family  ")
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if c.Name != "Family" {
+		t.Errorf("group name = %q, want trimmed %q", c.Name, "Family")
+	}
+	if c.Type.String() != "group" {
+		t.Errorf("group type = %q, want group", c.Type)
+	}
+
+	members, err := svc.Members(ctx, owner, c.ID)
+	if err != nil {
+		t.Fatalf("Members: %v", err)
+	}
+	if len(members) != 1 || members[0].UserID != ownerID || members[0].Role.String() != "owner" {
+		t.Fatalf("creator membership = %+v, want single owner", members)
+	}
+
+	if _, err := svc.CreateGroup(ctx, owner, "   "); !errors.Is(err, ErrEmptyName) {
+		t.Errorf("CreateGroup(blank) err = %v, want ErrEmptyName", err)
+	}
+}
+
+func TestInvite_AddsConversantAndFansOut(t *testing.T) {
+	svc, ownerID := setupChats(t, nil)
+	ctx := context.Background()
+	owner := Actor{UserID: ownerID}
+	bobID := createUser(t, svc, "bob")
+
+	c, err := svc.CreateGroup(ctx, owner, "Trip")
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+
+	m, err := svc.Invite(ctx, owner, c.ID, "BOB") // case-insensitive
+	if err != nil {
+		t.Fatalf("Invite: %v", err)
+	}
+	if m.UserID != bobID || m.Role.String() != "member" {
+		t.Errorf("invited membership = %+v, want bob as member", m)
+	}
+
+	// Idempotent re-invite.
+	if _, err := svc.Invite(ctx, owner, c.ID, "bob"); err != nil {
+		t.Fatalf("re-Invite: %v", err)
+	}
+
+	ids, err := svc.MemberUserIDs(ctx, owner, c.ID)
+	if err != nil {
+		t.Fatalf("MemberUserIDs: %v", err)
+	}
+	if len(ids) != 2 {
+		t.Fatalf("member count = %d, want 2 (owner + bob)", len(ids))
+	}
+
+	// Unknown username.
+	if _, err := svc.Invite(ctx, owner, c.ID, "nobody"); !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("Invite(unknown) err = %v, want ErrUserNotFound", err)
+	}
+}
+
+func TestInvite_NonOwnerForbidden(t *testing.T) {
+	svc, ownerID := setupChats(t, nil)
+	ctx := context.Background()
+	owner := Actor{UserID: ownerID}
+	bobID := createUser(t, svc, "bob")
+	carolID := createUser(t, svc, "carol")
+
+	c, err := svc.CreateGroup(ctx, owner, "Trip")
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if _, err := svc.Invite(ctx, owner, c.ID, "bob"); err != nil {
+		t.Fatalf("Invite bob: %v", err)
+	}
+
+	// bob is a plain member, not an owner → cannot invite carol.
+	_ = carolID
+	if _, err := svc.Invite(ctx, Actor{UserID: bobID}, c.ID, "carol"); !errors.Is(err, ErrForbidden) {
+		t.Errorf("non-owner Invite err = %v, want ErrForbidden", err)
+	}
+	// A complete stranger cannot invite either.
+	if _, err := svc.Invite(ctx, Actor{UserID: uuid.New()}, c.ID, "carol"); !errors.Is(err, ErrForbidden) {
+		t.Errorf("stranger Invite err = %v, want ErrForbidden", err)
+	}
+}
+
+func TestInvite_PrivateChatRejected(t *testing.T) {
+	svc, ownerID := setupChats(t, nil)
+	ctx := context.Background()
+	owner := Actor{UserID: ownerID}
+	createUser(t, svc, "bob")
+
+	dm, err := svc.PrivateChat(ctx, ownerID)
+	if err != nil {
+		t.Fatalf("PrivateChat: %v", err)
+	}
+	if _, err := svc.Invite(ctx, owner, dm.ID, "bob"); !errors.Is(err, ErrNotGroup) {
+		t.Errorf("Invite into private DM err = %v, want ErrNotGroup", err)
+	}
+}
+
+func TestLeaveAndRemove(t *testing.T) {
+	svc, ownerID := setupChats(t, nil)
+	ctx := context.Background()
+	owner := Actor{UserID: ownerID}
+	bobID := createUser(t, svc, "bob")
+
+	c, err := svc.CreateGroup(ctx, owner, "Trip")
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+	if _, err := svc.Invite(ctx, owner, c.ID, "bob"); err != nil {
+		t.Fatalf("Invite: %v", err)
+	}
+
+	// Sole owner cannot leave while bob remains.
+	if err := svc.Leave(ctx, owner, c.ID); !errors.Is(err, ErrLastOwner) {
+		t.Errorf("owner Leave err = %v, want ErrLastOwner", err)
+	}
+
+	// Owner cannot remove themselves via RemoveMember.
+	if err := svc.RemoveMember(ctx, owner, c.ID, ownerID); !errors.Is(err, ErrForbidden) {
+		t.Errorf("RemoveMember(self) err = %v, want ErrForbidden", err)
+	}
+
+	// A plain member cannot remove anyone.
+	if err := svc.RemoveMember(ctx, Actor{UserID: bobID}, c.ID, ownerID); !errors.Is(err, ErrForbidden) {
+		t.Errorf("member RemoveMember err = %v, want ErrForbidden", err)
+	}
+
+	// Owner removes bob.
+	if err := svc.RemoveMember(ctx, owner, c.ID, bobID); err != nil {
+		t.Fatalf("RemoveMember bob: %v", err)
+	}
+	ids, err := svc.MemberUserIDs(ctx, owner, c.ID)
+	if err != nil {
+		t.Fatalf("MemberUserIDs: %v", err)
+	}
+	if len(ids) != 1 || ids[0] != ownerID {
+		t.Fatalf("after removal members = %v, want [owner]", ids)
+	}
+
+	// Now the sole owner (last member) may leave.
+	if err := svc.Leave(ctx, owner, c.ID); err != nil {
+		t.Errorf("last-member owner Leave err = %v, want nil", err)
+	}
+
+	// bob (removed) can no longer see the chat.
+	if _, err := svc.GetChat(ctx, Actor{UserID: bobID}, c.ID); !errors.Is(err, ErrForbidden) {
+		t.Errorf("removed member GetChat err = %v, want ErrForbidden", err)
+	}
+}
+
+func TestListChats_MemberScoped(t *testing.T) {
+	svc, aliceID := setupChats(t, nil)
+	ctx := context.Background()
+	alice := Actor{UserID: aliceID}
+	bobID := createUser(t, svc, "bob")
+	bob := Actor{UserID: bobID}
+
+	// Alice owns a private DM and a group; bob is in neither yet.
+	if _, err := svc.PrivateChat(ctx, aliceID); err != nil {
+		t.Fatalf("PrivateChat: %v", err)
+	}
+	g, err := svc.CreateGroup(ctx, alice, "Trip")
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+
+	aliceChats, err := svc.ListChats(ctx, alice)
+	if err != nil {
+		t.Fatalf("ListChats(alice): %v", err)
+	}
+	if len(aliceChats) != 2 {
+		t.Fatalf("alice sees %d chats, want 2", len(aliceChats))
+	}
+
+	bobChats, err := svc.ListChats(ctx, bob)
+	if err != nil {
+		t.Fatalf("ListChats(bob): %v", err)
+	}
+	if len(bobChats) != 0 {
+		t.Fatalf("bob sees %d chats, want 0 before invite", len(bobChats))
+	}
+
+	if _, err := svc.Invite(ctx, alice, g.ID, "bob"); err != nil {
+		t.Fatalf("Invite bob: %v", err)
+	}
+	bobChats, err = svc.ListChats(ctx, bob)
+	if err != nil {
+		t.Fatalf("ListChats(bob) after invite: %v", err)
+	}
+	if len(bobChats) != 1 || bobChats[0].ID != g.ID {
+		t.Fatalf("bob sees %v after invite, want [group]", bobChats)
+	}
+}
+
 func TestHistory_KeysetPagination(t *testing.T) {
 	svc, userID := setupChats(t, &echoAgent{reply: "ok"})
 	ctx := context.Background()
