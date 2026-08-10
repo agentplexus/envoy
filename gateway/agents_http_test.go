@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -24,6 +25,14 @@ import (
 // (superadmin), bob and carol (members). The catalog's available-skills are
 // {web-search, calculator}.
 func setupAgentsHTTP(t *testing.T) (*AgentsHTTP, *TeamChatHTTP, map[string]uuid.UUID) {
+	ah, ch, ids, _ := setupAgentsHTTPFull(t, nil)
+	return ah, ch, ids
+}
+
+// setupAgentsHTTPFull is setupAgentsHTTP with a hook to tweak the
+// AgentsHTTPConfig (e.g. wire the secrets surface) and access to the agents
+// service. The base config always has Agents set.
+func setupAgentsHTTPFull(t *testing.T, tweak func(*AgentsHTTPConfig)) (*AgentsHTTP, *TeamChatHTTP, map[string]uuid.UUID, *agents.Service) {
 	t.Helper()
 	ctx := context.Background()
 	dsn := filepath.Join(t.TempDir(), "agents.db")
@@ -65,7 +74,11 @@ func setupAgentsHTTP(t *testing.T) (*AgentsHTTP, *TeamChatHTTP, map[string]uuid.
 	if err != nil {
 		t.Fatalf("agents.NewService: %v", err)
 	}
-	ah := NewAgentsHTTP(AgentsHTTPConfig{Agents: agentsSvc})
+	cfg := AgentsHTTPConfig{Agents: agentsSvc}
+	if tweak != nil {
+		tweak(&cfg)
+	}
+	ah := NewAgentsHTTP(cfg)
 
 	chatSvc, err := chats.NewService(st, chats.Config{Agents: agentsSvc})
 	if err != nil {
@@ -73,7 +86,7 @@ func setupAgentsHTTP(t *testing.T) (*AgentsHTTP, *TeamChatHTTP, map[string]uuid.
 	}
 	ch := NewTeamChatHTTP(TeamChatHTTPConfig{Chats: chatSvc})
 
-	return ah, ch, ids
+	return ah, ch, ids, agentsSvc
 }
 
 // do issues a request against a handler as the given user and returns the
@@ -470,3 +483,163 @@ func catalogFor(t *testing.T, h *AgentsHTTP, id uuid.UUID, super ...bool) agents
 	}
 	return got
 }
+
+// ---- Agent secrets (INIT-OMNIAGENT-004) ----------------------------------
+
+// fakeSecretStore is an in-memory AgentSecretStore for tests: it records
+// writes so tests can assert set/delete without a real vault.
+type fakeSecretStore struct {
+	data map[uuid.UUID]map[string]string
+}
+
+func newFakeSecretStore() *fakeSecretStore {
+	return &fakeSecretStore{data: map[uuid.UUID]map[string]string{}}
+}
+
+func (f *fakeSecretStore) SetAgentSecret(_ context.Context, id uuid.UUID, name, value string) error {
+	if f.data[id] == nil {
+		f.data[id] = map[string]string{}
+	}
+	f.data[id][name] = value
+	return nil
+}
+
+func (f *fakeSecretStore) DeleteAgentSecret(_ context.Context, id uuid.UUID, name string) error {
+	delete(f.data[id], name)
+	return nil
+}
+
+func (f *fakeSecretStore) ListAgentSecretNames(_ context.Context, id uuid.UUID) ([]string, error) {
+	names := make([]string, 0, len(f.data[id]))
+	for n := range f.data[id] {
+		names = append(names, n)
+	}
+	return names, nil
+}
+
+// setupAgentsSecretsHTTP wires the agents handler with the secrets surface: a
+// fake store, a declaration lookup that gives "web-search" one required secret
+// GITHUB_TOKEN, and an invalidation spy.
+func setupAgentsSecretsHTTP(t *testing.T) (*AgentsHTTP, map[string]uuid.UUID, *fakeSecretStore, *[]uuid.UUID) {
+	t.Helper()
+	store := newFakeSecretStore()
+	var invalidated []uuid.UUID
+	decls := map[string][]SecretDecl{
+		"web-search": {{Name: "GITHUB_TOKEN", Description: "A PAT", Env: "GITHUB_TOKEN", Required: true}},
+	}
+	ah, _, ids, _ := setupAgentsHTTPFull(t, func(cfg *AgentsHTTPConfig) {
+		cfg.Secrets = store
+		cfg.SkillSecretDecls = func(name string) []SecretDecl { return decls[name] }
+		cfg.InvalidateAgent = func(id uuid.UUID) { invalidated = append(invalidated, id) }
+	})
+	return ah, ids, store, &invalidated
+}
+
+func TestAgentSecrets_SetListDelete(t *testing.T) {
+	h, ids, store, invalidated := setupAgentsSecretsHTTP(t)
+	bob := ids["bob"]
+	id := createAgent(t, h, bob, "sec")
+	// Enable the secret-declaring skill.
+	if rec := do(h.Handler(), http.MethodPut, "/api/agents/"+id.String()+"/skills",
+		`{"skills":["web-search"]}`, bob, false); rec.Code != http.StatusOK {
+		t.Fatalf("set skills: %d %s", rec.Code, rec.Body.String())
+	}
+
+	// Catalog shows the declared secret, unset.
+	rec := do(h.Handler(), http.MethodGet, "/api/agents/"+id.String()+"/secrets", "", bob, false)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list secrets: %d %s", rec.Code, rec.Body.String())
+	}
+	var cat struct {
+		Secrets []secretView `json:"secrets"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &cat); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(cat.Secrets) != 1 || cat.Secrets[0].Name != "GITHUB_TOKEN" || cat.Secrets[0].Set || !cat.Secrets[0].Required {
+		t.Fatalf("catalog = %+v, want one unset required GITHUB_TOKEN", cat.Secrets)
+	}
+
+	// Set it.
+	if rec := do(h.Handler(), http.MethodPut, "/api/agents/"+id.String()+"/secrets",
+		`{"name":"GITHUB_TOKEN","value":"ghp_abc"}`, bob, false); rec.Code != http.StatusOK {
+		t.Fatalf("set secret: %d %s", rec.Code, rec.Body.String())
+	}
+	if store.data[id]["GITHUB_TOKEN"] != "ghp_abc" {
+		t.Errorf("value not stored: %v", store.data[id])
+	}
+	if len(*invalidated) != 1 || (*invalidated)[0] != id {
+		t.Errorf("invalidate = %v, want [%s]", *invalidated, id)
+	}
+
+	// Catalog now shows it set, and never returns the value.
+	rec = do(h.Handler(), http.MethodGet, "/api/agents/"+id.String()+"/secrets", "", bob, false)
+	_ = json.Unmarshal(rec.Body.Bytes(), &cat)
+	if !cat.Secrets[0].Set {
+		t.Error("secret should be marked set")
+	}
+	if bytes := rec.Body.String(); contains(bytes, "ghp_abc") {
+		t.Errorf("catalog leaked the secret value: %s", bytes)
+	}
+
+	// Delete it.
+	if rec := do(h.Handler(), http.MethodDelete, "/api/agents/"+id.String()+"/secrets/GITHUB_TOKEN", "", bob, false); rec.Code != http.StatusOK {
+		t.Fatalf("delete secret: %d %s", rec.Code, rec.Body.String())
+	}
+	if _, ok := store.data[id]["GITHUB_TOKEN"]; ok {
+		t.Error("secret not deleted")
+	}
+	if len(*invalidated) != 2 {
+		t.Errorf("invalidate calls = %d, want 2 (set + delete)", len(*invalidated))
+	}
+}
+
+func TestAgentSecrets_StrangerForbidden(t *testing.T) {
+	h, ids, store, _ := setupAgentsSecretsHTTP(t)
+	bob, carol := ids["bob"], ids["carol"]
+	id := createAgent(t, h, bob, "sec")
+
+	// A non-owner/maintainer cannot read or write the agent's secrets.
+	if rec := do(h.Handler(), http.MethodGet, "/api/agents/"+id.String()+"/secrets", "", carol, false); rec.Code != http.StatusForbidden {
+		t.Errorf("stranger list = %d, want 403", rec.Code)
+	}
+	if rec := do(h.Handler(), http.MethodPut, "/api/agents/"+id.String()+"/secrets",
+		`{"name":"GITHUB_TOKEN","value":"x"}`, carol, false); rec.Code != http.StatusForbidden {
+		t.Errorf("stranger set = %d, want 403", rec.Code)
+	}
+	if len(store.data[id]) != 0 {
+		t.Error("stranger write should not have stored anything")
+	}
+}
+
+func TestAgentSecrets_ValidationAndCSRF(t *testing.T) {
+	h, ids, _, _ := setupAgentsSecretsHTTP(t)
+	bob := ids["bob"]
+	id := createAgent(t, h, bob, "sec")
+
+	// Empty value is rejected.
+	if rec := do(h.Handler(), http.MethodPut, "/api/agents/"+id.String()+"/secrets",
+		`{"name":"GITHUB_TOKEN","value":""}`, bob, false); rec.Code != http.StatusBadRequest {
+		t.Errorf("empty value = %d, want 400", rec.Code)
+	}
+
+	// Missing CSRF header on a mutation is rejected.
+	req := httptest.NewRequest(http.MethodPut, "/api/agents/"+id.String()+"/secrets", nil)
+	req = req.WithContext(context.WithValue(req.Context(), principalCtxKey{}, &auth.Principal{UserID: bob}))
+	rec := httptest.NewRecorder()
+	h.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("missing CSRF = %d, want 403", rec.Code)
+	}
+}
+
+func TestAgentSecrets_RoutesAbsentWithoutVault(t *testing.T) {
+	h, _, ids := setupAgentsHTTP(t) // no Secrets configured
+	bob := ids["bob"]
+	id := createAgent(t, h, bob, "sec")
+	if rec := do(h.Handler(), http.MethodGet, "/api/agents/"+id.String()+"/secrets", "", bob, false); rec.Code != http.StatusNotFound {
+		t.Errorf("secrets route without vault = %d, want 404 (not registered)", rec.Code)
+	}
+}
+
+func contains(s, sub string) bool { return strings.Contains(s, sub) }
