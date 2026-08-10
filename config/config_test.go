@@ -376,6 +376,77 @@ func TestLoadEnv_Observability(t *testing.T) {
 	}
 }
 
+func TestLoadEnv_Team(t *testing.T) {
+	os.Setenv("OMNIAGENT_TEAM_ENABLED", "true")
+	os.Setenv("OMNIAGENT_TEAM_DATABASE_APP_DSN", "postgres://app@db/team")
+	os.Setenv("OMNIAGENT_TEAM_DATABASE_MIGRATE_DSN", "postgres://owner@db/team")
+	os.Setenv("OMNIAGENT_TEAM_DATABASE_APP_ROLE", "custom_app_role")
+	os.Setenv("OMNIAGENT_TEAM_BASE_URL", "https://team.example.com")
+	os.Setenv("OMNIAGENT_TEAM_SUPERADMIN_EMAIL", "root@example.com")
+	os.Setenv("OMNIAGENT_TEAM_AGENT_HANDLE", "helper")
+	os.Setenv("OMNIAGENT_TEAM_SMTP_HOST", "smtp.example.com")
+	os.Setenv("OMNIAGENT_TEAM_SMTP_PORT", "587")
+	os.Setenv("OMNIAGENT_TEAM_SMTP_USERNAME", "smtp-user")
+	os.Setenv("OMNIAGENT_TEAM_SMTP_PASSWORD", "smtp-pass")
+	os.Setenv("OMNIAGENT_TEAM_SMTP_FROM", "agent@example.com")
+	defer func() {
+		os.Unsetenv("OMNIAGENT_TEAM_ENABLED")
+		os.Unsetenv("OMNIAGENT_TEAM_DATABASE_APP_DSN")
+		os.Unsetenv("OMNIAGENT_TEAM_DATABASE_MIGRATE_DSN")
+		os.Unsetenv("OMNIAGENT_TEAM_DATABASE_APP_ROLE")
+		os.Unsetenv("OMNIAGENT_TEAM_BASE_URL")
+		os.Unsetenv("OMNIAGENT_TEAM_SUPERADMIN_EMAIL")
+		os.Unsetenv("OMNIAGENT_TEAM_AGENT_HANDLE")
+		os.Unsetenv("OMNIAGENT_TEAM_SMTP_HOST")
+		os.Unsetenv("OMNIAGENT_TEAM_SMTP_PORT")
+		os.Unsetenv("OMNIAGENT_TEAM_SMTP_USERNAME")
+		os.Unsetenv("OMNIAGENT_TEAM_SMTP_PASSWORD")
+		os.Unsetenv("OMNIAGENT_TEAM_SMTP_FROM")
+	}()
+
+	cfg, err := Load("")
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+
+	if !cfg.Team.Enabled {
+		t.Error("Team.Enabled = false, want true")
+	}
+	if cfg.Team.Database.AppDSN != "postgres://app@db/team" {
+		t.Errorf("Team.Database.AppDSN = %s, want postgres://app@db/team", cfg.Team.Database.AppDSN)
+	}
+	if cfg.Team.Database.MigrateDSN != "postgres://owner@db/team" {
+		t.Errorf("Team.Database.MigrateDSN = %s, want postgres://owner@db/team", cfg.Team.Database.MigrateDSN)
+	}
+	if cfg.Team.Database.AppRole != "custom_app_role" {
+		t.Errorf("Team.Database.AppRole = %s, want custom_app_role", cfg.Team.Database.AppRole)
+	}
+	if cfg.Team.BaseURL != "https://team.example.com" {
+		t.Errorf("Team.BaseURL = %s, want https://team.example.com", cfg.Team.BaseURL)
+	}
+	if cfg.Team.SuperadminEmail != "root@example.com" {
+		t.Errorf("Team.SuperadminEmail = %s, want root@example.com", cfg.Team.SuperadminEmail)
+	}
+	if cfg.Team.AgentHandle != "helper" {
+		t.Errorf("Team.AgentHandle = %s, want helper", cfg.Team.AgentHandle)
+	}
+	if cfg.Team.SMTP.Host != "smtp.example.com" {
+		t.Errorf("Team.SMTP.Host = %s, want smtp.example.com", cfg.Team.SMTP.Host)
+	}
+	if cfg.Team.SMTP.Port != 587 {
+		t.Errorf("Team.SMTP.Port = %d, want 587", cfg.Team.SMTP.Port)
+	}
+	if cfg.Team.SMTP.Username != "smtp-user" {
+		t.Errorf("Team.SMTP.Username = %s, want smtp-user", cfg.Team.SMTP.Username)
+	}
+	if cfg.Team.SMTP.Password != "smtp-pass" {
+		t.Errorf("Team.SMTP.Password = %s, want smtp-pass", cfg.Team.SMTP.Password)
+	}
+	if cfg.Team.SMTP.From != "agent@example.com" {
+		t.Errorf("Team.SMTP.From = %s, want agent@example.com", cfg.Team.SMTP.From)
+	}
+}
+
 func TestLoadEnv_AgentProviderSpecificKeys(t *testing.T) {
 	tests := []struct {
 		provider string
