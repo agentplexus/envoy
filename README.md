@@ -80,13 +80,13 @@ OmniAgent supports multiple connection methods for different use cases:
 
 #### Stock Skill via OmniAgent Web Interface
 
-![web](docs/images/ss_omniagent_col-002_stock-chart_img-001_2026-06-17_redacted.png)
+[![web](docs/images/ss_omniagent_col-002_stock-chart_img-001_2026-06-17_redacted.png)](https://plexusone.dev/omniagent/)
 
 #### Search Skill via WhatsApp
 
 <table>
-<tr><td><img src="docs/images/ss_omniagent_col-001_whatsapp_img-001_2026-02-22.png" /></td>
-<td><img src="docs/images/ss_omniagent_col-001_whatsapp_img-002_2026-02-23.png"/></td></tr>
+<tr><td><a href="https://plexusone.dev/omniagent/"><img src="docs/images/ss_omniagent_col-001_whatsapp_img-001_2026-02-22.png" /></a></td>
+<td><a href="https://plexusone.dev/omniagent/"><img src="docs/images/ss_omniagent_col-001_whatsapp_img-002_2026-02-23.png" /></a></td></tr>
 </table>
 
 ## Installation
