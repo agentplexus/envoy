@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -107,11 +108,19 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		return nil, nil, nil, nil, fmt.Errorf("auth service: %w", err)
 	}
 
+	googleProvider, githubProvider, err := buildSSOProviders(ctx, tc.SSO, strings.TrimRight(tc.BaseURL, "/"), logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, nil, nil, err
+	}
+
 	teamHTTP := gateway.NewTeamHTTP(authSvc, teamSvc, gateway.TeamHTTPConfig{
-		CookieSecure: secure,
-		SessionTTL:   auth.DefaultSessionTTL,
-		BaseURL:      strings.TrimRight(tc.BaseURL, "/"),
-		Logger:       logger,
+		CookieSecure:   secure,
+		SessionTTL:     auth.DefaultSessionTTL,
+		BaseURL:        strings.TrimRight(tc.BaseURL, "/"),
+		Logger:         logger,
+		GoogleProvider: googleProvider,
+		GitHubProvider: githubProvider,
 	})
 
 	// Agents registry (INIT-OMNIAGENT-005): gates agent-bound chat creation
@@ -278,6 +287,35 @@ func buildAgentSecretSource(cfg config.TeamSecretsConfig, logger *slog.Logger) (
 		return nil, nil, err
 	}
 	return agentSecretSource{svc: svc}, v, nil
+}
+
+// googleDiscoveryTimeout bounds NewGoogleProvider's OIDC discovery call so a
+// hung DNS/TLS attempt cannot hang gateway startup indefinitely.
+const googleDiscoveryTimeout = 15 * time.Second
+
+// buildSSOProviders constructs the configured Google/GitHub SSO providers,
+// returning gateway.SSOProvider values (nil when a provider is not
+// configured, so its routes are not registered). Google performs OIDC
+// discovery — a real network call — at construction: a failure here is
+// fatal, matching every other external-dependency error in setupTeamMode
+// (an operator who configured Google SSO intends it to work, not silently
+// never offer the button).
+func buildSSOProviders(ctx context.Context, cfg config.TeamSSOConfig, baseURL string, logger *slog.Logger) (google, github gateway.SSOProvider, err error) {
+	if cfg.Google.ClientID != "" && cfg.Google.ClientSecret != "" {
+		discoverCtx, cancel := context.WithTimeout(ctx, googleDiscoveryTimeout)
+		defer cancel()
+		gp, gerr := auth.NewGoogleProvider(discoverCtx, cfg.Google.ClientID, cfg.Google.ClientSecret, baseURL+"/api/auth/google/callback")
+		if gerr != nil {
+			return nil, nil, fmt.Errorf("google sso: %w", gerr)
+		}
+		google = gp
+		logger.Info("team mode: Google SSO enabled")
+	}
+	if cfg.GitHub.ClientID != "" && cfg.GitHub.ClientSecret != "" {
+		github = auth.NewGitHubProvider(cfg.GitHub.ClientID, cfg.GitHub.ClientSecret, baseURL+"/api/auth/github/callback")
+		logger.Info("team mode: GitHub SSO enabled")
+	}
+	return google, github, nil
 }
 
 // buildMailer returns a real SMTP mailer when configured, otherwise a log
