@@ -1,0 +1,110 @@
+# Verifies deploy/team/prod/backup.sh + restore.sh's underlying pg_dump/psql
+# procedure actually round-trips data: migrates the real team-mode schema,
+# seeds a few users via team.Service (the same code path production uses),
+# backs up, restores into a fresh throwaway database, and asserts the row
+# count survives. Manual trigger only -- this is an infra smoke test, not a
+# code-correctness gate that should run on every push/PR.
+name: Team backup/restore smoke test
+permissions:
+  contents: read
+on:
+  workflow_dispatch:
+
+jobs:
+  backup-restore:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: omniagent_owner
+          POSTGRES_PASSWORD: ci_owner_password
+          POSTGRES_DB: omniagent_team
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U omniagent_owner -d omniagent_team"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGPASSWORD: ci_owner_password
+      PGHOST: 127.0.0.1
+      PGUSER: omniagent_owner
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Create app role (mirrors deploy/team/prod/init/01-app-role.sh)
+        run: |
+          psql -d omniagent_team -c "CREATE ROLE omniagent_app LOGIN PASSWORD 'ci_app_password';"
+
+      - name: Migrate schema and seed test users
+        run: |
+          cat > /tmp/seed.go <<'EOF'
+          package main
+
+          import (
+          	"context"
+          	"log"
+
+          	"github.com/plexusone/omniagent/team"
+          	"github.com/plexusone/omniagent/team/store"
+          )
+
+          func main() {
+          	ctx := context.Background()
+          	cfg := store.Config{
+          		AppDSN:     "postgres://omniagent_app:ci_app_password@127.0.0.1:5432/omniagent_team?sslmode=disable",
+          		MigrateDSN: "postgres://omniagent_owner:ci_owner_password@127.0.0.1:5432/omniagent_team?sslmode=disable",
+          	}
+          	if err := store.Migrate(ctx, cfg); err != nil {
+          		log.Fatalf("migrate: %v", err)
+          	}
+          	st, err := store.Open(ctx, cfg)
+          	if err != nil {
+          		log.Fatalf("open: %v", err)
+          	}
+          	defer st.Close()
+
+          	svc, err := team.NewService(st, team.Config{SuperadminEmail: "root@example.com"})
+          	if err != nil {
+          		log.Fatalf("service: %v", err)
+          	}
+          	for _, email := range []string{"root@example.com", "member1@example.com", "member2@example.com"} {
+          		if _, _, err := svc.EnsureUser(ctx, email); err != nil {
+          			log.Fatalf("ensure user %s: %v", email, err)
+          		}
+          	}
+          	log.Println("seed complete")
+          }
+          EOF
+          go run /tmp/seed.go
+
+      - name: Capture source row count
+        run: |
+          echo "SRC_COUNT=$(psql -d omniagent_team -tAc 'SELECT count(*) FROM users;')" >> "$GITHUB_ENV"
+
+      - name: Backup (mirrors deploy/team/prod/backup.sh)
+        run: |
+          pg_dump --clean --if-exists -d omniagent_team | gzip > /tmp/backup.sql.gz
+
+      - name: Create empty restore-target database
+        run: |
+          psql -d omniagent_team -c "CREATE DATABASE omniagent_team_restore OWNER omniagent_owner;"
+
+      - name: Restore (mirrors deploy/team/prod/restore.sh)
+        run: |
+          gunzip -c /tmp/backup.sql.gz | psql -v ON_ERROR_STOP=1 -d omniagent_team_restore
+
+      - name: Assert restored row count matches source
+        run: |
+          restored=$(psql -d omniagent_team_restore -tAc 'SELECT count(*) FROM users;')
+          echo "source=$SRC_COUNT restored=$restored"
+          if [ "$SRC_COUNT" != "$restored" ]; then
+            echo "::error::row count mismatch after restore: source=$SRC_COUNT restored=$restored"
+            exit 1
+          fi
