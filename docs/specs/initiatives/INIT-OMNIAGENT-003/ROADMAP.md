@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-003`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Phases 1–2 completed — 12 of 29 items completed
+**Status:** Phases 1–2 completed — 13 of 29 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the
 > trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member
@@ -75,7 +75,7 @@
 ## Phase 4 — Embedded Web UI
 
 **Theme:** One capability-driven go:embed SPA serving both personal and team modes; Caddy does TLS only (team).
-**Status:** In progress — 2 of 5 items completed
+**Status:** In progress — 3 of 5 items completed
 
 > Capability-driven (TRD §1a/§6): the same SPA reads `GET /api/capabilities`.
 > Login (116) shows only when `authRequired`; group chat (118) and admin (119)
@@ -86,9 +86,9 @@
 - [x] `RMI-OMNIAGENT-116` Login UI (magic link)
   - Depends on: `RMI-OMNIAGENT-115`
   - Acceptance: rendered only when `authRequired`; supports single-account personal auth and team allowlist auth — personal single-account auth (`auth.enabled=true`, `team.enabled=false`) reuses team mode's magic-link/cookie stack against the SQLite store with `auth.owner_email` as the sole always-allowed account and the admin allowlist route unregistered (not merely denied)
-- [ ] `RMI-OMNIAGENT-117` Private chat UI
+- [x] `RMI-OMNIAGENT-117` Private chat UI
   - Depends on: `RMI-OMNIAGENT-115`
-  - Acceptance: works in personal mode with no login when auth is off; history keyset scroll-back; live agent replies over WS
+  - Acceptance: works in personal mode with no login when auth is off; history keyset scroll-back (`GET /api/chat` newest page + `hasMore`, `GET /api/chat/history?before=&limit=` for older pages, backed by `chats.HistoryBefore` backward keyset); live agent replies over WS (`POST /api/chat/messages` persists the user message and returns 202 immediately; the agent turn runs on a detached context and its reply is broadcast as a `chat.message` WS event — the composer re-enables on WS delivery, and a reconnect resyncs missed replies). WS upgrade is cookie-gated in personal-auth mode so replies never reach an unauthenticated socket.
 - [ ] `RMI-OMNIAGENT-118` Group chat UI
   - Depends on: `RMI-OMNIAGENT-117`
   - Acceptance: rendered only when `multiUser`
