@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-005`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** In progress — 10 of 14 items completed (Phases 1–3 complete; Phase 4 runtime instances landed)
+**Status:** In progress — 11 of 14 items completed (Phases 1–4 complete; Phase 5 web UI remains)
 
 > RMI IDs are stable and permanent. Commits carry `Refs: RMI-OMNIAGENT-<NNN>`.
 > Phase status derives from member RMIs. Cross-initiative dependencies on
@@ -57,14 +57,14 @@
 ## Phase 4 — Runtime: Per-Agent Skill & Secret Binding
 
 **Theme:** A chat runs with its agent's skills + agent-scoped secrets, isolated.
-**Status:** In progress — 1 of 2 items completed
+**Status:** Completed — 2 of 2 items completed
 
 - [x] `RMI-OMNIAGENT-309` Per-agent runtime instances (lazy, bounded cache)
   - Depends on: `RMI-OMNIAGENT-302`, `RMI-OMNIAGENT-308`
   - Acceptance: gateway routes a chat's turns to its agent instance built from persona + enabled skills. New `team/agentruntime.Cache` is a lazy, bounded-LRU cache of per-agent instances satisfying the `chats.AgentRuntime` seam (`Slug` = cheap @-mention read; `Processor` = build-on-first-use then cache): an instance is built the first time its agent takes a turn and evicted (LRU, `DefaultMaxInstances`=64, closing the instance) when the deployment exceeds capacity, so only hot agents stay resident. It depends only on two seams — a `ConfigLoader` (reads an agent's persona/model/provider/enabled-skills by ID in **system context**, since the runtime is a system principal not a user) and a `Builder` — keeping it independent of the LLM/skill stack and unit-tested with fakes (lazy single-build under concurrency via per-entry `sync.Once`, LRU eviction+close, build/load errors not cached, `Invalidate`/`Close`). `agentruntime.AgentBuilder` is the production `Builder`: it constructs a real `*agent.Agent` from the agent's persona (→ system prompt) + enabled skills (→ `WithSkillIncludes` over the deployment's shared skill source), model/provider falling back to deployment defaults. `agents.Service` gains the system-context `LoadRuntimeConfig`/`AgentSlugByID` loaders. The team composition root (`cmd/omniagent/commands/team.go`) now constructs the agents service (also wired as the chats `AgentGate`, so agent-bound chats can be created — RMI-308 goes live) and the runtime cache, passing it as `chats.Config.Runtime`; wired only when an LLM API key is configured (otherwise agent-bound chats stay silent, unchanged). Combined with the RMI-113 mention policy and RMI-114 per-chat memory scope, an @-mentioned agent now runs on its own persona+skills instance. Agent-scoped **secret** injection (per-agent MCP env, disjoint-secret isolation) is the remaining RMI-310.
-- [ ] `RMI-OMNIAGENT-310` Agent-scoped secret binding + isolation
-  - Depends on: `RMI-OMNIAGENT-309`, `RMI-OMNIAGENT-207` (agent secrets)
-  - Acceptance: agent secrets injected (incl. per-agent MCP env); two agents load disjoint skills/secrets with no cross-leak
+- [x] `RMI-OMNIAGENT-310` Agent-scoped secret binding + isolation
+  - Depends on: `RMI-OMNIAGENT-309`, ~~`RMI-OMNIAGENT-207`~~ (superseded — see below)
+  - Acceptance: agent secrets injected (incl. per-agent MCP env); two agents load disjoint skills/secrets with no cross-leak. Direction (2026-08-09): use **OmniVault** (`github.com/plexusone/omnivault`) as the secret abstraction and add the missing multi-tenancy. OmniVault is a flat, path-keyed store with no native tenancy, so `team/secrets.ScopedVault` adds it as a namespace-prefixing decorator (a caller handed `Scoped(v, "agents/<id>")` cannot address another agent's keys — isolation is structural, not policy). `team/secrets.Service` turns an agent's `agents/<id>` namespace into the env map its instance injects (`ResolveAgentSecrets`), plus `SetAgentSecret`/`DeleteAgentSecret` write paths. Injection uses a new `compiled.SecretsAware` interface (mirroring `StorageAware`/`AgentAware`): the MCP skill's `SetSecrets` merges secrets into its subprocess env without mutating shared config, and `agent.WithSecretEnv`/`Agent.SetSecretEnv` push the resolved env into every secrets-aware compiled skill (order-independent). `agentruntime.AgentBuilder` grows a `SecretSource` seam and resolves each agent's secrets in `Build`, appending `WithSecretEnv` — so each per-agent instance (RMI-309) is built with only its own secrets; two agents' MCP subprocesses run with disjoint environments. The team composition root builds the vault (`memory`/`file` provider, config `team.secrets`) and wires the source, gated like the RMI-309 runtime; unset config injects nothing (unchanged). Disjoint-isolation is proven end-to-end (`team/secrets` service, `agentruntime` builder, `agent` option tests). **Deferred (per 2026-08-09 direction):** encryption-at-rest for the team store (`memory`/`file` are unencrypted; a Postgres/ent + envelope-crypto or promoted OmniVault AES provider is follow-on INIT-004 work), `requires.secrets` SKILL.md declaration, and upstreaming `ScopedVault` into omnivault. Design: `DESIGN-310-agent-secrets.md`.
 
 ## Phase 5 — Web UI
 

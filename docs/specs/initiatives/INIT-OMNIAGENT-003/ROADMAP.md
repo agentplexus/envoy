@@ -63,8 +63,11 @@
 > instances), so an @-mentioned agent runs on its own persona+skills instance.
 > **RMI-114** (per-chat memory scoping via the `memscope` seam) is complete and
 > takes runtime effect through that same RMI-309 processor. Phase 3 is complete;
-> the only remaining gap to fully live agent-in-chat behavior is INIT-005
-> **RMI-310** (agent-scoped secret binding + per-agent MCP env isolation).
+> agent-in-chat behavior is now fully live end-to-end — INIT-005 **RMI-310**
+> (agent-scoped secret binding + per-agent MCP env isolation, via
+> `team/secrets.ScopedVault` over OmniVault and the builder's `SecretSource`
+> seam) is complete, so an @-mentioned agent runs on its own persona + enabled
+> skills + agent-scoped secrets with no cross-agent leakage.
 
 - [x] `RMI-OMNIAGENT-110` Chat + membership service
   - Acceptance: DM (private) with an agent created on demand for permitted users, one per user per agent; group create/invite/leave/remove with chat owner/superadmin rules; invitees join as conversants with no agent-config rights. Implemented in `team/chats`: `CreateGroup`, `Invite` (by username, resolved in system context since RLS hides other users; idempotent; owner/superadmin only), `Leave` (self-leave with sole-owner orphan guard), `RemoveMember` (owner/superadmin; owners not removable, no self-remove), `ListChats`/`GetChat`/`Members`/`MembersDetailed` (member/superadmin scoped). Backstopped by the existing chats/chat_members RLS policies (Postgres) and enforced at the service layer for the SQLite path.
