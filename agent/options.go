@@ -56,6 +56,27 @@ func WithStorage(s kvs.Store) Option {
 	}
 }
 
+// WithSecretEnv injects secrets (keyed by environment-variable name) into the
+// agent's secrets-aware compiled skills — notably MCP servers, whose subprocess
+// environment receives them. Injection is order-independent: skills registered
+// before or after this option all receive the secrets before Init().
+//
+// Per-agent runtime instances (RMI-OMNIAGENT-310) use this to bind agent-scoped
+// secrets, so two agents' MCP subprocesses run with disjoint environments.
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithMCPSkill(mcpskill.Config{Name: "github", Command: cmd}),
+//	    agent.WithSecretEnv(map[string]string{"GITHUB_TOKEN": token}),
+//	)
+func WithSecretEnv(env map[string]string) Option {
+	return func(a *Agent) error {
+		a.SetSecretEnv(env)
+		return nil
+	}
+}
+
 // WithTool registers a single tool with the agent.
 //
 // Example:

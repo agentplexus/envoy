@@ -86,6 +86,11 @@ func (a *Agent) RegisterCompiledSkill(skill compiled.Skill) error {
 		aa.SetAgent(a)
 	}
 
+	// Check if skill implements SecretsAware and inject secrets
+	if sa, ok := skill.(compiled.SecretsAware); ok && len(a.secretEnv) > 0 {
+		sa.SetSecrets(a.secretEnv)
+	}
+
 	// Determine the source kind: skills backed by an external protocol
 	// (e.g. MCP) declare it via an optional SourceType method.
 	sourceType := "skill"
@@ -164,6 +169,26 @@ func (a *Agent) SetStorage(s kvs.Store) {
 		}
 		if aa, ok := skill.(compiled.AgentAware); ok {
 			aa.SetAgent(a)
+		}
+	}
+}
+
+// SetSecretEnv sets the injected secret environment for the agent and pushes it
+// into any already-registered secrets-aware compiled skills. Skills registered
+// afterward pick it up in RegisterCompiledSkill, so injection is order-
+// independent (as with SetStorage). Secrets are keyed by env-var name.
+func (a *Agent) SetSecretEnv(env map[string]string) {
+	a.mu.Lock()
+	a.secretEnv = env
+	skills := a.compiledSkills
+	a.mu.Unlock()
+
+	if len(env) == 0 {
+		return
+	}
+	for _, skill := range skills {
+		if sa, ok := skill.(compiled.SecretsAware); ok {
+			sa.SetSecrets(env)
 		}
 	}
 }

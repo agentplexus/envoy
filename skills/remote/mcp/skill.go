@@ -72,6 +72,28 @@ func (s *Skill) Name() string {
 	return s.config.Name
 }
 
+// SetSecrets merges the given secrets into the MCP server's subprocess
+// environment, implementing compiled.SecretsAware. Injected values take
+// precedence over statically configured Env. It must be called before Init/
+// first connect; a fresh map is built so the caller's map and any shared base
+// Config are never mutated (each agent instance gets its own skill instance and
+// thus its own environment — the basis for per-agent secret isolation).
+func (s *Skill) SetSecrets(env map[string]string) {
+	if len(env) == 0 {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	merged := make(map[string]string, len(s.config.Env)+len(env))
+	for k, v := range s.config.Env {
+		merged[k] = v
+	}
+	for k, v := range env {
+		merged[k] = v
+	}
+	s.config.Env = merged
+}
+
 // SourceType identifies tools from this skill as MCP-backed, so tool
 // inventories can expose the originating server and tool identity.
 func (s *Skill) SourceType() string {
@@ -332,5 +354,8 @@ func (s *Skill) makeToolHandler(toolName string) skill.ToolFunc {
 	}
 }
 
-// Verify Skill implements compiled.Skill at compile time.
-var _ compiled.Skill = (*Skill)(nil)
+// Verify Skill implements compiled.Skill and compiled.SecretsAware at compile time.
+var (
+	_ compiled.Skill        = (*Skill)(nil)
+	_ compiled.SecretsAware = (*Skill)(nil)
+)

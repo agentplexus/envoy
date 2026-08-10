@@ -41,6 +41,18 @@ type AgentAware interface {
 	SetAgent(a interface{})
 }
 
+// SecretsAware is an optional interface for skills that accept injected secrets
+// (e.g. an MCP server's subprocess environment). If a skill implements this
+// interface, the agent injects the resolved secret env after creation and
+// before Init() is called. Secrets are keyed by environment-variable name.
+//
+// This is the seam per-agent runtime instances use to bind agent-scoped secrets
+// (RMI-OMNIAGENT-310): each instance is built with its own agent's secrets, so
+// two agents' skills receive disjoint environments.
+type SecretsAware interface {
+	SetSecrets(env map[string]string)
+}
+
 // SkillInfo provides metadata about a skill for introspection.
 type SkillInfo struct {
 	Name        string

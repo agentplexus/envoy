@@ -33,18 +33,19 @@ import (
 type Agent struct {
 	client         *omnillm.ChatClient
 	tools          *ToolRegistry
-	skills         []*skills.Skill  // Markdown skills (SKILL.md)
-	skillManager   *skills.Manager  // Skill manager (if using packs)
-	skillPacks     []fs.FS          // Embedded skill packs
-	skillDirs      []string         // Skill directories
-	skillIncludes  []string         // Include only these skills
-	skillExcludes  []string         // Exclude these skills
-	compiledSkills []compiled.Skill // Compiled Go skills
-	storage        kvs.Store        // Key-value storage backend
-	sessions       *sessions.Store  // Persistent session storage
-	memory         *core.Client     // OmniMemory client for semantic memory
-	contextEngine  *agentctx.Engine // Context management engine
-	hooks          *hooks.Registry  // Event hook registry
+	skills         []*skills.Skill   // Markdown skills (SKILL.md)
+	skillManager   *skills.Manager   // Skill manager (if using packs)
+	skillPacks     []fs.FS           // Embedded skill packs
+	skillDirs      []string          // Skill directories
+	skillIncludes  []string          // Include only these skills
+	skillExcludes  []string          // Exclude these skills
+	compiledSkills []compiled.Skill  // Compiled Go skills
+	storage        kvs.Store         // Key-value storage backend
+	secretEnv      map[string]string // Injected secrets (env-var name -> value) for secrets-aware skills
+	sessions       *sessions.Store   // Persistent session storage
+	memory         *core.Client      // OmniMemory client for semantic memory
+	contextEngine  *agentctx.Engine  // Context management engine
+	hooks          *hooks.Registry   // Event hook registry
 	dispatcher     *hooks.Dispatcher
 	config         Config
 	logger         *slog.Logger
