@@ -242,14 +242,19 @@ Secrets are stored in an [OmniVault](vault-credentials.md)-backed store and
 handed a namespace-scoped view, two agents load disjoint secrets with no
 cross-leak, and each agent's runtime instance is built with only its own secrets.
 
+Skills **declare** the secrets they need in their `SKILL.md`, and an agent's
+**owner/maintainer** sets the values in the agent's **Secrets** panel (or over
+the API) — see [Virtual Agents → Secrets](agents.md#secrets) for the full
+GitHub-style workflow. Values are write-only: the UI/API report only whether a
+secret is set, never its value.
+
 !!! warning "Current limitations"
     - The `memory` and `file` providers are **not encrypted at rest** — the
       isolation mechanism ships first; an encrypted store is planned. Protect the
       `dir` with filesystem permissions in the meantime.
-    - Secret **values** are intentionally kept off the web UI. They are
-      provisioned into the vault out-of-band today (e.g. the `file` provider
-      keeps them under `dir`, keyed by the `agents/<agentID>/<ENV_VAR>` path); a
-      management surface is planned.
+    - Injection currently covers **compiled** and **MCP** skills. OpenAPI-skill
+      auth injection and a single-operator config-file binding path are planned
+      follow-ons.
 
 ## Deployment notes
 

@@ -67,6 +67,8 @@ Open an agent from the list to edit it in panels:
 - **Skills** — tick the deployment skills this agent may use. Only skills in the
   deployment's available-skills catalog (minus the operator deny-list) can be
   enabled; an unknown or blocked skill is rejected and nothing is changed.
+- **Secrets** — set the credential values the agent's enabled skills declare
+  (see [Secrets](#secrets) below). Owners and maintainers only.
 - **Visibility** — Private or Listed (see below). Owners and maintainers only.
 - **Maintainers** — add a co-editor by username, or remove one. Owners only.
   Anyone may **Leave** an agent they hold a role on; the sole owner cannot leave
@@ -148,12 +150,52 @@ is enforced per-agent server-side.
 | `POST /api/agents/{id}/leave` | Remove your own role. |
 | `PUT /api/agents/{id}/visibility` | Set `private` or `listed` (owner/maintainer). |
 | `PUT /api/agents/{id}/featured` | Set featured (superadmin only). |
+| `GET /api/agents/{id}/secrets` | Declared-secrets catalog + set-state (owner/maintainer; values never returned). |
+| `PUT /api/agents/{id}/secrets` | Set a secret value by env-var name (owner/maintainer). |
+| `DELETE /api/agents/{id}/secrets/{name}` | Remove a secret (owner/maintainer). |
 | `POST /api/chats/agents/{agentId}/dm` | Start (or reopen) a DM with the agent. |
 | `POST /api/chats/agents/{agentId}/group` | Create a group chat bound to the agent. |
 
 ## Secrets
 
-Agent-scoped secrets (per-agent environment injected into an agent's skills,
-including its MCP subprocesses) are configured out-of-band, not through this UI —
-managing secret **values** is intentionally kept off the web surface. See the
-deployment configuration for `team.secrets`.
+Skills often need credentials — a GitHub token, an SMTP password. A skill
+**declares** the secrets it needs in its `SKILL.md` frontmatter, GitHub-Actions
+style, and an agent's **owner/maintainer** supplies the values in the agent's
+**Secrets** panel (or over the API above). The values are injected as
+environment variables into that agent's skills — including its MCP subprocesses
+— every time the agent runs, and are namespaced per agent so two agents never
+see each other's secrets (INIT-OMNIAGENT-004).
+
+**Declaring secrets** (skill author), in `SKILL.md`:
+
+```yaml
+metadata:
+  openclaw:
+    requires:
+      secrets:
+        - name: GITHUB_TOKEN
+          description: A GitHub personal access token
+          required: true
+        - name: GITHUB_ENTERPRISE_URL
+          env: GH_ENTERPRISE_URL   # env var to inject as; defaults to name
+```
+
+Declaration is the allowlist: a skill only ever receives secrets it declares.
+
+**Setting values** (owner/maintainer): open the agent's **Secrets** panel. It
+lists each secret the agent's enabled skills declare, with a set/unset badge and
+a paste-to-set field. Values are **write-only** — once saved, the UI and API
+only ever report *whether* a secret is set, never its value, and setting a new
+value replaces the old one (like a GitHub repository secret). Changing a secret
+takes effect on the agent's next turn.
+
+Requires `team.secrets` to be configured (the OmniVault-backed store — see the
+[Team Mode guide](team-mode.md#agent-scoped-secrets)); without it the Secrets
+panel and API are unavailable. The `memory`/`file` providers are **not encrypted
+at rest** — protect the secrets directory with filesystem permissions.
+
+!!! note "Injection coverage"
+    Agent secrets are injected into **compiled** Go skills and **MCP**
+    subprocess skills today. OpenAPI-skill auth injection and a single-operator
+    config-file binding path (`secrets:` / `skills.config.<name>.secrets`) are
+    planned follow-ons.
