@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-003`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Phases 1–2 completed — 13 of 29 items completed
+**Status:** Phases 1–2 completed — 16 of 29 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the
 > trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member
@@ -49,22 +49,24 @@
 ## Phase 3 — Private & Group Chats
 
 **Theme:** Agent-anchored chats with membership fan-out and @-mention agent policy.
-**Status:** Planned — 0 of 5 items completed
+**Status:** In progress — 3 of 5 items completed
 
 > **Cross-initiative dependency:** rescoped onto `INIT-OMNIAGENT-005` (Virtual
 > Agents, Roles & Registry) — a chat attaches to an `agent_id` and creation is
 > gated by `Can(CapCreateChat)`. INIT-005 **RMI-308** adds `chats.agent_id` +
 > the `Can()` gate on top of RMI-110; INIT-005 Phases 1–3 must land before this
-> phase completes.
+> phase completes. RMI-110/111/112 (chat/membership/message/fan-out) carry no
+> INIT-005 dependency and are complete; **RMI-113/114 remain blocked** on the
+> INIT-005 agent entity + `Can()` + per-agent runtime binding.
 
-- [ ] `RMI-OMNIAGENT-110` Chat + membership service
-  - Acceptance: DM (private) with an agent created on demand for permitted users, one per user per agent; group create/invite/leave/remove with chat owner/superadmin rules; invitees join as conversants with no agent-config rights
-- [ ] `RMI-OMNIAGENT-111` Message persistence + history API
+- [x] `RMI-OMNIAGENT-110` Chat + membership service
+  - Acceptance: DM (private) with an agent created on demand for permitted users, one per user per agent; group create/invite/leave/remove with chat owner/superadmin rules; invitees join as conversants with no agent-config rights. Implemented in `team/chats`: `CreateGroup`, `Invite` (by username, resolved in system context since RLS hides other users; idempotent; owner/superadmin only), `Leave` (self-leave with sole-owner orphan guard), `RemoveMember` (owner/superadmin; owners not removable, no self-remove), `ListChats`/`GetChat`/`Members`/`MembersDetailed` (member/superadmin scoped). Backstopped by the existing chats/chat_members RLS policies (Postgres) and enforced at the service layer for the SQLite path.
+- [x] `RMI-OMNIAGENT-111` Message persistence + history API
   - Depends on: `RMI-OMNIAGENT-110`
-  - Acceptance: keyset pagination; length cap; RLS-scoped reads/writes
-- [ ] `RMI-OMNIAGENT-112` WebSocket chat rooms + fan-out
+  - Acceptance: keyset pagination; length cap; RLS-scoped reads/writes. Team chat HTTP (`gateway/TeamChatHTTP`) exposes `GET /api/chats`, `POST /api/chats`, `GET /api/chats/dm`, `GET /api/chats/{id}`, `GET /api/chats/{id}/messages?before=&limit=` (backward keyset via `chats.HistoryBefore`, `hasMore` probe, limit clamped to 100), `POST /api/chats/{id}/messages` (`MaxMessageBytes` cap), and `/members`/`/leave` routes; CSRF-guarded mutations, cookie-authenticated principal.
+- [x] `RMI-OMNIAGENT-112` WebSocket chat rooms + fan-out
   - Depends on: `RMI-OMNIAGENT-110`
-  - Acceptance: membership-validated subscribe; commit-then-broadcast to all connected members; no cross-chat leakage
+  - Acceptance: membership-validated subscribe; commit-then-broadcast to all connected members; no cross-chat leakage. `Gateway.BroadcastToUsers` delivers a persisted message only to the sockets whose bound `user_id` is in the chat's member set (computed per send); non-members and unauthenticated sockets never receive it. Persist-then-fan-out: the HTTP handler persists the user message, then broadcasts a `chat.message` event (channel = chat ID) to members; private DMs additionally run the agent turn out-of-band and fan out the reply.
 - [ ] `RMI-OMNIAGENT-113` Mention policy + agent turns
   - Depends on: `RMI-OMNIAGENT-111`, `RMI-OMNIAGENT-112`, `INIT-OMNIAGENT-005` (agent entity + `Can()` + runtime binding)
   - Acceptance: group = respond only on `@<agent-slug>`; private = always; chat runs on the bound agent's runtime (persona + enabled skills + agent secrets); agent session keyed `chat:<id>`; reply persisted then broadcast; never self-replies
