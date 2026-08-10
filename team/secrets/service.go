@@ -84,6 +84,17 @@ func (s *Service) ResolveAgentSecrets(ctx context.Context, agentID uuid.UUID) (m
 	return env, nil
 }
 
+// ListAgentSecretNames returns the env-var names of an agent's set secrets,
+// without their values — the write-only listing the management API/UI use to
+// show set/unset state (INIT-OMNIAGENT-004). Never returns values.
+func (s *Service) ListAgentSecretNames(ctx context.Context, agentID uuid.UUID) ([]string, error) {
+	names, err := s.AgentVault(agentID).List(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("list agent secret names: %w", err)
+	}
+	return names, nil
+}
+
 // SetAgentSecret stores a single agent secret by env-var name. It is the write
 // path used by tooling and tests; the management API/UI is later INIT-004 work.
 func (s *Service) SetAgentSecret(ctx context.Context, agentID uuid.UUID, name, value string) error {

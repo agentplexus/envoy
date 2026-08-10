@@ -13,6 +13,7 @@ import (
 	"github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omniagent/config"
 	"github.com/plexusone/omniagent/gateway"
+	"github.com/plexusone/omniagent/skills"
 	"github.com/plexusone/omniagent/team"
 	"github.com/plexusone/omniagent/team/agentruntime"
 	"github.com/plexusone/omniagent/team/agents"
@@ -135,6 +136,17 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		return nil, nil, nil, nil, fmt.Errorf("agents service: %w", err)
 	}
 
+	// Team secret service (INIT-OMNIAGENT-004): a single OmniVault-backed store,
+	// namespaced per agent. Built up front (independent of the LLM key) so the
+	// owner/maintainer management API works even before an LLM is configured.
+	// Nil when no provider is set — secrets are neither injected nor manageable.
+	secretSvc, sv, serr := buildSecretService(tc.Secrets, logger)
+	if serr != nil {
+		cleanup()
+		return nil, nil, nil, nil, fmt.Errorf("team secrets: %w", serr)
+	}
+	secretVault = sv
+
 	// Per-agent runtime (RMI-OMNIAGENT-309): build each agent-bound chat's
 	// instance lazily from its persona + enabled skills, held in a bounded LRU.
 	// Wired only when an LLM API key is configured — without one a built agent
@@ -142,16 +154,14 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	// chats silent (a wrong/failed reply is worse than none), exactly as before.
 	var runtime chats.AgentRuntime
 	if cfg.Agent.APIKey != "" {
-		// Agent-scoped secrets (RMI-OMNIAGENT-310): when a secret vault is
+		// Agent-scoped secrets (RMI-OMNIAGENT-310): when the secret service is
 		// configured, each instance is built with its own agent's secrets injected
-		// into secrets-aware skills (per-agent MCP subprocess env). Disabled config
+		// into secrets-aware skills (per-agent MCP subprocess env). A nil service
 		// yields a nil source — no secrets injected, unchanged behavior.
-		secretSrc, sv, serr := buildAgentSecretSource(tc.Secrets, logger)
-		if serr != nil {
-			cleanup()
-			return nil, nil, nil, nil, fmt.Errorf("team secrets: %w", serr)
+		var secretSrc agentruntime.SecretSource
+		if secretSvc != nil {
+			secretSrc = agentSecretSource{svc: secretSvc}
 		}
-		secretVault = sv
 
 		builder := agentruntime.NewAgentBuilder(agentruntime.BuilderConfig{
 			Defaults: agent.Config{
@@ -205,11 +215,22 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 
 	// Agents management + discovery surface (INIT-OMNIAGENT-005 Phase 5): the
 	// owner/maintainer config area, the catalog, and superadmin curation, all
-	// over the same agentsSvc gate.
-	agentsHTTP := gateway.NewAgentsHTTP(gateway.AgentsHTTPConfig{
+	// over the same agentsSvc gate. When a secret vault is configured, it also
+	// serves the agent Secrets management surface (INIT-OMNIAGENT-004): an
+	// owner/maintainer sets values that the agent's skills receive, and the
+	// declared-secrets catalog comes from the loaded skills' SKILL.md metadata.
+	agentsHTTPCfg := gateway.AgentsHTTPConfig{
 		Agents: agentsSvc,
 		Logger: logger,
-	})
+	}
+	if secretSvc != nil {
+		agentsHTTPCfg.Secrets = secretSvc
+		agentsHTTPCfg.SkillSecretDecls = skillSecretDeclLookup(cfg.Skills, logger)
+		if runtimeCache != nil {
+			agentsHTTPCfg.InvalidateAgent = runtimeCache.Invalidate
+		}
+	}
+	agentsHTTP := gateway.NewAgentsHTTP(agentsHTTPCfg)
 
 	logger.Info("team mode enabled: database migrated (schema + RLS)",
 		"superadmin_email", tc.SuperadminEmail, "cookie_secure", secure)
@@ -255,12 +276,14 @@ func (s agentSecretSource) ResolveSecrets(ctx context.Context, agentID uuid.UUID
 	return s.svc.ResolveAgentSecrets(ctx, agentID)
 }
 
-// buildAgentSecretSource constructs the per-agent secret source from config,
-// returning it alongside the backing vault to close on shutdown. Returns
-// (nil, nil, nil) when no secret provider is configured, so no secrets are
-// injected (unchanged behavior). Tenant isolation (per-agent namespaces) is
-// applied by secrets.Service, so the raw deployment vault is passed through.
-func buildAgentSecretSource(cfg config.TeamSecretsConfig, logger *slog.Logger) (agentruntime.SecretSource, io.Closer, error) {
+// buildSecretService constructs the team secret service from config, returning
+// it alongside the backing vault to close on shutdown. Returns (nil, nil, nil)
+// when no secret provider is configured, so no secrets are injected and the
+// secrets management surface stays unregistered (unchanged behavior). Tenant
+// isolation (per-agent namespaces) is applied by secrets.Service, so the raw
+// deployment vault is passed through. The same service backs both the runtime's
+// SecretSource (read/inject) and the owner/maintainer management API (write).
+func buildSecretService(cfg config.TeamSecretsConfig, logger *slog.Logger) (*secrets.Service, io.Closer, error) {
 	if cfg.Provider == "" {
 		return nil, nil, nil
 	}
@@ -286,7 +309,46 @@ func buildAgentSecretSource(cfg config.TeamSecretsConfig, logger *slog.Logger) (
 		}
 		return nil, nil, err
 	}
-	return agentSecretSource{svc: svc}, v, nil
+	return svc, v, nil
+}
+
+// skillSecretDeclLookup returns a best-effort lookup from a skill name to the
+// secrets it declares in its SKILL.md, driving the agent Secrets catalog UI.
+// It loads directory skills once at startup; a load failure degrades to "no
+// declarations" rather than failing the gateway (the set/inject path works by
+// env-var name regardless). Embedded skill packs are not covered by the
+// catalog at v1.
+func skillSecretDeclLookup(cfg config.SkillsConfig, logger *slog.Logger) func(string) []gateway.SecretDecl {
+	dirs := cfg.Paths
+	if len(dirs) == 0 {
+		dirs = skills.DefaultSearchPaths()
+	}
+	mgr := skills.NewManager(skills.ManagerConfig{
+		Dirs:     dirs,
+		Includes: cfg.Includes,
+		Excludes: cfg.Excludes,
+	})
+	if err := mgr.Load(); err != nil {
+		logger.Warn("skill secrets: could not load skills for the declaration catalog", "error", err)
+		return func(string) []gateway.SecretDecl { return nil }
+	}
+	return func(name string) []gateway.SecretDecl {
+		sk := mgr.Get(name)
+		if sk == nil {
+			return nil
+		}
+		decls := sk.DeclaredSecrets()
+		out := make([]gateway.SecretDecl, len(decls))
+		for i, d := range decls {
+			out[i] = gateway.SecretDecl{
+				Name:        d.Name,
+				Description: d.Description,
+				Env:         d.EnvVar(),
+				Required:    d.Required,
+			}
+		}
+		return out
+	}
 }
 
 // googleDiscoveryTimeout bounds NewGoogleProvider's OIDC discovery call so a

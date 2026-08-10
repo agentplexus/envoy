@@ -27,15 +27,48 @@ import (
 // defense-in-depth backstop. Secret management is intentionally out of scope
 // here (an INIT-004 concern), so no secret values cross this surface.
 type AgentsHTTP struct {
-	agents *agents.Service
-	logger *slog.Logger
-	mux    *http.ServeMux
+	agents     *agents.Service
+	secrets    AgentSecretStore
+	skillDecls func(skillName string) []SecretDecl
+	invalidate func(agentID uuid.UUID)
+	logger     *slog.Logger
+	mux        *http.ServeMux
+}
+
+// AgentSecretStore is the write-only agent-secret store the secrets surface
+// drives (satisfied by *team/secrets.Service). Values are set/deleted and
+// listed by env-var name only — a value is never read back over HTTP
+// (INIT-OMNIAGENT-004).
+type AgentSecretStore interface {
+	SetAgentSecret(ctx context.Context, agentID uuid.UUID, name, value string) error
+	DeleteAgentSecret(ctx context.Context, agentID uuid.UUID, name string) error
+	ListAgentSecretNames(ctx context.Context, agentID uuid.UUID) ([]string, error)
+}
+
+// SecretDecl is a gateway-local projection of a skill's declared secret
+// (skills.SecretRequirement), so this package needn't import skills.
+type SecretDecl struct {
+	Name        string
+	Description string
+	Env         string
+	Required    bool
 }
 
 // AgentsHTTPConfig configures the agents handler.
 type AgentsHTTPConfig struct {
 	Agents *agents.Service
 	Logger *slog.Logger
+	// Secrets, when non-nil, enables the agent Secrets surface
+	// (/api/agents/{id}/secrets). Nil (no secret vault configured) leaves
+	// those routes unregistered.
+	Secrets AgentSecretStore
+	// SkillSecretDecls maps an enabled skill name to the secrets it declares,
+	// supplied by the composition root (which owns the skill manager). Nil is
+	// treated as "no declarations".
+	SkillSecretDecls func(skillName string) []SecretDecl
+	// InvalidateAgent evicts an agent's cached runtime instance so a
+	// freshly-set secret takes effect on its next turn. Nil is a no-op.
+	InvalidateAgent func(agentID uuid.UUID)
 }
 
 // NewAgentsHTTP builds the agents handler set.
@@ -43,7 +76,13 @@ func NewAgentsHTTP(cfg AgentsHTTPConfig) *AgentsHTTP {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.Default()
 	}
-	h := &AgentsHTTP{agents: cfg.Agents, logger: cfg.Logger}
+	h := &AgentsHTTP{
+		agents:     cfg.Agents,
+		secrets:    cfg.Secrets,
+		skillDecls: cfg.SkillSecretDecls,
+		invalidate: cfg.InvalidateAgent,
+		logger:     cfg.Logger,
+	}
 	h.routes()
 	return h
 }
@@ -71,6 +110,13 @@ func (h *AgentsHTTP) routes() {
 	h.mux.HandleFunc("PUT /api/agents/{id}/visibility", h.handleSetVisibility)
 	// Superadmin curation (RMI-313).
 	h.mux.HandleFunc("PUT /api/agents/{id}/featured", h.handleSetFeatured)
+	// Agent secrets (INIT-OMNIAGENT-004) — only when a secret vault is
+	// configured. Owner/maintainer-gated (Can(CapConfigure)); write-only.
+	if h.secrets != nil {
+		h.mux.HandleFunc("GET /api/agents/{id}/secrets", h.handleListSecrets)
+		h.mux.HandleFunc("PUT /api/agents/{id}/secrets", h.handleSetSecret)
+		h.mux.HandleFunc("DELETE /api/agents/{id}/secrets/{name}", h.handleDeleteSecret)
+	}
 }
 
 // ---- Views ---------------------------------------------------------------
@@ -432,6 +478,171 @@ func (h *AgentsHTTP) handleSetFeatured(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toAgentView(a))
+}
+
+// ---- Agent secrets (INIT-OMNIAGENT-004) ----------------------------------
+
+// secretView is one declared secret plus whether the agent has a value set for
+// it. Values are never included — the surface is write-only.
+type secretView struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Env         string `json:"env"`
+	Required    bool   `json:"required"`
+	Skill       string `json:"skill"`
+	Set         bool   `json:"set"`
+}
+
+// handleListSecrets returns the agent's declared-secrets catalog: for each
+// enabled skill, the secrets it declares, cross-referenced with which have a
+// value set (by env-var name). No values are returned.
+func (h *AgentsHTTP) handleListSecrets(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.actor(w, r)
+	if !ok {
+		return
+	}
+	id, ok := h.agentID(w, r)
+	if !ok {
+		return
+	}
+	if !h.requireConfigure(w, r.Context(), actor, id) {
+		return
+	}
+
+	skillNames, err := h.agents.AgentSkills(r.Context(), actor, id)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	setNames, err := h.secrets.ListAgentSecretNames(r.Context(), id)
+	if err != nil {
+		h.logger.Error("list agent secret names", "error", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	set := make(map[string]bool, len(setNames))
+	for _, n := range setNames {
+		set[n] = true
+	}
+
+	// Collect declared secrets across the agent's enabled skills, de-duped by
+	// env-var name (the injection key). First declaration wins its metadata.
+	out := make([]secretView, 0)
+	seen := make(map[string]bool)
+	for _, skillName := range skillNames {
+		if h.skillDecls == nil {
+			break
+		}
+		for _, d := range h.skillDecls(skillName) {
+			env := d.Env
+			if env == "" {
+				env = d.Name
+			}
+			if seen[env] {
+				continue
+			}
+			seen[env] = true
+			out = append(out, secretView{
+				Name:        d.Name,
+				Description: d.Description,
+				Env:         env,
+				Required:    d.Required,
+				Skill:       skillName,
+				Set:         set[env],
+			})
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"secrets": out})
+}
+
+type setSecretRequest struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// handleSetSecret upserts an agent secret by env-var name, then invalidates the
+// agent's cached runtime so the value takes effect on the next turn.
+func (h *AgentsHTTP) handleSetSecret(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.actorCSRF(w, r)
+	if !ok {
+		return
+	}
+	id, ok := h.agentID(w, r)
+	if !ok {
+		return
+	}
+	if !h.requireConfigure(w, r.Context(), actor, id) {
+		return
+	}
+	var req setSecretRequest
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "secret name is required")
+		return
+	}
+	if req.Value == "" {
+		writeError(w, http.StatusBadRequest, "secret value is required")
+		return
+	}
+	if err := h.secrets.SetAgentSecret(r.Context(), id, req.Name, req.Value); err != nil {
+		h.logger.Error("set agent secret", "error", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	h.invalidateAgent(id)
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// handleDeleteSecret removes an agent secret by env-var name, then invalidates
+// the agent's cached runtime.
+func (h *AgentsHTTP) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.actorCSRF(w, r)
+	if !ok {
+		return
+	}
+	id, ok := h.agentID(w, r)
+	if !ok {
+		return
+	}
+	if !h.requireConfigure(w, r.Context(), actor, id) {
+		return
+	}
+	name := r.PathValue("name")
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "secret name is required")
+		return
+	}
+	if err := h.secrets.DeleteAgentSecret(r.Context(), id, name); err != nil {
+		h.logger.Error("delete agent secret", "error", err)
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	h.invalidateAgent(id)
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// requireConfigure enforces the owner/maintainer gate on the secrets surface.
+// secrets.Service does no authorization of its own, so this HTTP-layer check is
+// the authorization boundary for agent secrets.
+func (h *AgentsHTTP) requireConfigure(w http.ResponseWriter, ctx context.Context, actor agents.Actor, id uuid.UUID) bool {
+	can, err := h.agents.Can(ctx, actor, id, agents.CapConfigure)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return false
+	}
+	if !can {
+		writeError(w, http.StatusForbidden, "forbidden")
+		return false
+	}
+	return true
+}
+
+func (h *AgentsHTTP) invalidateAgent(id uuid.UUID) {
+	if h.invalidate != nil {
+		h.invalidate(id)
+	}
 }
 
 // ---- Internals -----------------------------------------------------------
