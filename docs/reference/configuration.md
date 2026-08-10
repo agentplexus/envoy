@@ -196,6 +196,10 @@ full picture.
 | `team.smtp.password` | string | - | SMTP password |
 | `team.secrets.provider` | string | - | Per-agent secret vault: `memory` or `file`. Empty disables secret injection |
 | `team.secrets.dir` | string | - | Storage directory for the `file` provider (required for it) |
+| `team.sso.google.client_id` | string | - | Google OAuth client ID. Optional; enables the "Sign in with Google" button |
+| `team.sso.google.client_secret` | string | - | Google OAuth client secret |
+| `team.sso.github.client_id` | string | - | GitHub OAuth App client ID. Optional; enables the "Sign in with GitHub" button |
+| `team.sso.github.client_secret` | string | - | GitHub OAuth App client secret |
 
 ```yaml
 team:
@@ -211,10 +215,18 @@ team:
     host: smtp.example.com
     port: 587
     from: agent@example.com
-    password: ${SMTP_PASSWORD}
+    # password: set via OMNIAGENT_TEAM_SMTP_PASSWORD (YAML values are not
+    # shell-expanded, so a literal ${VAR} here is not substituted)
   secrets:
     provider: file
     dir: /var/lib/omniagent/secrets
+  sso:
+    google:
+      client_id: "1234567890-abc.apps.googleusercontent.com"
+      client_secret: "GOCSPX-..."
+    github:
+      client_id: "Iv1.abc123"
+      client_secret: "..."
 ```
 
 !!! note "PostgreSQL vs. SQLite"

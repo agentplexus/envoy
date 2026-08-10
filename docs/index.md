@@ -8,7 +8,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 
 - 💬 **Multi-Channel Support** - Telegram, Discord, Slack, WhatsApp, and more
 - 🤖 **AI-Powered Responses** - Powered by omnillm (Claude, GPT, Gemini, OpenRouter)
-- 👥 **Team Mode** - Multi-user deployments with magic-link sign-in, private/group chats, and PostgreSQL row-level isolation
+- 👥 **Team Mode** - Multi-user deployments with magic-link/Google/GitHub sign-in, an admin UI, private/group chats, and PostgreSQL row-level isolation
 - 🪪 **Virtual Agents** - Named personas with per-agent skills, secrets, owner/maintainer roles, and a discoverable catalog
 - 🎤 **Voice Notes** - Transcribe incoming voice, respond with synthesized speech via OmniVoice
 - 📹 **LiveKit Voice Agents** - Real-time voice AI with avatar support and multi-agent panels

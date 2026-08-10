@@ -52,7 +52,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🔗 **OpenAI-Compatible API** - Drop-in replacement for OpenAI client libraries with SSE streaming
 - 🖼️ **Image Generation** - AI image generation via OpenAI (DALL-E) or Fal AI (FLUX)
 - 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
-- 🏢 **Team Mode** - Multi-user deployments with magic-link sign-in, private/group chats, and PostgreSQL row-level isolation
+- 🏢 **Team Mode** - Multi-user deployments with magic-link/Google/GitHub sign-in, an admin UI, private/group chats, and PostgreSQL row-level isolation
 - 🪪 **Virtual Agents** - Named personas with per-agent skills, agent-scoped secrets, owner/maintainer roles, and a discoverable catalog
 - 📈 **Usage Analytics** - Token usage tracking, tool call statistics, and cost estimation
 - 🔧 **Tool Visualization** - Real-time tool call display with arguments and results in web UI
@@ -422,8 +422,9 @@ See the [Roles Guide](docs/guides/roles.md) for complete documentation.
 ## Team Mode
 
 Team mode turns a single-operator deployment into a **multi-user** one: real
-accounts, allowlist-closed magic-link sign-in, private and group chats, and
-**virtual agents** that people discover in a catalog and chat with.
+accounts, allowlist-closed magic-link (or Google/GitHub) sign-in, private and
+group chats, and **virtual agents** that people discover in a catalog and
+chat with.
 
 ```yaml
 # omniagent.yaml
@@ -443,7 +444,8 @@ web:
 agent:
   provider: anthropic
   model: claude-sonnet-5
-  api_key: ${ANTHROPIC_API_KEY}
+  # api_key: set via ANTHROPIC_API_KEY (loadEnv falls back to the
+  # provider-specific env var when api_key is left unset here)
 ```
 
 ```bash
@@ -453,7 +455,7 @@ omniagent gateway run --config omniagent.yaml
 The gateway migrates the database (schema **and** PostgreSQL row-level security),
 serves the SPA at `/`, and emails magic links (or logs them in dev when no SMTP
 is set). The account in `superadmin_email` bootstraps as superadmin on first
-sign-in.
+sign-in, and gets an **Admin** tab to manage the allowlist and members.
 
 **Virtual agents.** In team mode an *agent* is a first-class entity: a
 persona + a chosen subset of the deployment's skills + agent-scoped secrets, with
@@ -466,9 +468,16 @@ DM or group, and superadmins promote agents under **Curation**.
   `app_dsn` selects SQLite for local trials only.
 - Agent-scoped secrets (`team.secrets`) are namespaced per agent so two agents
   load disjoint secrets with no cross-leak.
+- Optional Google OIDC and GitHub OAuth sign-in (`team.sso.*`), additive to
+  magic-link email — an SSO identity links by verified email to an existing
+  account rather than creating a duplicate.
+- A production Docker Compose stack (Caddy + omniagent + PostgreSQL) for a
+  single-VM deployment lives under `deploy/team/prod/`.
 
-See the [Team Mode guide](docs/guides/team-mode.md) and
-[Virtual Agents guide](docs/guides/agents.md) for the full walkthrough.
+See the [Team Mode guide](docs/guides/team-mode.md),
+[Virtual Agents guide](docs/guides/agents.md), and
+[Team Deployment guide](docs/guides/team-deployment.md) for the full
+walkthrough.
 
 ## Sessions
 

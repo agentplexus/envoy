@@ -14,18 +14,19 @@ and an embedded web UI. It runs in two shapes:
 
 - **Personal mode** (default): one implicit user, SQLite, a single agent.
 - **Team mode** (`team.enabled`): many users, PostgreSQL with row-level
-  security, magic-link auth, private/group chats, and **virtual agents** with a
-  catalog. See `docs/guides/team-mode.md` and `docs/guides/agents.md`.
+  security, magic-link/Google/GitHub auth, an admin UI, private/group chats,
+  and **virtual agents** with a catalog. See `docs/guides/team-mode.md`,
+  `docs/guides/team-deployment.md`, and `docs/guides/agents.md`.
 
 ## Package map
 
 | Path | Responsibility |
 |------|----------------|
 | `agent/` | Core agent: config, options, tools, compiled-skill registration, session rollover. `agent.New` builds one instance. |
-| `gateway/` | WebSocket gateway + all HTTP handlers. `team_http.go` (auth/admin + `RequireAuth`/CSRF middleware), `team_chat_http.go` (chats), `agents_http.go` (virtual-agents API), `web_http.go` (SPA + capabilities). |
-| `team/` | Multi-user domain. `auth/` (magic-link + Principal), `agents/` (virtual-agents service: CRUD, roles, `Can` authz matrix, registry, catalog), `chats/` (DMs/groups, agent turns, mention policy, memory scope), `secrets/` (ScopedVault multi-tenancy + per-agent secret resolution over OmniVault), `agentruntime/` (lazy bounded per-agent runtime cache + builder), `store/` (Ent + RLS, dialect-aware), `ent/` (generated), `mail/`. |
+| `gateway/` | WebSocket gateway + all HTTP handlers. `team_http.go` (auth incl. SSO start/callback, admin allowlist/users, `RequireAuth`/CSRF middleware), `team_chat_http.go` (chats), `agents_http.go` (virtual-agents API), `web_http.go` (SPA + capabilities). |
+| `team/` | Multi-user domain. `auth/` (magic-link + Google OIDC/GitHub OAuth SSO + Principal — `CompleteSSOLogin` resolves/links a provider identity by verified email, reusing the same session issuance as magic-link), `agents/` (virtual-agents service: CRUD, roles, `Can` authz matrix, registry, catalog), `chats/` (DMs/groups, agent turns, mention policy, memory scope), `secrets/` (ScopedVault multi-tenancy + per-agent secret resolution over OmniVault), `agentruntime/` (lazy bounded per-agent runtime cache + builder), `store/` (Ent + RLS, dialect-aware), `ent/` (generated), `mail/`. |
 | `skills/` | `compiled/` (Go skill interface + `StorageAware`/`AgentAware`/`SecretsAware` injection), `remote/mcp/` (MCP subprocess skill), `web/`, `memory/`, `github/`. |
-| `config/` | Config structs + validation. `team.go` (team + secrets), `capabilities.go` (web-UI capability flags). |
+| `config/` | Config structs + validation. `team.go` (team + secrets + SSO provider credentials), `capabilities.go` (web-UI capability flags). |
 | `web/dist/` | Embedded vanilla-JS SPA (`app.js`, `style.css`) — no build step, CSP-clean (no external assets). |
 | `cmd/omniagent/commands/` | Cobra CLI + composition root. `gateway.go` mounts handlers; `team.go` (`setupTeamMode`) wires the team services. |
 | `docs/specs/initiatives/` | Initiative specs + ROADMAPs (`INIT-OMNIAGENT-00N`). |
@@ -64,7 +65,7 @@ and an embedded web UI. It runs in two shapes:
 ```bash
 export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
 go build ./...                 # package-scoped is faster on a cold cache
-go test ./...                  # SQLite-backed team tests need no external DB
+go test ./...                  # most team/gateway tests SKIP without Postgres — see below
 golangci-lint run
 node --check web/dist/app.js   # the SPA has no build step; syntax-check it
 ```
@@ -72,6 +73,13 @@ node --check web/dist/app.js   # the SPA has no build step; syntax-check it
 - `go build ./...` can be slow cold — prefer package-scoped builds while iterating.
 - gopls "No active builds contain …" diagnostics on new/edited files are LSP
   workspace noise; verify with real `go build`/`go test`/`golangci-lint`.
+- **Most `team/`, `team/auth/`, and `gateway/` tests are Postgres-backed**
+  (`internal/pgtest.DSNs`, RLS-heavy) and silently `t.Skip` without
+  `TEAM_TEST_OWNER_DSN`/`TEAM_TEST_APP_DSN` — a pass with them skipped is
+  not real coverage. Point those two env vars at a real dev Postgres (see
+  `deploy/team/dev/docker-compose.dev.yaml`), or a scratch local `initdb`
+  instance, before trusting `go test ./team/... ./gateway/...` results;
+  only `team/store` and `team/agents` have SQLite-only test paths.
 
 ## Conventions specific to this repo
 
