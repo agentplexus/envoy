@@ -22,6 +22,7 @@ import (
 
 	"github.com/plexusone/omniagent/team/ent"
 	"github.com/plexusone/omniagent/team/ent/allowlistentry"
+	"github.com/plexusone/omniagent/team/ent/identity"
 	entuser "github.com/plexusone/omniagent/team/ent/user"
 	"github.com/plexusone/omniagent/team/store"
 )
@@ -245,6 +246,33 @@ func (s *Service) AllowlistList(ctx context.Context, actor Actor) ([]*ent.Allowl
 		return err
 	})
 	return entries, err
+}
+
+// ListIdentities returns each given user's linked sign-in provider names
+// ("magic_link", "google", "github"), keyed by user ID. Superadmin only;
+// used by the admin members view (RMI-OMNIAGENT-122).
+func (s *Service) ListIdentities(ctx context.Context, actor Actor, userIDs []uuid.UUID) (map[uuid.UUID][]string, error) {
+	if !actor.Superadmin {
+		return nil, fmt.Errorf("list identities: %w", ErrForbidden)
+	}
+	out := make(map[uuid.UUID][]string, len(userIDs))
+	if len(userIDs) == 0 {
+		return out, nil
+	}
+	err := s.store.AsUser(ctx, actor.UserID, true, func(ctx context.Context, tx *ent.Tx) error {
+		rows, qerr := tx.Identity.Query().
+			Where(identity.UserIDIn(userIDs...)).
+			Order(ent.Asc(identity.FieldCreatedAt)).
+			All(ctx)
+		if qerr != nil {
+			return qerr
+		}
+		for _, row := range rows {
+			out[row.UserID] = append(out[row.UserID], string(row.Provider))
+		}
+		return nil
+	})
+	return out, err
 }
 
 // normalizeEmail validates and lowercases an email address.
