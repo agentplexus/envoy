@@ -58,12 +58,13 @@
 > phase completes. RMI-110/111/112 (chat/membership/message/fan-out) carry no
 > INIT-005 dependency and are complete; **RMI-113** (mention policy + agent
 > turns) is complete on top of INIT-005 RMI-308 — the per-agent runtime is
-> reached through the `chats.AgentRuntime` seam that INIT-005 **RMI-309** fills
-> (until then agent-bound chats stay silent). **RMI-114** (per-chat memory
-> scoping via the `memscope` seam) is complete; like RMI-113 it is wired at the
-> seam and takes runtime effect once RMI-309 supplies a real processor. Phase 3
-> is complete; the only remaining gap to fully live agent-in-chat behavior is
-> INIT-005 RMI-309/310 (per-agent runtime + agent-scoped secrets).
+> reached through the `chats.AgentRuntime` seam, now **filled by INIT-005
+> RMI-309** (`team/agentruntime.Cache`, a lazy bounded-LRU of per-agent
+> instances), so an @-mentioned agent runs on its own persona+skills instance.
+> **RMI-114** (per-chat memory scoping via the `memscope` seam) is complete and
+> takes runtime effect through that same RMI-309 processor. Phase 3 is complete;
+> the only remaining gap to fully live agent-in-chat behavior is INIT-005
+> **RMI-310** (agent-scoped secret binding + per-agent MCP env isolation).
 
 - [x] `RMI-OMNIAGENT-110` Chat + membership service
   - Acceptance: DM (private) with an agent created on demand for permitted users, one per user per agent; group create/invite/leave/remove with chat owner/superadmin rules; invitees join as conversants with no agent-config rights. Implemented in `team/chats`: `CreateGroup`, `Invite` (by username, resolved in system context since RLS hides other users; idempotent; owner/superadmin only), `Leave` (self-leave with sole-owner orphan guard), `RemoveMember` (owner/superadmin; owners not removable, no self-remove), `ListChats`/`GetChat`/`Members`/`MembersDetailed` (member/superadmin scoped). Backstopped by the existing chats/chat_members RLS policies (Postgres) and enforced at the service layer for the SQLite path.

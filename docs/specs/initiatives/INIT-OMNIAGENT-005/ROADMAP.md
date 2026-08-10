@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-005`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** In progress — 9 of 14 items completed (Phases 1–3 complete)
+**Status:** In progress — 10 of 14 items completed (Phases 1–3 complete; Phase 4 runtime instances landed)
 
 > RMI IDs are stable and permanent. Commits carry `Refs: RMI-OMNIAGENT-<NNN>`.
 > Phase status derives from member RMIs. Cross-initiative dependencies on
@@ -57,11 +57,11 @@
 ## Phase 4 — Runtime: Per-Agent Skill & Secret Binding
 
 **Theme:** A chat runs with its agent's skills + agent-scoped secrets, isolated.
-**Status:** Planned — 0 of 2 items completed
+**Status:** In progress — 1 of 2 items completed
 
-- [ ] `RMI-OMNIAGENT-309` Per-agent runtime instances (lazy, bounded cache)
+- [x] `RMI-OMNIAGENT-309` Per-agent runtime instances (lazy, bounded cache)
   - Depends on: `RMI-OMNIAGENT-302`, `RMI-OMNIAGENT-308`
-  - Acceptance: gateway routes a chat's turns to its agent instance built from persona + enabled skills
+  - Acceptance: gateway routes a chat's turns to its agent instance built from persona + enabled skills. New `team/agentruntime.Cache` is a lazy, bounded-LRU cache of per-agent instances satisfying the `chats.AgentRuntime` seam (`Slug` = cheap @-mention read; `Processor` = build-on-first-use then cache): an instance is built the first time its agent takes a turn and evicted (LRU, `DefaultMaxInstances`=64, closing the instance) when the deployment exceeds capacity, so only hot agents stay resident. It depends only on two seams — a `ConfigLoader` (reads an agent's persona/model/provider/enabled-skills by ID in **system context**, since the runtime is a system principal not a user) and a `Builder` — keeping it independent of the LLM/skill stack and unit-tested with fakes (lazy single-build under concurrency via per-entry `sync.Once`, LRU eviction+close, build/load errors not cached, `Invalidate`/`Close`). `agentruntime.AgentBuilder` is the production `Builder`: it constructs a real `*agent.Agent` from the agent's persona (→ system prompt) + enabled skills (→ `WithSkillIncludes` over the deployment's shared skill source), model/provider falling back to deployment defaults. `agents.Service` gains the system-context `LoadRuntimeConfig`/`AgentSlugByID` loaders. The team composition root (`cmd/omniagent/commands/team.go`) now constructs the agents service (also wired as the chats `AgentGate`, so agent-bound chats can be created — RMI-308 goes live) and the runtime cache, passing it as `chats.Config.Runtime`; wired only when an LLM API key is configured (otherwise agent-bound chats stay silent, unchanged). Combined with the RMI-113 mention policy and RMI-114 per-chat memory scope, an @-mentioned agent now runs on its own persona+skills instance. Agent-scoped **secret** injection (per-agent MCP env, disjoint-secret isolation) is the remaining RMI-310.
 - [ ] `RMI-OMNIAGENT-310` Agent-scoped secret binding + isolation
   - Depends on: `RMI-OMNIAGENT-309`, `RMI-OMNIAGENT-207` (agent secrets)
   - Acceptance: agent secrets injected (incl. per-agent MCP env); two agents load disjoint skills/secrets with no cross-leak
