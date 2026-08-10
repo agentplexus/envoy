@@ -159,6 +159,7 @@ channels:
 |-------|------|---------|-------------|
 | `skills.enabled` | bool | `true` | Enable skill loading |
 | `skills.paths` | []string | `[]` | Additional skill directories |
+| `skills.includes` | []string | `[]` | If set, load only these skills. In team mode this is the catalog a virtual agent's enabled skills may be drawn from. |
 | `skills.disabled` | []string | `[]` | Skills to skip |
 | `skills.max_injected` | int | `20` | Max skills in prompt |
 
@@ -172,6 +173,54 @@ skills:
     - experimental-skill
   max_injected: 20
 ```
+
+## Team Mode
+
+Multi-user mode: user accounts, magic-link sign-in, chats, and virtual agents.
+Disabled by default. See the [Team Mode guide](../guides/team-mode.md) for the
+full picture.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `team.enabled` | bool | `false` | Turn team (multi-user) mode on |
+| `team.superadmin_email` | string | - | **Required.** Bootstrapped as superadmin on first sign-in |
+| `team.base_url` | string | - | External origin (`https://…`) for magic links and cookies |
+| `team.agent_handle` | string | `omniagent` | @-mention handle for the agent in group chats |
+| `team.database.app_dsn` | string | - | **Required.** Application-role connection string. `postgres://…` selects PostgreSQL; any other value (file path, `sqlite://…`) selects SQLite |
+| `team.database.migrate_dsn` | string | - | Owner-role DSN used only for migrations-on-start (PostgreSQL) |
+| `team.database.app_role` | string | `omniagent_app` | Application role name granted access by migrations |
+| `team.smtp.host` | string | - | SMTP host for magic-link email; if unset, links are **logged** (dev) |
+| `team.smtp.port` | int | - | SMTP port |
+| `team.smtp.from` | string | - | From address (required with `host`) |
+| `team.smtp.username` | string | - | SMTP username |
+| `team.smtp.password` | string | - | SMTP password |
+| `team.secrets.provider` | string | - | Per-agent secret vault: `memory` or `file`. Empty disables secret injection |
+| `team.secrets.dir` | string | - | Storage directory for the `file` provider (required for it) |
+
+```yaml
+team:
+  enabled: true
+  superadmin_email: you@example.com
+  base_url: https://team.example.com
+  agent_handle: omniagent
+  database:
+    app_dsn: postgres://omniagent_app:pw@db:5432/omniagent_team
+    migrate_dsn: postgres://owner:pw@db:5432/omniagent_team
+    app_role: omniagent_app
+  smtp:
+    host: smtp.example.com
+    port: 587
+    from: agent@example.com
+    password: ${SMTP_PASSWORD}
+  secrets:
+    provider: file
+    dir: /var/lib/omniagent/secrets
+```
+
+!!! note "PostgreSQL vs. SQLite"
+    PostgreSQL is the production target and enforces row-level security as a
+    backstop. SQLite (any non-`postgres://` `app_dsn`) has no RLS and is for
+    local trials/tests only.
 
 ## Storage
 

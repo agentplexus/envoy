@@ -57,6 +57,7 @@ nav:
   - Guides:
     - OpenAI-Compatible API: guides/openai-api.md
     - Image Generation: guides/images.md
+    - Team Mode: guides/team-mode.md
     - Web UI Authentication: guides/authentication.md
     - Virtual Agents: guides/agents.md
     - Multi-Agent Setup: guides/multi-agent.md
