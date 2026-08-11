@@ -767,3 +767,100 @@ func TestTeamHTTP_SSOCallback_LandsInExistingMagicLinkAccount(t *testing.T) {
 }
 
 var errTestExchange = errors.New("fake exchange failure")
+
+// ---- Password login (RMI-OMNIAGENT-129/130) --------------------------------
+
+func TestTeamHTTP_PasswordLoginFlow(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+	kidID := kid.me(t).UserID
+
+	// Superadmin sets the member's password via the admin endpoint.
+	resp := f.patch(t, "/api/admin/users/"+kidID, `{"password":"s3cret-passphrase"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("admin set password = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// A fresh client logs in with email+password.
+	jar, _ := newJar()
+	pw := &teamHTTPFixture{server: f.server, mailer: f.mailer, client: &http.Client{
+		Jar:           jar,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}}
+	resp = pw.post(t, "/api/auth/password", `{"email":"kid@example.com","password":"s3cret-passphrase"}`, false)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("password login = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+	if got := pw.me(t); got.UserID != kidID {
+		t.Fatalf("logged-in user = %s, want %s", got.UserID, kidID)
+	}
+}
+
+func TestTeamHTTP_PasswordLoginWrongCreds(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+	kidID := kid.me(t).UserID
+	f.patch(t, "/api/admin/users/"+kidID, `{"password":"s3cret-passphrase"}`, true).Body.Close()
+
+	// Wrong password → 401 uniform.
+	resp := f.post(t, "/api/auth/password", `{"email":"kid@example.com","password":"nope"}`, false)
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("wrong password = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+	// Unknown email → 401 uniform.
+	resp = f.post(t, "/api/auth/password", `{"email":"ghost@example.com","password":"whatever-here"}`, false)
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("unknown email = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+func TestTeamHTTP_ChangePasswordSelfService(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+
+	// First self-set (no current password yet) requires CSRF; succeeds.
+	resp := kid.post(t, "/api/users/me/password", `{"new_password":"first-passphrase"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("first self-set = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Missing CSRF is rejected.
+	resp = kid.post(t, "/api/users/me/password", `{"current_password":"first-passphrase","new_password":"second-passphrase"}`, false)
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("no-CSRF change = %d, want 403", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Wrong current → 401; correct current → 200.
+	resp = kid.post(t, "/api/users/me/password", `{"current_password":"wrong","new_password":"second-passphrase"}`, true)
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("wrong current = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+	resp = kid.post(t, "/api/users/me/password", `{"current_password":"first-passphrase","new_password":"second-passphrase"}`, true)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("correct current = %d, want 200", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+func TestTeamHTTP_AdminSetWeakPasswordRejected(t *testing.T) {
+	f := setupTeamHTTP(t)
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+	kidID := kid.me(t).UserID
+
+	resp := f.patch(t, "/api/admin/users/"+kidID, `{"password":"short"}`, true)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("weak admin-set password = %d, want 400", resp.StatusCode)
+	}
+	resp.Body.Close()
+}

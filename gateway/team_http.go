@@ -138,12 +138,14 @@ func (h *TeamHTTP) RequireAuth(next http.Handler) http.Handler {
 func (h *TeamHTTP) routes() {
 	h.mux = http.NewServeMux()
 	// Auth
-	h.mux.HandleFunc("/api/auth/magic-link", h.handleMagicLink) // POST
-	h.mux.HandleFunc("/api/auth/verify", h.handleVerify)        // GET
+	h.mux.HandleFunc("/api/auth/magic-link", h.handleMagicLink)   // POST
+	h.mux.HandleFunc("/api/auth/verify", h.handleVerify)          // GET
+	h.mux.HandleFunc("/api/auth/password", h.handlePasswordLogin) // POST
 	h.mux.HandleFunc("/api/auth/logout", h.requireCSRF(h.handleLogout))
 	h.mux.HandleFunc("/api/auth/me", h.requireAuth(h.handleMe)) // GET
 	// Self-service
 	h.mux.HandleFunc("/api/users/me/username", h.requireCSRF(h.requireAuth(h.handleRename)))
+	h.mux.HandleFunc("/api/users/me/password", h.requireCSRF(h.requireAuth(h.handleChangePassword)))
 	// SSO — each provider's routes are only registered when configured.
 	if h.cfg.GoogleProvider != nil {
 		h.mux.HandleFunc("GET /api/auth/google", h.handleSSOStart("google", h.cfg.GoogleProvider))
@@ -341,6 +343,65 @@ func (h *TeamHTTP) readAndClearSSOCookie(w http.ResponseWriter, r *http.Request,
 	return c.Value, true
 }
 
+type passwordLoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// handlePasswordLogin authenticates an email+password credential and sets the
+// session cookie. Rate-limited by client IP and email (like magic-link) and
+// returns a uniform 401 on any failure to avoid account enumeration.
+func (h *TeamHTTP) handlePasswordLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	var req passwordLoginRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	ip := clientIP(r)
+	keys := []string{"pw:ip:" + ip}
+	if email := strings.ToLower(strings.TrimSpace(req.Email)); email != "" {
+		keys = append(keys, "pw:email:"+email)
+	}
+	_ = h.limiter.recordFailureAndDelayAll(r.Context(), keys...) //nolint:errcheck // delay is best-effort; ctx cancel just skips it
+
+	sessionToken, _, err := h.auth.LoginWithPassword(r.Context(), req.Email, req.Password, r.UserAgent(), ip)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "invalid email or password")
+		return
+	}
+	h.setSessionCookie(w, sessionToken)
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+type changePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+// handleChangePassword lets the authenticated user set or change their own
+// password. Requires the current password when one is already set.
+func (h *TeamHTTP) handleChangePassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	p := principalFrom(r.Context())
+	var req changePasswordRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if err := h.auth.SetPassword(r.Context(), p.Actor(), p.UserID, req.CurrentPassword, req.NewPassword); err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
 func (h *TeamHTTP) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -536,6 +597,7 @@ func (h *TeamHTTP) handleListUsers(w http.ResponseWriter, r *http.Request) {
 type updateUserRequest struct {
 	Username *string `json:"username"`
 	Status   *string `json:"status"`
+	Password *string `json:"password"`
 }
 
 func (h *TeamHTTP) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -571,6 +633,14 @@ func (h *TeamHTTP) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := h.team.SetUserStatus(r.Context(), actor, id, status); err != nil {
+			h.writeServiceError(w, err)
+			return
+		}
+	}
+	if req.Password != nil {
+		// Superadmin sets another user's password: no current-password check
+		// (actor is a proven superadmin via the admin gate above).
+		if err := h.auth.SetPassword(r.Context(), actor, id, "", *req.Password); err != nil {
 			h.writeServiceError(w, err)
 			return
 		}
@@ -660,6 +730,10 @@ func (h *TeamHTTP) writeServiceError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, "invalid email address")
 	case errors.Is(err, team.ErrNotFound):
 		writeError(w, http.StatusNotFound, "not found")
+	case errors.Is(err, auth.ErrInvalidCredentials):
+		writeError(w, http.StatusUnauthorized, "invalid email or password")
+	case errors.Is(err, auth.ErrWeakPassword):
+		writeError(w, http.StatusBadRequest, "password must be at least 8 characters")
 	default:
 		h.logger.Error("team service error", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal error")
