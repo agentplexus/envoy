@@ -592,5 +592,37 @@ func (s *Skill) applyAuth(req *http.Request) {
 	}
 }
 
-// Verify Skill implements compiled.Skill at compile time.
-var _ compiled.Skill = (*Skill)(nil)
+// SetSecrets injects agent-scoped secrets (INIT-OMNIAGENT-004) into the auth
+// config, implementing compiled.SecretsAware. Each credential is populated
+// from the injected env var named by its Auth.*Env field, when set and
+// present. Called once after creation and before Init, so a per-agent skill
+// instance carries only its own agent's credential.
+func (s *Skill) SetSecrets(env map[string]string) {
+	if len(env) == 0 {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if name := s.config.Auth.APIKeyEnv; name != "" {
+		if v, ok := env[name]; ok {
+			s.config.Auth.APIKey = v
+		}
+	}
+	if name := s.config.Auth.TokenEnv; name != "" {
+		if v, ok := env[name]; ok {
+			s.config.Auth.Token = v
+		}
+	}
+	if name := s.config.Auth.PasswordEnv; name != "" {
+		if v, ok := env[name]; ok {
+			s.config.Auth.Password = v
+		}
+	}
+}
+
+// Verify Skill implements compiled.Skill and compiled.SecretsAware at compile
+// time.
+var (
+	_ compiled.Skill        = (*Skill)(nil)
+	_ compiled.SecretsAware = (*Skill)(nil)
+)

@@ -94,6 +94,15 @@ type AuthConfig struct {
 
 	// Password is the password (for AuthBasic).
 	Password string
+
+	// APIKeyEnv, TokenEnv, and PasswordEnv name the injected-secret env var
+	// (INIT-OMNIAGENT-004) whose value populates the corresponding credential
+	// at SetSecrets time — e.g. TokenEnv: "GITHUB_TOKEN" makes an agent's
+	// GITHUB_TOKEN secret the bearer token. When empty, no injection occurs
+	// for that field (the static value above is used, unchanged behavior).
+	APIKeyEnv   string
+	TokenEnv    string
+	PasswordEnv string //nolint:gosec // G117: names an env var, not a credential
 }
 
 // setDefaults applies default values to the config.

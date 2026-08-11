@@ -1093,3 +1093,60 @@ func TestSkillHeaderParameter(t *testing.T) {
 		t.Errorf("X-Custom-Header = %q, want %q", receivedHeader, "custom-value-123")
 	}
 }
+
+func TestSetSecrets(t *testing.T) {
+	tests := []struct {
+		name    string
+		auth    AuthConfig
+		env     map[string]string
+		wantKey string
+		wantTok string
+		wantPwd string
+	}{
+		{
+			name:    "bearer from TokenEnv",
+			auth:    AuthConfig{Type: AuthBearer, TokenEnv: "GITHUB_TOKEN"}, //nolint:gosec // G101: env var name, not a credential
+			env:     map[string]string{"GITHUB_TOKEN": "ghp_injected"},
+			wantTok: "ghp_injected",
+		},
+		{
+			name:    "apiKey from APIKeyEnv",
+			auth:    AuthConfig{Type: AuthAPIKey, APIKeyEnv: "SVC_KEY"},
+			env:     map[string]string{"SVC_KEY": "k-123"},
+			wantKey: "k-123",
+		},
+		{
+			name:    "basic password from PasswordEnv",
+			auth:    AuthConfig{Type: AuthBasic, Username: "u", PasswordEnv: "SVC_PW"},
+			env:     map[string]string{"SVC_PW": "s3cret"},
+			wantPwd: "s3cret",
+		},
+		{
+			name:    "no mapping configured is a no-op",
+			auth:    AuthConfig{Type: AuthBearer, Token: "static"},
+			env:     map[string]string{"GITHUB_TOKEN": "ignored"},
+			wantTok: "static",
+		},
+		{
+			name:    "mapped env var absent leaves static value",
+			auth:    AuthConfig{Type: AuthBearer, Token: "static", TokenEnv: "GITHUB_TOKEN"}, //nolint:gosec // G101: env var name, not a credential
+			env:     map[string]string{"OTHER": "x"},
+			wantTok: "static",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewSkill(Config{Name: "svc", Auth: tt.auth})
+			s.SetSecrets(tt.env)
+			if s.config.Auth.APIKey != tt.wantKey {
+				t.Errorf("APIKey = %q, want %q", s.config.Auth.APIKey, tt.wantKey)
+			}
+			if s.config.Auth.Token != tt.wantTok {
+				t.Errorf("Token = %q, want %q", s.config.Auth.Token, tt.wantTok)
+			}
+			if s.config.Auth.Password != tt.wantPwd {
+				t.Errorf("Password = %q, want %q", s.config.Auth.Password, tt.wantPwd)
+			}
+		})
+	}
+}
