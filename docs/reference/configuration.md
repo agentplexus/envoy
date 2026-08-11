@@ -184,6 +184,7 @@ full picture.
 |-------|------|---------|-------------|
 | `team.enabled` | bool | `false` | Turn team (multi-user) mode on |
 | `team.superadmin_email` | string | - | **Required.** Bootstrapped as superadmin on first sign-in |
+| `team.superadmin_password` | string | - | Optional. Seeds the superadmin's email+password credential on startup (set-once; min 8 chars). Prefer `OMNIAGENT_TEAM_SUPERADMIN_PASSWORD` or a vault ref over a literal |
 | `team.base_url` | string | - | External origin (`https://…`) for magic links and cookies |
 | `team.agent_handle` | string | `omniagent` | @-mention handle for the agent in group chats |
 | `team.database.app_dsn` | string | - | **Required.** Application-role connection string. `postgres://…` selects PostgreSQL; any other value (file path, `sqlite://…`) selects SQLite |

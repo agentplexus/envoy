@@ -161,6 +161,7 @@ value always overrides the file.
 | `OMNIAGENT_TEAM_DATABASE_APP_ROLE` | Application role name granted access by migrations |
 | `OMNIAGENT_TEAM_BASE_URL` | External origin for magic links + cookies |
 | `OMNIAGENT_TEAM_SUPERADMIN_EMAIL` | Email bootstrapped as superadmin on first login |
+| `OMNIAGENT_TEAM_SUPERADMIN_PASSWORD` | Seeds the superadmin's password on startup (set-once; enables password login without SMTP) |
 | `OMNIAGENT_TEAM_AGENT_HANDLE` | @-mention handle in group chats |
 | `OMNIAGENT_TEAM_SMTP_HOST` | Outbound SMTP host for magic-link email |
 | `OMNIAGENT_TEAM_SMTP_PORT` | Outbound SMTP port |

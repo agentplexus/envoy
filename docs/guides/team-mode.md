@@ -116,7 +116,46 @@ its first successful sign-in. Everyone else must be on the allowlist.
     If no `smtp` block is configured, magic links are **logged to the gateway
     console** instead of emailed. Request a link, copy the
     `/api/auth/verify?token=…` URL from the logs, and open it. Handy for local
-    trials; configure SMTP for any real deployment.
+    trials; configure SMTP for any real deployment. Or use **password login**
+    (below), which needs no SMTP at all.
+
+### Password login (email + password)
+
+Email + password sign-in is an **additive** third method alongside magic-link
+and SSO — the login screen offers all configured options. It's allowlist-safe
+by construction: a password only exists on an already-created (therefore
+allowlisted) user, and login also requires an active account. Wrong password
+and unknown email return the same uniform error (no account enumeration), and
+the endpoint is rate-limited like magic-link. Passwords are stored argon2id-
+hashed (never in plaintext or logs).
+
+A password can be set three ways:
+
+- **Startup bootstrap (no SMTP needed).** Set the superadmin's password from
+  config/env so you can log in immediately on a fresh deployment:
+
+  ```bash
+  OMNIAGENT_TEAM_SUPERADMIN_PASSWORD='a-strong-passphrase' \
+    omniagent gateway run --config omniagent.yaml
+  ```
+
+  or `team.superadmin_password` in the config file (prefer an env/vault
+  reference over a literal). It's **set-once**: applied only if the superadmin
+  has no password yet, so it never clobbers a password later changed in the UI.
+- **Superadmin sets any user's** password from the **Admin → Members** panel
+  (or `PATCH /api/admin/users/{id}` with `{"password":"…"}`).
+- **A user changes their own** in the **Account** tab (or
+  `POST /api/users/me/password`); changing an existing password requires the
+  current one.
+
+Minimum length is 8 characters.
+
+!!! note "Config format"
+    The config file may be **JSON or YAML** (the loader picks by extension),
+    and every `team.*` field also has an `OMNIAGENT_TEAM_*` env var that
+    overrides it — so a deployment can be driven entirely by environment
+    variables (as the Compose stack does). Don't commit literal passwords;
+    source them from env vars or a vault reference.
 
 ### Managing the allowlist and members
 

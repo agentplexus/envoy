@@ -40,6 +40,7 @@ services:
       OMNIAGENT_TEAM_DATABASE_MIGRATE_DSN: "postgres://omniagent_owner:${POSTGRES_PASSWORD}@postgres:5432/omniagent_team?sslmode=disable"
       OMNIAGENT_TEAM_BASE_URL: "https://${DOMAIN:?DOMAIN is required, see .env.example}"
       OMNIAGENT_TEAM_SUPERADMIN_EMAIL: "${SUPERADMIN_EMAIL:?SUPERADMIN_EMAIL is required, see .env.example}"
+      OMNIAGENT_TEAM_SUPERADMIN_PASSWORD: "${SUPERADMIN_PASSWORD:-}"
       OMNIAGENT_TEAM_SMTP_HOST: "${SMTP_HOST:-}"
       OMNIAGENT_TEAM_SMTP_PORT: "${SMTP_PORT:-587}"
       OMNIAGENT_TEAM_SMTP_USERNAME: "${SMTP_USERNAME:-}"
