@@ -71,6 +71,7 @@
       var tabs = [["chat", "Chats"], ["catalog", "Catalog"], ["agents", "My Agents"]];
       if (me.superadmin) tabs.push(["curation", "Curation"]);
       if (me.superadmin) tabs.push(["admin", "Admin"]);
+      tabs.push(["account", "Account"]);
       tabs.forEach(function (t) {
         nav.appendChild(el("button", {
           type: "button",
@@ -117,10 +118,42 @@
       app.appendChild(renderCuration(me));
     } else if (teamView === "admin" && me && me.superadmin) {
       app.appendChild(renderAdmin(me));
+    } else if (teamView === "account") {
+      app.appendChild(renderAccount(me));
     } else {
       teamView = "chat";
       app.appendChild(renderTeamChat(me));
     }
+  }
+
+  // renderAccount is the member's self-service surface: change your own
+  // password (current required once one is set).
+  function renderAccount() {
+    var section = el("section", { className: "admin-area" });
+    section.appendChild(el("h2", { className: "view-title", text: "Account" }));
+    var status = el("p", { className: "error" });
+    var current = el("input", { type: "password", placeholder: "current password (leave blank if none set)", autocomplete: "current-password" });
+    var next = el("input", { type: "password", placeholder: "new password (min 8 chars)", autocomplete: "new-password" });
+    var form = el("form", { className: "agent-form" }, [
+      field("Current password", current), field("New password", next),
+      el("div", { className: "form-actions" }, [el("button", { type: "submit", text: "Change password" })]),
+      status,
+    ]);
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      status.className = "error"; status.textContent = "";
+      jsonFetch("/api/users/me/password", {
+        method: "POST", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+        body: JSON.stringify({ current_password: current.value, new_password: next.value }),
+      }).then(function () {
+        current.value = ""; next.value = "";
+        status.className = "ok"; status.textContent = "Password changed.";
+      }).catch(function (err) {
+        status.textContent = err.message === "unauthenticated" ? "" : err.message;
+      });
+    });
+    section.appendChild(card("Change password", form));
+    return section;
   }
 
   // ssoErrorMessage maps a ?error= query param (set by the magic-link and
@@ -181,6 +214,26 @@
     section.appendChild(heading);
     section.appendChild(form);
     section.appendChild(status);
+
+    // Email + password sign-in (additive to magic-link + SSO).
+    var pwEmail = el("input", { type: "email", required: true, placeholder: "you@example.com", autocomplete: "username" });
+    var pwPass = el("input", { type: "password", required: true, placeholder: "password", autocomplete: "current-password" });
+    var pwStatus = el("p", { className: "error" });
+    var pwForm = el("form", { className: "login" }, [pwEmail, pwPass, el("button", { type: "submit", text: "Sign in" })]);
+    pwForm.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      pwStatus.className = "error"; pwStatus.textContent = "";
+      fetch("/api/auth/password", {
+        method: "POST", credentials: "same-origin", headers: csrfHeaders(),
+        body: JSON.stringify({ email: pwEmail.value, password: pwPass.value }),
+      }).then(function (res) {
+        if (res.ok) { render(); return; }
+        pwStatus.textContent = "Invalid email or password.";
+      }).catch(function () { pwStatus.textContent = "Could not reach the server. Try again."; });
+    });
+    section.appendChild(el("p", { className: "muted", text: "…or sign in with a password:" }));
+    section.appendChild(pwForm);
+    section.appendChild(pwStatus);
 
     var loginError = consumeLoginError();
     if (loginError) {
@@ -1667,7 +1720,18 @@
               }).then(reload).catch(function (err) { setErr(status, err); });
             } }));
           }
-          list.appendChild(el("li", {}, row));
+          // Superadmin can set/reset any member's password (write-only).
+          var pw = el("input", { type: "password", placeholder: "set password", autocomplete: "off" });
+          row.push(pw);
+          row.push(el("button", { type: "button", text: "Set", onclick: function () {
+            if (!pw.value) return;
+            status.className = "error"; status.textContent = "";
+            jsonFetch("/api/admin/users/" + encodeURIComponent(u.id), {
+              method: "PATCH", headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+              body: JSON.stringify({ password: pw.value }),
+            }).then(function () { pw.value = ""; status.className = "ok"; status.textContent = "Password set for " + (u.displayName || u.username) + "."; }).catch(function (err) { setErr(status, err); });
+          } }));
+          list.appendChild(el("li", { className: "secret-row" }, row));
         });
       }
 
