@@ -22,6 +22,8 @@ const (
 	FieldUsername = "username"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
+	// FieldPasswordHash holds the string denoting the password_hash field in the database.
+	FieldPasswordHash = "password_hash"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -112,6 +114,7 @@ var Columns = []string{
 	FieldEmail,
 	FieldUsername,
 	FieldDisplayName,
+	FieldPasswordHash,
 	FieldRole,
 	FieldStatus,
 	FieldCreatedAt,
@@ -216,6 +219,11 @@ func ByUsername(opts ...sql.OrderTermOption) OrderOption {
 // ByDisplayName orders the results by the display_name field.
 func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
+// ByPasswordHash orders the results by the password_hash field.
+func ByPasswordHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPasswordHash, opts...).ToFunc()
 }
 
 // ByRole orders the results by the role field.

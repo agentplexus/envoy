@@ -31,6 +31,11 @@ func (User) Fields() []ent.Field {
 			Unique().
 			NotEmpty(),
 		field.String("display_name").Optional(),
+		// password_hash is the argon2id PHC-encoded credential for optional
+		// email+password login (additive to magic-link/SSO). Nullable: unset
+		// means the account has no password. Sensitive so ent omits it from
+		// String()/logging.
+		field.String("password_hash").Optional().Sensitive(),
 		field.Enum("role").Values("superadmin", "member").Default("member"),
 		field.Enum("status").Values("active", "disabled").Default("active"),
 		field.Time("created_at").Default(time.Now).Immutable(),

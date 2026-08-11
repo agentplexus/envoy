@@ -319,6 +319,7 @@ var (
 		{Name: "email", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"postgres": "citext"}},
 		{Name: "username", Type: field.TypeString, Unique: true, SchemaType: map[string]string{"postgres": "citext"}},
 		{Name: "display_name", Type: field.TypeString, Nullable: true},
+		{Name: "password_hash", Type: field.TypeString, Nullable: true},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"superadmin", "member"}, Default: "member"},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "disabled"}, Default: "active"},
 		{Name: "created_at", Type: field.TypeTime},
