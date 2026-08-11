@@ -49,6 +49,29 @@ func (e *RequirementError) InstallHint() string {
 	return strings.Join(hints, " or ")
 }
 
+// UnmetRequiredSecrets returns the declared secrets a skill marks required
+// whose env-var name is absent from available (the resolved secret env, e.g.
+// an agent's set secrets), with an actionable message per entry. A skill with
+// unmet required secrets should be treated as unavailable — running it would
+// hit the API with a missing credential (INIT-OMNIAGENT-004). Optional
+// (non-required) declared secrets never gate availability.
+func (s *Skill) UnmetRequiredSecrets(available map[string]string) []*RequirementError {
+	var errs []*RequirementError
+	for _, sec := range s.DeclaredSecrets() {
+		if !sec.Required {
+			continue
+		}
+		if _, ok := available[sec.EnvVar()]; !ok {
+			errs = append(errs, &RequirementError{
+				Type:  "secret",
+				Name:  sec.EnvVar(),
+				Skill: s.Name,
+			})
+		}
+	}
+	return errs
+}
+
 // CheckRequirements verifies all skill prerequisites.
 // Returns a slice of errors for missing requirements.
 func (s *Skill) CheckRequirements() []error {

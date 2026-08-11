@@ -423,3 +423,44 @@ func TestFilterAvailable(t *testing.T) {
 		t.Errorf("FilterAvailable() returned wrong skill: %q", available[0].Name)
 	}
 }
+
+func TestUnmetRequiredSecrets(t *testing.T) {
+	skill := &Skill{
+		Name: "github",
+		Metadata: SkillMeta{OpenClaw: &OpenClawMeta{Requires: &Requires{
+			Secrets: []SecretRequirement{
+				{Name: "GITHUB_TOKEN", Required: true},
+				{Name: "GH_ENTERPRISE_URL", Env: "GH_ENTERPRISE_URL", Required: false},
+				{Name: "API_KEY", Env: "SVC_API_KEY", Required: true},
+			},
+		}}},
+	}
+
+	// Nothing available: both required secrets are unmet; the optional one is not.
+	unmet := skill.UnmetRequiredSecrets(nil)
+	if len(unmet) != 2 {
+		t.Fatalf("unmet = %d (%v), want 2 required", len(unmet), unmet)
+	}
+	got := map[string]bool{}
+	for _, e := range unmet {
+		got[e.Name] = true
+		if e.Type != "secret" || e.Skill != "github" {
+			t.Errorf("bad error %+v", e)
+		}
+	}
+	if !got["GITHUB_TOKEN"] || !got["SVC_API_KEY"] {
+		t.Errorf("unmet names = %v, want GITHUB_TOKEN + SVC_API_KEY (by env var)", got)
+	}
+
+	// Both required secrets present (by env-var name): none unmet.
+	if u := skill.UnmetRequiredSecrets(map[string]string{"GITHUB_TOKEN": "x", "SVC_API_KEY": "y"}); len(u) != 0 {
+		t.Errorf("unmet with all set = %v, want none", u)
+	}
+}
+
+func TestUnmetRequiredSecrets_NoDeclarations(t *testing.T) {
+	skill := &Skill{Name: "bare"}
+	if u := skill.UnmetRequiredSecrets(nil); len(u) != 0 {
+		t.Errorf("unmet for a skill with no declarations = %v, want none", u)
+	}
+}
