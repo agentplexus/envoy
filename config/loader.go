@@ -184,6 +184,9 @@ func loadEnv(cfg *Config) {
 	if v := os.Getenv("OMNIAGENT_TEAM_SUPERADMIN_EMAIL"); v != "" {
 		cfg.Team.SuperadminEmail = v
 	}
+	if v := os.Getenv("OMNIAGENT_TEAM_SUPERADMIN_PASSWORD"); v != "" {
+		cfg.Team.SuperadminPassword = v
+	}
 	if v := os.Getenv("OMNIAGENT_TEAM_AGENT_HANDLE"); v != "" {
 		cfg.Team.AgentHandle = v
 	}

@@ -383,6 +383,7 @@ func TestLoadEnv_Team(t *testing.T) {
 	os.Setenv("OMNIAGENT_TEAM_DATABASE_APP_ROLE", "custom_app_role")
 	os.Setenv("OMNIAGENT_TEAM_BASE_URL", "https://team.example.com")
 	os.Setenv("OMNIAGENT_TEAM_SUPERADMIN_EMAIL", "root@example.com")
+	os.Setenv("OMNIAGENT_TEAM_SUPERADMIN_PASSWORD", "boot-passphrase")
 	os.Setenv("OMNIAGENT_TEAM_AGENT_HANDLE", "helper")
 	os.Setenv("OMNIAGENT_TEAM_SMTP_HOST", "smtp.example.com")
 	os.Setenv("OMNIAGENT_TEAM_SMTP_PORT", "587")
@@ -396,6 +397,7 @@ func TestLoadEnv_Team(t *testing.T) {
 		os.Unsetenv("OMNIAGENT_TEAM_DATABASE_APP_ROLE")
 		os.Unsetenv("OMNIAGENT_TEAM_BASE_URL")
 		os.Unsetenv("OMNIAGENT_TEAM_SUPERADMIN_EMAIL")
+		os.Unsetenv("OMNIAGENT_TEAM_SUPERADMIN_PASSWORD")
 		os.Unsetenv("OMNIAGENT_TEAM_AGENT_HANDLE")
 		os.Unsetenv("OMNIAGENT_TEAM_SMTP_HOST")
 		os.Unsetenv("OMNIAGENT_TEAM_SMTP_PORT")
@@ -423,6 +425,9 @@ func TestLoadEnv_Team(t *testing.T) {
 	}
 	if cfg.Team.BaseURL != "https://team.example.com" {
 		t.Errorf("Team.BaseURL = %s, want https://team.example.com", cfg.Team.BaseURL)
+	}
+	if cfg.Team.SuperadminPassword != "boot-passphrase" {
+		t.Errorf("Team.SuperadminPassword = %s, want boot-passphrase", cfg.Team.SuperadminPassword)
 	}
 	if cfg.Team.SuperadminEmail != "root@example.com" {
 		t.Errorf("Team.SuperadminEmail = %s, want root@example.com", cfg.Team.SuperadminEmail)

@@ -66,6 +66,8 @@ func TestTeamConfig_Validate(t *testing.T) {
 			c.BaseURL = ""
 			c.SSO.Google = TeamOAuthProviderConfig{ClientID: "id", ClientSecret: "secret"}
 		}, wantErr: "team.base_url is required"},
+		{name: "superadmin password ok", mutate: func(c *TeamConfig) { c.SuperadminPassword = "long-enough" }},
+		{name: "superadmin password too short", mutate: func(c *TeamConfig) { c.SuperadminPassword = "short" }, wantErr: "superadmin_password"},
 	}
 
 	for _, tt := range tests {

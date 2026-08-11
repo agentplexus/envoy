@@ -109,6 +109,17 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		return nil, nil, nil, nil, fmt.Errorf("auth service: %w", err)
 	}
 
+	// Bootstrap the superadmin's password from config/env (set-once): create
+	// the superadmin account if needed and set its password only when it has
+	// none yet, so an operator can log in without SMTP without ever clobbering
+	// a password the superadmin later changed.
+	if tc.SuperadminPassword != "" {
+		if err := bootstrapSuperadminPassword(ctx, teamSvc, authSvc, tc.SuperadminEmail, tc.SuperadminPassword, logger); err != nil {
+			cleanup()
+			return nil, nil, nil, nil, fmt.Errorf("bootstrap superadmin password: %w", err)
+		}
+	}
+
 	googleProvider, githubProvider, err := buildSSOProviders(ctx, tc.SSO, strings.TrimRight(tc.BaseURL, "/"), logger)
 	if err != nil {
 		cleanup()
@@ -349,6 +360,26 @@ func skillSecretDeclLookup(cfg config.SkillsConfig, logger *slog.Logger) func(st
 		}
 		return out
 	}
+}
+
+// bootstrapSuperadminPassword ensures the superadmin account exists and, if it
+// has no password yet, sets the configured one (set-once). It never overwrites
+// an existing password — resets go through the UI/API.
+func bootstrapSuperadminPassword(ctx context.Context, teamSvc *team.Service, authSvc *auth.Service, email, password string, logger *slog.Logger) error {
+	u, _, err := teamSvc.EnsureUser(ctx, email)
+	if err != nil {
+		return fmt.Errorf("ensure superadmin user: %w", err)
+	}
+	if u.PasswordHash != "" {
+		logger.Info("team mode: superadmin already has a password; startup value ignored (set-once)")
+		return nil
+	}
+	actor := team.Actor{UserID: u.ID, Superadmin: true}
+	if err := authSvc.SetPassword(ctx, actor, u.ID, "", password); err != nil {
+		return err
+	}
+	logger.Info("team mode: superadmin password set from startup config", "email", email)
+	return nil
 }
 
 // googleDiscoveryTimeout bounds NewGoogleProvider's OIDC discovery call so a

@@ -24,6 +24,13 @@ type TeamConfig struct {
 	// SuperadminEmail bootstraps the superadmin on first login.
 	SuperadminEmail string `json:"superadmin_email" yaml:"superadmin_email"`
 
+	// SuperadminPassword, when set, seeds the superadmin's email+password
+	// credential on startup (set-once: applied only if that account has no
+	// password yet, so it never clobbers a later change). Lets an operator log
+	// in without SMTP. Prefer supplying it via OMNIAGENT_TEAM_SUPERADMIN_PASSWORD
+	// or a vault reference rather than a literal in a committed config file.
+	SuperadminPassword string `json:"superadmin_password,omitempty" yaml:"superadmin_password,omitempty"` //nolint:gosec // G117: loaded from config/env, not a hardcoded credential
+
 	// AgentHandle is the @-mention handle of the agent in group chats
 	// (default "omniagent").
 	AgentHandle string `json:"agent_handle,omitempty" yaml:"agent_handle,omitempty"`
@@ -103,6 +110,10 @@ type TeamSMTPConfig struct {
 // agentHandlePattern constrains the @-mention handle.
 var agentHandlePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{1,31}$`)
 
+// minSuperadminPasswordLen mirrors auth.MinPasswordLen; kept local so config
+// validation has no dependency on the auth package.
+const minSuperadminPasswordLen = 8
+
 // Validate checks the team configuration. A disabled config is always valid.
 func (c *TeamConfig) Validate() error {
 	if !c.Enabled {
@@ -125,6 +136,9 @@ func (c *TeamConfig) Validate() error {
 	}
 	if c.AgentHandle != "" && !agentHandlePattern.MatchString(c.AgentHandle) {
 		return fmt.Errorf("team.agent_handle %q must match %s", c.AgentHandle, agentHandlePattern)
+	}
+	if c.SuperadminPassword != "" && len(c.SuperadminPassword) < minSuperadminPasswordLen {
+		return fmt.Errorf("team.superadmin_password must be at least %d characters", minSuperadminPasswordLen)
 	}
 	// SMTP becomes mandatory with magic-link auth (Phase 2); at the data
 	// layer we only insist on coherence when partially configured.
