@@ -46,7 +46,12 @@ UI) has shipped; the single-operator config-binding path has also shipped.
 > immediate "unknown vault URI scheme" error as any other unrecognized
 > scheme instead of an opaque failure deep inside omnivault; `aws-sm://` was
 > never actually implemented and is not added here — no known provider
-> package to add), and the redaction guarantee of RMI-204 (values never
+> package to add), RMI-208 (team-mode agent secret resolution now falls
+> back through the RMI-201/202 config bindings when the per-agent vault
+> doesn't have a value — per-agent secret ▸ per-skill global binding,
+> scoped to that agent's own enabled skills ▸ global binding — closing the
+> loop between the two secret systems that previously had zero awareness
+> of each other), and the redaction guarantee of RMI-204 (values never
 > reach logs/prompt — injection targets skill env/auth only). **Follow-on
 > (still open):** the rest of RMI-204 (no dedicated cross-type redaction
 > test suite covering MCP/compiled/OpenAPI together — RMI-203's tests cover
@@ -117,9 +122,21 @@ UI) has shipped; the single-operator config-binding path has also shipped.
 **Theme:** Acting-user secret resolution with GitHub-style precedence.
 **Status:** Planned — 0 of 3 items completed
 
-- [ ] `RMI-OMNIAGENT-208` Acting-user secret context + precedence
+- [x] `RMI-OMNIAGENT-208` Agent secret resolution and precedence
   - Depends on: `RMI-OMNIAGENT-207`
-  - Acceptance: `secrets.FromContext` returns the acting user's set; precedence per-user ▸ per-skill global ▸ global
+  - Shipped as agent-scoped (not per-user — see rescope note), and layered
+    against the RMI-201/202 single-operator config bindings rather than a
+    `secrets.FromContext` accessor (no such function exists anywhere in the
+    repo; that naming predates the rescope). Precedence: per-agent secret
+    (`team/secrets.Service.ResolveAgentSecrets`) ▸ per-skill global binding
+    (`Skills.Config[name].Secrets`, scoped to exactly that agent's own
+    enabled skills — never the deployment's full skill set, which would
+    leak a binding into an agent that doesn't have the skill enabled) ▸
+    global binding (`Config.Secrets`). Implemented in
+    `cmd/omniagent/commands/team.go`'s `mergeSecretEnv` +
+    `agentSecretSource`, fed by `team/agentruntime.Builder.Build` now
+    passing the agent's `cfg.Skills` through the widened `SecretSource`
+    interface.
 - [x] `RMI-OMNIAGENT-209` Agent-scoped injection for compiled + OpenAPI skills
   - Shipped as agent-scoped (not per-user — see rescope note): `agent.WithSecretEnv` +
     `compiled.SecretsAware` for compiled skills, `openapi.Config.Auth.{APIKeyEnv,TokenEnv,PasswordEnv}`
