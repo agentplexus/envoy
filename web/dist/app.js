@@ -5,6 +5,7 @@
 
   var app = document.getElementById("app");
   var nav = document.getElementById("nav");
+  var navExtra = document.getElementById("nav-extra");
 
   // chatTeardown releases the previous chat view's WebSocket/timers before a
   // re-render (e.g. logout) so we never leak a socket per render().
@@ -63,6 +64,93 @@
     });
   }
 
+  // attachSpeechToText wires a mic button to dictate into a text input via
+  // the browser's native SpeechRecognition API — no backend involved. Single-
+  // utterance (not the continuous/auto-restart-on-silence pattern some voice
+  // assistants use), since this dictates one composer message, not an open
+  // mic. Hides the button outright when the browser has no support, rather
+  // than failing on click.
+  function attachSpeechToText(button, input) {
+    var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      button.hidden = true;
+      return;
+    }
+    var recognition = new Recognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    var listening = false;
+
+    function stop() {
+      listening = false;
+      button.classList.remove("recording");
+      try { recognition.stop(); } catch (e) { /* already stopped */ }
+    }
+
+    recognition.onresult = function (event) {
+      var transcript = "";
+      for (var i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      input.value = transcript;
+    };
+    recognition.onerror = function () { stop(); };
+    recognition.onend = function () { stop(); };
+
+    button.addEventListener("click", function () {
+      if (listening) {
+        stop();
+        return;
+      }
+      listening = true;
+      button.classList.add("recording");
+      try {
+        recognition.start();
+      } catch (e) {
+        stop();
+      }
+    });
+  }
+
+  // attachTranslate wires a translate button + language popover to POST the
+  // input's current text to /api/translate and replace it with the response.
+  // Only ever called when currentCaps.translate is true (a deployment-wide
+  // LLM is configured — see config/capabilities.go).
+  var TRANSLATE_LANGS = ["Spanish", "French", "German", "Chinese", "Japanese", "Korean", "Portuguese", "Italian"];
+
+  function attachTranslate(button, input) {
+    var menu = document.createElement("div");
+    menu.className = "translate-menu";
+    menu.hidden = true;
+    TRANSLATE_LANGS.forEach(function (lang) {
+      var langBtn = document.createElement("button");
+      langBtn.type = "button";
+      langBtn.textContent = lang;
+      langBtn.addEventListener("click", function () {
+        var text = input.value.trim();
+        menu.hidden = true;
+        if (!text) return;
+        jsonFetch("/api/translate", {
+          method: "POST",
+          headers: csrfHeaders({ "X-OmniAgent-CSRF": "1" }),
+          body: JSON.stringify({ text: text, targetLang: lang }),
+        })
+          .then(function (body) {
+            if (body && body.translation) input.value = body.translation;
+          })
+          .catch(function () { /* leave input unchanged on failure */ });
+      });
+      menu.appendChild(langBtn);
+    });
+    button.addEventListener("click", function () {
+      menu.hidden = !menu.hidden;
+    });
+    document.addEventListener("click", function (ev) {
+      if (!menu.hidden && ev.target !== button && !menu.contains(ev.target)) menu.hidden = true;
+    });
+    button.insertAdjacentElement("afterend", menu);
+  }
+
   function renderNav(caps, me) {
     nav.innerHTML = "";
     // Team-mode view tabs (RMI-311/312/313): Chats, Catalog, My Agents, and
@@ -109,6 +197,7 @@
       chatTeardown = null;
     }
     app.innerHTML = "";
+    navExtra.innerHTML = "";
     var me = currentMe;
     if (teamView === "catalog") {
       app.appendChild(renderCatalog(me));
@@ -180,6 +269,7 @@
 
   function renderLogin(caps) {
     var section = document.createElement("section");
+    section.className = "narrow";
     var heading = document.createElement("p");
     heading.textContent = "Sign in with a magic link:";
     var form = document.createElement("form");
@@ -294,7 +384,7 @@
   function renderChat() {
     var PAGE = 50;
     var section = document.createElement("section");
-    section.className = "chat";
+    section.className = "chat narrow";
     var list = document.createElement("ul");
     list.className = "messages";
     var status = document.createElement("p");
@@ -307,10 +397,25 @@
     input.type = "text";
     input.placeholder = "Message the agent…";
     input.autocomplete = "off";
+    var micBtn = document.createElement("button");
+    micBtn.type = "button";
+    micBtn.className = "icon-btn";
+    micBtn.title = "Dictate";
+    micBtn.textContent = "🎤";
+    attachSpeechToText(micBtn, input);
+    var translateBtn = document.createElement("button");
+    translateBtn.type = "button";
+    translateBtn.className = "icon-btn";
+    translateBtn.title = "Translate";
+    translateBtn.textContent = "🌐";
+    translateBtn.hidden = !currentCaps || !currentCaps.translate;
+    if (!translateBtn.hidden) attachTranslate(translateBtn, input);
     var button = document.createElement("button");
     button.type = "submit";
     button.textContent = "Send";
     form.appendChild(input);
+    form.appendChild(micBtn);
+    form.appendChild(translateBtn);
     form.appendChild(button);
 
     var state = {
@@ -349,6 +454,8 @@
       state.pending = on;
       input.disabled = on;
       button.disabled = on;
+      micBtn.disabled = on;
+      translateBtn.disabled = on;
       typingIndicator(on);
       if (state.replyTimer) {
         clearTimeout(state.replyTimer);
@@ -606,12 +713,10 @@
 
   function renderTeamChat(me) {
     var PAGE = 50;
-    var wrap = document.createElement("section");
-    wrap.className = "team";
 
-    // ---- Sidebar: chat list + create affordances ----------------------
-    var side = document.createElement("aside");
-    side.className = "sidebar";
+    // ---- Chat list + create affordances: mounted into the persistent
+    // left nav's #nav-extra slot (below the view tabs), not a second
+    // in-content sidebar. ---------------------------------------------
     var actions = document.createElement("div");
     actions.className = "side-actions";
     var dmBtn = document.createElement("button");
@@ -624,8 +729,8 @@
     actions.appendChild(groupBtn);
     var listEl = document.createElement("ul");
     listEl.className = "chat-list";
-    side.appendChild(actions);
-    side.appendChild(listEl);
+    navExtra.appendChild(actions);
+    navExtra.appendChild(listEl);
 
     // ---- Main pane: header, messages, composer ------------------------
     var pane = document.createElement("section");
@@ -661,10 +766,25 @@
     input.type = "text";
     input.autocomplete = "off";
     input.placeholder = "Message…";
+    var micBtn = document.createElement("button");
+    micBtn.type = "button";
+    micBtn.className = "icon-btn";
+    micBtn.title = "Dictate";
+    micBtn.textContent = "🎤";
+    attachSpeechToText(micBtn, input);
+    var translateBtn = document.createElement("button");
+    translateBtn.type = "button";
+    translateBtn.className = "icon-btn";
+    translateBtn.title = "Translate";
+    translateBtn.textContent = "🌐";
+    translateBtn.hidden = !currentCaps || !currentCaps.translate;
+    if (!translateBtn.hidden) attachTranslate(translateBtn, input);
     var sendBtn = document.createElement("button");
     sendBtn.type = "submit";
     sendBtn.textContent = "Send";
     form.appendChild(input);
+    form.appendChild(micBtn);
+    form.appendChild(translateBtn);
     form.appendChild(sendBtn);
 
     pane.appendChild(header);
@@ -672,9 +792,6 @@
     pane.appendChild(memberPanel);
     pane.appendChild(status);
     pane.appendChild(form);
-
-    wrap.appendChild(side);
-    wrap.appendChild(pane);
 
     var state = {
       chats: [],
@@ -827,6 +944,8 @@
       state.pending = on;
       input.disabled = on;
       sendBtn.disabled = on;
+      micBtn.disabled = on;
+      translateBtn.disabled = on;
       if (state.replyTimer) {
         clearTimeout(state.replyTimer);
         state.replyTimer = null;
@@ -1142,7 +1261,7 @@
         status.textContent = "Failed to load chats: " + err.message;
       });
 
-    return wrap;
+    return pane;
   }
 
   // ---- Catalog: discover agents, start chats (RMI-312) ------------------
@@ -1752,6 +1871,7 @@
       chatTeardown = null;
     }
     app.innerHTML = "";
+    navExtra.innerHTML = "";
     fetchCapabilities()
       .then(function (caps) {
         var showLogin = caps.authRequired;
