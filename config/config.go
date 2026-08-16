@@ -20,6 +20,12 @@ type Config struct {
 	Image         ImageConfig         `json:"image" yaml:"image"`
 	Observability ObservabilityConfig `json:"observability" yaml:"observability"`
 	Tokens        TokenConfig         `json:"tokens" yaml:"tokens"`
+	// Secrets holds global secret bindings available to all skills —
+	// env-var name -> plain value or vault URI (op://, bw://, file://,
+	// env://) — resolved in place by ResolveCredentials. Per-skill
+	// overrides live in Skills.Config[name].Secrets and take precedence
+	// (RMI-OMNIAGENT-201/202).
+	Secrets map[string]string `json:"secrets,omitempty" yaml:"secrets,omitempty"`
 }
 
 // MemoryConfig configures the omnimemory integration.
@@ -170,6 +176,17 @@ type SkillsConfig struct {
 	Excludes    []string `json:"excludes" yaml:"excludes"` // Skip these skills
 	Disabled    []string `json:"disabled" yaml:"disabled"` // Deprecated: use excludes
 	MaxInjected int      `json:"max_injected" yaml:"max_injected"`
+	// Config holds per-skill settings keyed by skill name, mirroring
+	// Tokens.Services' map-by-name shape (RMI-OMNIAGENT-202).
+	Config map[string]SkillConfig `json:"config,omitempty" yaml:"config,omitempty"`
+}
+
+// SkillConfig is one skill's config.yaml overrides.
+type SkillConfig struct {
+	// Secrets binds this skill's declared secret env-var names to plain
+	// values or vault URIs, resolved in place by ResolveCredentials.
+	// Takes precedence over the same key in the root Config.Secrets.
+	Secrets map[string]string `json:"secrets,omitempty" yaml:"secrets,omitempty"`
 }
 
 // VoiceConfig configures voice processing.

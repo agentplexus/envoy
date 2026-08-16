@@ -12,7 +12,12 @@ import (
 )
 
 // vaultSchemes are the URI schemes that indicate a vault-backed credential.
-var vaultSchemes = []string{"op", "bw", "keeper", "file", "env"}
+// keeper is deliberately not listed: no Keeper Secrets Manager provider is
+// registered anywhere in this module's dependency tree, so a keeper:// value
+// gets the same clear "unknown vault URI scheme" error as any other
+// unrecognized scheme instead of an opaque failure deep inside omnivault
+// (RMI-OMNIAGENT-201).
+var vaultSchemes = []string{"op", "bw", "file", "env"}
 
 // credentialResolver caches vault providers by scheme for credential resolution.
 type credentialResolver struct {
@@ -109,8 +114,10 @@ func getPath(uri string) string {
 }
 
 // ResolveCredentials resolves all vault-backed credentials in the config.
-// Values starting with op://, bw://, keeper://, file://, or env:// are
-// resolved using omnivault. Plain string values are left unchanged.
+// Values starting with op://, bw://, file://, or env:// are resolved using
+// omnivault. Plain string values are left unchanged. This also resolves the
+// global Secrets map and each skill's Skills.Config[name].Secrets map
+// in place (RMI-OMNIAGENT-201/202), reusing the same resolution machinery.
 func (c *Config) ResolveCredentials(ctx context.Context) error {
 	resolver := newCredentialResolver()
 	defer resolver.close()
@@ -151,6 +158,38 @@ func (c *Config) ResolveCredentials(ctx context.Context) error {
 		*f.value = resolved
 	}
 
+	if err := resolveSecretMap(ctx, resolver, "secrets", c.Secrets); err != nil {
+		return err
+	}
+	for name, sc := range c.Skills.Config {
+		if err := resolveSecretMap(ctx, resolver, "skills.config."+name+".secrets", sc.Secrets); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// resolveSecretMap resolves each value in m in place. path names the config
+// location for actionable error messages (e.g. "secrets" or
+// "skills.config.github.secrets").
+func resolveSecretMap(ctx context.Context, resolver *credentialResolver, path string, m map[string]string) error {
+	for key, val := range m {
+		if val == "" {
+			continue
+		}
+		if isUnknownVaultURI(val) {
+			return fmt.Errorf("resolve %s.%s: unknown vault URI scheme in %q", path, key, val)
+		}
+		if !isVaultURI(val) {
+			continue
+		}
+		resolved, err := resolveCredential(ctx, resolver, val)
+		if err != nil {
+			return fmt.Errorf("resolve %s.%s: %w", path, key, err)
+		}
+		m[key] = resolved
+	}
 	return nil
 }
 

@@ -15,7 +15,7 @@ import (
 // access token refresh (Google, Zoom, RingCentral, etc.).
 type TokenConfig struct {
 	// VaultURI is the vault URI for storing credentials and tokens.
-	// Examples: "op://MyVault", "bw://org-id", "keeper://"
+	// Examples: "op://MyVault", "bw://org-id"
 	VaultURI string `json:"vault_uri" yaml:"vault_uri"`
 
 	// Services maps service names to their credential configuration.

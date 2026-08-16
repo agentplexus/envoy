@@ -151,6 +151,24 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		rolloverOpt = agent.WithSessionRollover(policy)
 	}
 
+	// Single-operator secret bindings (RMI-OMNIAGENT-201/202): global
+	// cfg.Secrets as the base, with each skill's cfg.Skills.Config[name].Secrets
+	// overlaid on top (per-skill wins on key collision). Already resolved to
+	// plain values by cfg.ResolveCredentials during config.Load. Personal mode
+	// has one flat secret env per agent instance (unlike team mode's
+	// per-agent isolation), so two skills declaring different values for the
+	// same env-var name is an inherent limit here, not something this
+	// resolves — last-merged wins.
+	secretEnv := make(map[string]string, len(cfg.Secrets))
+	for k, v := range cfg.Secrets {
+		secretEnv[k] = v
+	}
+	for _, sc := range cfg.Skills.Config {
+		for k, v := range sc.Secrets {
+			secretEnv[k] = v
+		}
+	}
+
 	// Create agent factory for registry
 	agentFactory := func(regCfg *registry.AgentConfig) (*agent.Agent, error) {
 		agentConfig := agent.Config{
@@ -172,6 +190,9 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		agentOpts := getAgentOptions()
 		if rolloverOpt != nil {
 			agentOpts = append(agentOpts, rolloverOpt)
+		}
+		if len(secretEnv) > 0 {
+			agentOpts = append(agentOpts, agent.WithSecretEnv(secretEnv))
 		}
 
 		ag, err := agent.New(agentConfig, agentOpts...)

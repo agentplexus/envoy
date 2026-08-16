@@ -14,7 +14,7 @@ import (
 
 // Load reads configuration from a file and environment variables.
 // Environment variables override file values.
-// Vault-backed credentials (op://, bw://, keeper://) are resolved automatically.
+// Vault-backed credentials (op://, bw://, file://, env://) are resolved automatically.
 func Load(path string) (*Config, error) {
 	return LoadWithContext(context.Background(), path)
 }
