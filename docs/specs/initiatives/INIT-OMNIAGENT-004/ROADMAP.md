@@ -31,11 +31,18 @@ UI) has shipped; the single-operator config-binding path is a follow-on.
 >    no consumer in omniagent; the sole live SKILL.md parser is `skills/skill.go`.
 >
 > **Shipped:** RMI-200 (declaration), RMI-207 + RMI-211 (agent secret service +
-> HTTP API), RMI-212 (UI), and the redaction guarantee of RMI-204 (values never
-> reach logs/prompt — injection targets skill env/auth only). **Follow-on
+> HTTP API), RMI-212 (UI), RMI-209 (agent-scoped injection for both compiled
+> and OpenAPI skills), RMI-203 (`Agent.filterSecretGated` wired into both
+> `initSkillManager` and `LoadSkills` — a markdown skill with an unmet
+> required secret is excluded with a logged reason instead of silently
+> loading), and the redaction guarantee of RMI-204 (values never reach
+> logs/prompt — injection targets skill env/auth only). **Follow-on
 > (still open):** RMI-201/202 (reusable resolver + single-operator config
-> bindings, `keeper://` wiring), the OpenAPI-skill injection half of RMI-209,
-> and RMI-203/210's config-binding gating. **Cancelled:** RMI-205, RMI-206.
+> bindings, `keeper://` wiring), the rest of RMI-204 (no dedicated
+> cross-type redaction test suite covering MCP/compiled/OpenAPI together —
+> RMI-203's tests cover markdown-skill gating only), RMI-210 (MCP global-only
+> guardrail — not started), and RMI-213 (docs shipped; the admin global-bindings view
+> itself does not exist). **Cancelled:** RMI-205, RMI-206.
 
 ## Phase 1 — Declaration, Binding & Injection
 
@@ -49,9 +56,16 @@ UI) has shipped; the single-operator config-binding path is a follow-on.
 - [ ] `RMI-OMNIAGENT-202` Global + per-skill secret bindings in config
   - Depends on: `RMI-OMNIAGENT-201`
   - Acceptance: `secrets:` and `skills.config.<name>.secrets` resolve at load; validation errors are actionable
-- [ ] `RMI-OMNIAGENT-203` Per-skill-type injection + required-secret gating
-  - Depends on: `RMI-OMNIAGENT-200`, `RMI-OMNIAGENT-202`
-  - Acceptance: MCP `Env`, compiled `SecretsAware`, OpenAPI `Auth` receive only declared secrets; unbound required secret disables the skill with a clear message
+- [x] `RMI-OMNIAGENT-203` Per-skill-type injection + required-secret gating
+  - Shipped without the RMI-202 dependency: compiled `SecretsAware` and OpenAPI
+    `Auth` already receive only declared secrets (RMI-209's `SetSecrets`/
+    `Auth.{APIKeyEnv,TokenEnv,PasswordEnv}` mapping). Required-secret gating
+    applies to markdown SKILL.md skills via `Agent.filterSecretGated`
+    (`agent/agent.go`, called from both `initSkillManager` and `LoadSkills`) —
+    an unmet required secret drops the skill with a logged reason instead of
+    a later opaque provider failure. Compiled/MCP/OpenAPI skills registered
+    via `agent.Option` have no `Requires()`/declared-secrets concept, so
+    there's nothing to gate on that path yet.
 - [ ] `RMI-OMNIAGENT-204` Redaction + cross-type tests
   - Depends on: `RMI-OMNIAGENT-203`
   - Acceptance: resolved values are masked in logs and never enter prompt/transcript; tests cover MCP/compiled/OpenAPI with a fake vault
@@ -75,9 +89,11 @@ UI) has shipped; the single-operator config-binding path is a follow-on.
 - [ ] `RMI-OMNIAGENT-208` Acting-user secret context + precedence
   - Depends on: `RMI-OMNIAGENT-207`
   - Acceptance: `secrets.FromContext` returns the acting user's set; precedence per-user ▸ per-skill global ▸ global
-- [ ] `RMI-OMNIAGENT-209` Per-user injection for compiled + OpenAPI skills
-  - Depends on: `RMI-OMNIAGENT-208`, `RMI-OMNIAGENT-003` chats (`RMI-OMNIAGENT-113`)
-  - Acceptance: same skill instance uses A's secret in A's chat and B's in B's; no cross-user leakage
+- [x] `RMI-OMNIAGENT-209` Agent-scoped injection for compiled + OpenAPI skills
+  - Shipped as agent-scoped (not per-user — see rescope note): `agent.WithSecretEnv` +
+    `compiled.SecretsAware` for compiled skills, `openapi.Config.Auth.{APIKeyEnv,TokenEnv,PasswordEnv}`
+    + `Skill.SetSecrets` for OpenAPI skills. One resolved secret set per agent instance,
+    isolated by the per-agent OmniVault namespace — not per-acting-user.
 - [ ] `RMI-OMNIAGENT-210` MCP global-only guardrail + unset-secret prompt
   - Depends on: `RMI-OMNIAGENT-208`
   - Acceptance: per-user MCP declarations warn and fall back to global; a member is told which secret to add when a required one is unset

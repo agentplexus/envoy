@@ -164,11 +164,34 @@ func New(config Config, opts ...Option) (*Agent, error) {
 	return a, nil
 }
 
+// filterSecretGated drops skills whose declared required secrets aren't
+// present in a.secretEnv, logging which ones are missing so the skip is
+// explained rather than silent (RMI-OMNIAGENT-203). Bin/env availability
+// (skill.IsAvailable() / CheckRequirements()) is already applied by the
+// caller before this runs.
+func (a *Agent) filterSecretGated(list []*skills.Skill) []*skills.Skill {
+	filtered := make([]*skills.Skill, 0, len(list))
+	for _, skill := range list {
+		unmet := skill.UnmetRequiredSecrets(a.secretEnv)
+		if len(unmet) == 0 {
+			filtered = append(filtered, skill)
+			continue
+		}
+		names := make([]string, len(unmet))
+		for i, e := range unmet {
+			names[i] = e.Name
+		}
+		a.logger.Warn("skill unavailable: missing required secret(s)",
+			"name", skill.Name, "missing", names)
+	}
+	return filtered
+}
+
 // initSkillManager initializes the skill manager from configured options.
 func (a *Agent) initSkillManager() error {
 	// Skip if a custom manager was provided
 	if a.skillManager != nil {
-		a.skills = a.skillManager.Available()
+		a.skills = a.filterSecretGated(a.skillManager.Available())
 		a.logger.Info("using custom skill manager",
 			"total", a.skillManager.Count(),
 			"available", len(a.skills))
@@ -193,7 +216,7 @@ func (a *Agent) initSkillManager() error {
 		return err
 	}
 
-	a.skills = a.skillManager.Available()
+	a.skills = a.filterSecretGated(a.skillManager.Available())
 	a.logger.Info("skills loaded from manager",
 		"total", a.skillManager.Count(),
 		"available", len(a.skills))
@@ -1030,6 +1053,7 @@ func (a *Agent) LoadSkills(dirs []string) error {
 		}
 	}
 
+	available = a.filterSecretGated(available)
 	a.skills = available
 	a.logger.Info("skills loaded", "total", len(discovered), "available", len(available))
 	return nil

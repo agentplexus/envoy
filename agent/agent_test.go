@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +22,7 @@ import (
 	"github.com/plexusone/omniagent/hooks"
 	"github.com/plexusone/omniagent/memscope"
 	"github.com/plexusone/omniagent/sessions"
+	"github.com/plexusone/omniagent/skills"
 )
 
 // newMemoryBackend returns an in-memory KVS backend closed at test cleanup.
@@ -957,5 +960,100 @@ func TestToolRegistry_Describe_MCPIdentity(t *testing.T) {
 	}
 	if d.SourceTool != "search_issues" {
 		t.Errorf("SourceTool = %q, want search_issues", d.SourceTool)
+	}
+}
+
+// secretGatedSkill returns a skill declaring one required and one optional
+// secret, for filterSecretGated tests (RMI-OMNIAGENT-203).
+func secretGatedSkill(name string) *skills.Skill {
+	return &skills.Skill{
+		Name: name,
+		Metadata: skills.SkillMeta{OpenClaw: &skills.OpenClawMeta{Requires: &skills.Requires{
+			Secrets: []skills.SecretRequirement{
+				{Name: "GITHUB_TOKEN", Required: true},
+				{Name: "GH_ENTERPRISE_URL", Required: false},
+			},
+		}}},
+	}
+}
+
+func TestFilterSecretGated_DropsUnmetRequired(t *testing.T) {
+	a := &Agent{logger: slog.Default()}
+	got := a.filterSecretGated([]*skills.Skill{secretGatedSkill("github")})
+	if len(got) != 0 {
+		t.Errorf("filterSecretGated() = %d skills, want 0 (required secret unmet)", len(got))
+	}
+}
+
+func TestFilterSecretGated_KeepsWhenRequiredSecretPresent(t *testing.T) {
+	a := &Agent{logger: slog.Default(), secretEnv: map[string]string{"GITHUB_TOKEN": "x"}}
+	got := a.filterSecretGated([]*skills.Skill{secretGatedSkill("github")})
+	if len(got) != 1 || got[0].Name != "github" {
+		t.Errorf("filterSecretGated() = %v, want [github]", got)
+	}
+}
+
+func TestFilterSecretGated_OptionalUnmetNeverGates(t *testing.T) {
+	skill := &skills.Skill{
+		Name: "optional-only",
+		Metadata: skills.SkillMeta{OpenClaw: &skills.OpenClawMeta{Requires: &skills.Requires{
+			Secrets: []skills.SecretRequirement{{Name: "GH_ENTERPRISE_URL", Required: false}},
+		}}},
+	}
+	a := &Agent{logger: slog.Default()}
+	got := a.filterSecretGated([]*skills.Skill{skill})
+	if len(got) != 1 {
+		t.Errorf("filterSecretGated() = %d skills, want 1 (optional secret must not gate)", len(got))
+	}
+}
+
+func TestFilterSecretGated_NoDeclarationsKept(t *testing.T) {
+	a := &Agent{logger: slog.Default()}
+	got := a.filterSecretGated([]*skills.Skill{{Name: "bare"}})
+	if len(got) != 1 {
+		t.Errorf("filterSecretGated() = %d skills, want 1 (no declared secrets)", len(got))
+	}
+}
+
+// TestLoadSkills_GatesOnMissingRequiredSecret exercises the real personal-mode
+// entry point end to end: a skill declaring a required secret is excluded
+// from LoadSkills' result until that secret is present in a.secretEnv
+// (RMI-OMNIAGENT-203).
+func TestLoadSkills_GatesOnMissingRequiredSecret(t *testing.T) {
+	dir := t.TempDir()
+	skillMD := `---
+name: github
+description: "GitHub operations via the gh CLI."
+metadata:
+  {
+    "openclaw":
+      {
+        "requires": { "secrets": [{ "name": "GITHUB_TOKEN", "required": true }] },
+      },
+  }
+---
+`
+	skillDir := filepath.Join(dir, "github")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(skillMD), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	a := &Agent{logger: slog.Default()}
+	if err := a.LoadSkills([]string{dir}); err != nil {
+		t.Fatalf("LoadSkills: %v", err)
+	}
+	if got := a.GetSkills(); len(got) != 0 {
+		t.Errorf("GetSkills() = %d skills, want 0 (GITHUB_TOKEN unset)", len(got))
+	}
+
+	a.secretEnv = map[string]string{"GITHUB_TOKEN": "x"}
+	if err := a.LoadSkills([]string{dir}); err != nil {
+		t.Fatalf("LoadSkills: %v", err)
+	}
+	if got := a.GetSkills(); len(got) != 1 || got[0].Name != "github" {
+		t.Errorf("GetSkills() = %v, want [github] (GITHUB_TOKEN set)", got)
 	}
 }
