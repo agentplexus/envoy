@@ -171,7 +171,7 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 		// yields a nil source — no secrets injected, unchanged behavior.
 		var secretSrc agentruntime.SecretSource
 		if secretSvc != nil {
-			secretSrc = agentSecretSource{svc: secretSvc}
+			secretSrc = agentSecretSource{svc: secretSvc, globalSecrets: cfg.Secrets, skillConfig: cfg.Skills.Config}
 		}
 
 		builder := agentruntime.NewAgentBuilder(agentruntime.BuilderConfig{
@@ -276,15 +276,44 @@ func (l agentConfigLoader) LoadConfig(ctx context.Context, agentID uuid.UUID) (a
 }
 
 // agentSecretSource adapts *secrets.Service to agentruntime.SecretSource,
-// resolving an agent's agent-scoped secrets into the env map its instance
-// injects. The adapter lives at the composition root so neither package depends
-// on the other.
+// resolving an agent's env with the RMI-OMNIAGENT-208 precedence: per-agent
+// secret > per-skill global binding > global binding. The adapter lives at
+// the composition root so agentruntime stays independent of both the secret
+// store and the config package.
 type agentSecretSource struct {
-	svc *secrets.Service
+	svc           *secrets.Service
+	globalSecrets map[string]string
+	skillConfig   map[string]config.SkillConfig
 }
 
-func (s agentSecretSource) ResolveSecrets(ctx context.Context, agentID uuid.UUID) (map[string]string, error) {
-	return s.svc.ResolveAgentSecrets(ctx, agentID)
+func (s agentSecretSource) ResolveSecrets(ctx context.Context, agentID uuid.UUID, skillNames []string) (map[string]string, error) {
+	agentEnv, err := s.svc.ResolveAgentSecrets(ctx, agentID)
+	if err != nil {
+		return nil, err
+	}
+	return mergeSecretEnv(s.globalSecrets, s.skillConfig, skillNames, agentEnv), nil
+}
+
+// mergeSecretEnv layers three secret sources into one env map, later layers
+// winning on key collision (RMI-OMNIAGENT-208): global bindings (lowest),
+// then per-skill bindings scoped to exactly this agent's enabled skills
+// (never the full deployment's skill set — that would leak a binding into
+// an agent that doesn't have the skill enabled), then the agent's own
+// per-agent secret (highest).
+func mergeSecretEnv(global map[string]string, skillConfig map[string]config.SkillConfig, skillNames []string, agentEnv map[string]string) map[string]string {
+	env := make(map[string]string, len(global)+len(agentEnv))
+	for k, v := range global {
+		env[k] = v
+	}
+	for _, name := range skillNames {
+		for k, v := range skillConfig[name].Secrets {
+			env[k] = v
+		}
+	}
+	for k, v := range agentEnv {
+		env[k] = v
+	}
+	return env
 }
 
 // buildSecretService constructs the team secret service from config, returning

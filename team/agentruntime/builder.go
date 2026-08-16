@@ -17,8 +17,13 @@ import (
 // builder independent of the secret store and unit-testable with a fake. A nil
 // SecretSource means no secrets are injected (prior behavior). Resolution runs
 // in system context — the runtime is a system principal, not a user.
+//
+// skillNames is the agent's own enabled-skill list (AgentConfig.Skills) — an
+// implementation that layers in skill-scoped fallback bindings (RMI-OMNIAGENT-208)
+// must restrict them to these names, never the deployment's full skill set, or
+// it leaks a binding into an agent that doesn't have that skill enabled.
 type SecretSource interface {
-	ResolveSecrets(ctx context.Context, agentID uuid.UUID) (map[string]string, error)
+	ResolveSecrets(ctx context.Context, agentID uuid.UUID, skillNames []string) (map[string]string, error)
 }
 
 // BuilderConfig configures the production AgentBuilder.
@@ -99,7 +104,7 @@ func (b *AgentBuilder) Build(ctx context.Context, cfg AgentConfig) (chats.AgentP
 	// receives only its own agent's secrets, two agents' skills (and MCP
 	// subprocess environments) are disjoint (RMI-OMNIAGENT-310).
 	if b.cfg.Secrets != nil {
-		env, err := b.cfg.Secrets.ResolveSecrets(ctx, cfg.ID)
+		env, err := b.cfg.Secrets.ResolveSecrets(ctx, cfg.ID, cfg.Skills)
 		if err != nil {
 			return nil, fmt.Errorf("resolve secrets for agent %q: %w", cfg.Slug, err)
 		}
