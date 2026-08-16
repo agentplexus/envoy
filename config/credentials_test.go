@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -15,6 +16,7 @@ func TestIsUnknownVaultURI(t *testing.T) {
 		{"Invalid scheme", "invalid://path", true},
 		{"HTTP URL", "https://example.com", true},
 		{"FTP URL", "ftp://server/path", true},
+		{"Keeper URI (no provider registered)", "keeper://record/field", true},
 		{"1Password URI", "op://MyVault/item", false},
 		{"Bitwarden URI", "bw://org-id/secret", false},
 		{"Env URI", "env://VAR_NAME", false},
@@ -45,7 +47,7 @@ func TestIsVaultURI(t *testing.T) {
 	}{
 		{"1Password URI", "op://MyVault/item/field", true},
 		{"Bitwarden URI", "bw://org-id/secret", true},
-		{"Keeper URI", "keeper://record/field", true},
+		{"Keeper URI (no provider registered)", "keeper://record/field", false},
 		{"File URI", "file:///path/to/secret", true},
 		{"Env URI", "env://VAR_NAME", true},
 		{"Plain string", "sk-ant-api03-xxx", false},
@@ -344,6 +346,86 @@ func TestCredentialResolver_CachesVaults(t *testing.T) {
 	// Should be the same instance (pointer equality)
 	if v1 != v2 {
 		t.Error("getVault should return cached vault instance")
+	}
+}
+
+//nolint:gosec // G101: Test fixtures with fake credentials and vault URIs
+func TestResolveCredentials_GlobalSecrets(t *testing.T) {
+	os.Setenv("TEST_GLOBAL_SECRET", "resolved-github-token")
+	defer os.Unsetenv("TEST_GLOBAL_SECRET")
+
+	cfg := &Config{
+		Secrets: map[string]string{
+			"GITHUB_TOKEN": "env://TEST_GLOBAL_SECRET",
+			"PLAIN_VALUE":  "already-a-value",
+		},
+	}
+
+	if err := cfg.ResolveCredentials(context.Background()); err != nil {
+		t.Fatalf("ResolveCredentials() error = %v", err)
+	}
+	if got := cfg.Secrets["GITHUB_TOKEN"]; got != "resolved-github-token" {
+		t.Errorf("Secrets[GITHUB_TOKEN] = %q, want %q", got, "resolved-github-token")
+	}
+	if got := cfg.Secrets["PLAIN_VALUE"]; got != "already-a-value" {
+		t.Errorf("Secrets[PLAIN_VALUE] = %q, want unchanged", got)
+	}
+}
+
+//nolint:gosec // G101: Test fixtures with fake credentials and vault URIs
+func TestResolveCredentials_SkillSecrets(t *testing.T) {
+	os.Setenv("TEST_SKILL_SECRET", "resolved-skill-token")
+	defer os.Unsetenv("TEST_SKILL_SECRET")
+
+	cfg := &Config{
+		Skills: SkillsConfig{
+			Config: map[string]SkillConfig{
+				"github": {Secrets: map[string]string{
+					"GITHUB_TOKEN": "env://TEST_SKILL_SECRET",
+				}},
+			},
+		},
+	}
+
+	if err := cfg.ResolveCredentials(context.Background()); err != nil {
+		t.Fatalf("ResolveCredentials() error = %v", err)
+	}
+	if got := cfg.Skills.Config["github"].Secrets["GITHUB_TOKEN"]; got != "resolved-skill-token" {
+		t.Errorf("Skills.Config[github].Secrets[GITHUB_TOKEN] = %q, want %q", got, "resolved-skill-token")
+	}
+}
+
+//nolint:gosec // G101: Test fixture with intentionally unsupported vault scheme
+func TestResolveCredentials_SecretsUnknownScheme(t *testing.T) {
+	cfg := &Config{
+		Secrets: map[string]string{"GITHUB_TOKEN": "keeper://record/field"},
+	}
+	err := cfg.ResolveCredentials(context.Background())
+	if err == nil {
+		t.Fatal("ResolveCredentials() should return error for keeper:// (no provider registered)")
+	}
+	if !strings.Contains(err.Error(), "secrets.GITHUB_TOKEN") {
+		t.Errorf("error = %v, want it to name secrets.GITHUB_TOKEN", err)
+	}
+}
+
+//nolint:gosec // G101: Test fixture with intentionally missing env var
+func TestResolveCredentials_SkillSecretsErrorPath(t *testing.T) {
+	cfg := &Config{
+		Skills: SkillsConfig{
+			Config: map[string]SkillConfig{
+				"github": {Secrets: map[string]string{
+					"GITHUB_TOKEN": "env://NONEXISTENT_SKILL_SECRET_VAR_12345",
+				}},
+			},
+		},
+	}
+	err := cfg.ResolveCredentials(context.Background())
+	if err == nil {
+		t.Fatal("ResolveCredentials() should return error for missing env var")
+	}
+	if !strings.Contains(err.Error(), "skills.config.github.secrets.GITHUB_TOKEN") {
+		t.Errorf("error = %v, want it to name skills.config.github.secrets.GITHUB_TOKEN", err)
 	}
 }
 
