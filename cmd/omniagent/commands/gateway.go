@@ -24,6 +24,7 @@ import (
 	"github.com/plexusone/omnichat/providers/telegram"
 	"github.com/plexusone/omnichat/providers/twilio"
 	"github.com/plexusone/omnichat/providers/whatsapp"
+	chatllm "github.com/plexusone/omnillm"
 	"github.com/plexusone/omniobserve/integrations/omnillm"
 	"github.com/plexusone/omniobserve/llmops"
 	_ "github.com/plexusone/omniobserve/llmops/slog" // Register slog provider
@@ -450,6 +451,30 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("create gateway: %w", err)
 	}
 
+	// Translate API: a one-shot, non-persisting LLM completion the composer
+	// uses to translate its text before sending (config/capabilities.go's
+	// Translate flag mirrors this same cfg.Agent.APIKey gate so the SPA hides
+	// the button when it would 404). Built directly from the deployment-wide
+	// LLM config, bypassing agent.Agent/tools/sessions entirely — the same
+	// standalone omnillm.ChatClient pattern voice/gateway.go uses.
+	var translateHTTP *gateway.TranslateHTTP
+	if cfg.Agent.APIKey != "" {
+		llm, err := chatllm.NewClient(chatllm.ClientConfig{
+			Providers: []chatllm.ProviderConfig{
+				{
+					Provider: chatllm.ProviderName(cfg.Agent.Provider),
+					APIKey:   cfg.Agent.APIKey,
+					BaseURL:  cfg.Agent.BaseURL,
+				},
+			},
+		})
+		if err != nil {
+			logger.Warn("translate API disabled: failed to create LLM client", "error", err)
+		} else {
+			translateHTTP = gateway.NewTranslateHTTP(llm, cfg.Agent.Model)
+		}
+	}
+
 	// Team mode: mount the auth/admin API and gate WebSocket upgrades on
 	// the session cookie.
 	if teamHTTP != nil {
@@ -485,6 +510,13 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		gw.Handle("/api/agents/", agentsAPI)
 		gw.Handle("/api/catalog", agentsAPI)
 		logger.Info("agents management + catalog API mounted at /api/agents and /api/catalog")
+	}
+
+	// Translate API (team mode): exact pattern wins over team mode's "/api/"
+	// subtree, wrapped in RequireAuth like the other team routes above.
+	if translateHTTP != nil && teamHTTP != nil {
+		gw.Handle("/api/translate", teamHTTP.RequireAuth(translateHTTP.Handler()))
+		logger.Info("translate API mounted at /api/translate (team mode)")
 	}
 
 	// Web UI: capabilities is an exact pattern so it keeps resolving even
@@ -527,6 +559,17 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		gw.Handle("/api/chat/history", historyHandler)
 		gw.Handle("/api/chat/messages", sendHandler)
 		logger.Info("personal chat API mounted at /api/chat (live replies over WebSocket)")
+	}
+
+	// Translate API (personal mode): same conditional auth wrap as the
+	// personal chat routes above.
+	if translateHTTP != nil && personalChatHTTP != nil {
+		th := translateHTTP.Handler()
+		if personalAuthHTTP != nil {
+			th = personalAuthHTTP.RequireAuth(th)
+		}
+		gw.Handle("/api/translate", th)
+		logger.Info("translate API mounted at /api/translate (personal mode)")
 	}
 
 	// Start gateway

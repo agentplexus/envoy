@@ -22,6 +22,11 @@ type Capabilities struct {
 	// both a client ID and secret configured.
 	GoogleSSO bool `json:"googleSso"`
 	GitHubSSO bool `json:"githubSso"`
+	// Translate is true when a deployment-wide LLM (cfg.Agent.APIKey) is
+	// configured, so the composer's translate button has something to call
+	// (POST /api/translate) — false hides it rather than showing a dead
+	// button.
+	Translate bool `json:"translate"`
 }
 
 // Capabilities derives the active capability set from the team and auth
@@ -37,5 +42,6 @@ func (c *Config) Capabilities() Capabilities {
 		Catalog:      multiUser,
 		GoogleSSO:    multiUser && c.Team.SSO.Google.configured(),
 		GitHubSSO:    multiUser && c.Team.SSO.GitHub.configured(),
+		Translate:    c.Agent.APIKey != "",
 	}
 }
