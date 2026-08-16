@@ -8,6 +8,7 @@ func TestConfig_Capabilities(t *testing.T) {
 		team         bool
 		auth         bool
 		sso          TeamSSOConfig
+		apiKey       string
 		wantMultiSet bool
 		want         Capabilities
 	}{
@@ -74,13 +75,19 @@ func TestConfig_Capabilities(t *testing.T) {
 			sso:  TeamSSOConfig{Google: TeamOAuthProviderConfig{ClientID: "id", ClientSecret: "secret"}},
 			want: Capabilities{},
 		},
+		{
+			name:   "personal mode with agent API key enables translate",
+			apiKey: "sk-test",
+			want:   Capabilities{Translate: true},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Team: TeamConfig{Enabled: tt.team, SSO: tt.sso},
-				Auth: AuthConfig{Enabled: tt.auth},
+				Team:  TeamConfig{Enabled: tt.team, SSO: tt.sso},
+				Auth:  AuthConfig{Enabled: tt.auth},
+				Agent: AgentConfig{APIKey: tt.apiKey},
 			}
 			got := cfg.Capabilities()
 			if got != tt.want {
