@@ -29,13 +29,24 @@ func (f *fakeSecretSkill) SetSecrets(env map[string]string) { f.secrets = env }
 
 var _ compiled.SecretsAware = (*fakeSecretSkill)(nil)
 
-// fakeSecretSource returns per-agent secrets by ID.
+// fakeSecretSource returns per-agent secrets by ID. calls records the
+// skillNames each ResolveSecrets call was made with, so tests can assert
+// the builder passes the agent's enabled-skill list through.
 type fakeSecretSource struct {
-	byID map[uuid.UUID]map[string]string
-	err  error
+	byID  map[uuid.UUID]map[string]string
+	err   error
+	calls *[]calledWith
 }
 
-func (f fakeSecretSource) ResolveSecrets(_ context.Context, id uuid.UUID) (map[string]string, error) {
+type calledWith struct {
+	agentID    uuid.UUID
+	skillNames []string
+}
+
+func (f fakeSecretSource) ResolveSecrets(_ context.Context, id uuid.UUID, skillNames []string) (map[string]string, error) {
+	if f.calls != nil {
+		*f.calls = append(*f.calls, calledWith{agentID: id, skillNames: skillNames})
+	}
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -150,6 +161,40 @@ func TestAgentBuilder_NoSecretSource(t *testing.T) {
 	}
 	if len(created) != 1 || created[0].secrets != nil {
 		t.Errorf("expected no secrets injected, got %v", created[0].secrets)
+	}
+}
+
+// TestAgentBuilder_PassesSkillNamesToSecretSource confirms Build() forwards
+// the agent's own enabled-skill list to ResolveSecrets (RMI-OMNIAGENT-208) —
+// the seam a skill-scoped fallback source needs to avoid leaking a per-skill
+// binding into an agent that doesn't have that skill enabled.
+func TestAgentBuilder_PassesSkillNamesToSecretSource(t *testing.T) {
+	var calls []calledWith
+	src := fakeSecretSource{calls: &calls}
+
+	b := NewAgentBuilder(BuilderConfig{
+		Defaults: agent.Config{Provider: "openai", Model: "gpt-4o-mini", APIKey: "test-key"},
+		Secrets:  src,
+	})
+
+	agentID := uuid.New()
+	proc, err := b.Build(context.Background(), AgentConfig{ID: agentID, Slug: "a", Skills: []string{"github", "web"}})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	if c, ok := proc.(io.Closer); ok {
+		defer c.Close() //nolint:errcheck // test teardown
+	}
+
+	if len(calls) != 1 {
+		t.Fatalf("ResolveSecrets called %d times, want 1", len(calls))
+	}
+	if calls[0].agentID != agentID {
+		t.Errorf("ResolveSecrets agentID = %v, want %v", calls[0].agentID, agentID)
+	}
+	got := calls[0].skillNames
+	if len(got) != 2 || got[0] != "github" || got[1] != "web" {
+		t.Errorf("ResolveSecrets skillNames = %v, want [github web]", got)
 	}
 }
 
