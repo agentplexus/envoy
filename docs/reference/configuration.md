@@ -174,6 +174,42 @@ skills:
   max_injected: 20
 ```
 
+### Secrets
+
+A skill declares the secrets it needs in its `SKILL.md` frontmatter
+(`requires.secrets`); the values come from two places in `omniagent.yaml`,
+resolved the same way as every other credential field (plain values, or
+`op://`/`bw://`/`file://`/`env://` vault URIs — see
+[Vault-Backed Credentials](#vault-backed-credentials)):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `secrets` | map[string]string | Global bindings, keyed by env-var name, available to every skill |
+| `skills.config.<name>.secrets` | map[string]string | Per-skill bindings for skill `<name>`; take precedence over `secrets` for the same key |
+
+A skill with a required secret that resolves to nothing here is excluded
+from the loaded skill set (with a logged reason) rather than loading and
+failing later at call time. This is the single-operator/personal-mode
+path — team mode's per-agent secrets are managed in the web UI instead
+(see the [Team Mode guide](../guides/team-mode.md)).
+
+```yaml
+secrets:
+  GITHUB_TOKEN: "op://Shared/github/token"
+
+skills:
+  enabled: true
+  config:
+    github:
+      secrets:
+        GITHUB_TOKEN: "env://GITHUB_TOKEN_OVERRIDE" # wins over the global binding above
+```
+
+Personal mode holds one flat secret map per agent instance — if two
+different skills bind the same env-var name to different values, only one
+wins (whichever was merged last). This doesn't come up in team mode, where
+secrets are already isolated per virtual agent.
+
 ## Team Mode
 
 Multi-user mode: user accounts, magic-link sign-in, chats, and virtual agents.
@@ -400,9 +436,12 @@ Credentials can be stored in password managers using URI schemes:
 |--------|----------|---------|
 | `op://` | 1Password | `op://MyVault/item/field` |
 | `bw://` | Bitwarden | `bw://org-id/item-name` |
-| `keeper://` | Keeper | `keeper://folder/record/field` |
 | `file://` | File | `file:///path/to/secret` |
 | `env://` | Environment | `env://VAR_NAME` |
+
+Keeper (`keeper://`) is not supported — no provider is registered for it,
+so it's rejected at startup with a clear "unknown vault URI scheme" error
+rather than failing confusingly later.
 
 ```yaml
 agent:
@@ -412,7 +451,7 @@ channels:
   telegram:
     token: "bw://org-id/telegram-bot-token"
   discord:
-    token: "keeper://Discord/bot-token"
+    token: "env://DISCORD_BOT_TOKEN"
 ```
 
 Credentials are resolved once at startup. Plain string values still work.

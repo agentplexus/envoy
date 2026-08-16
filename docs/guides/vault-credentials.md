@@ -25,10 +25,12 @@ Credentials are resolved once at startup. Plain string values still work for dev
 |----------|------------|-------------|
 | 1Password | `op://` | 1Password service accounts |
 | Bitwarden | `bw://` | Bitwarden Secrets Manager |
-| Keeper | `keeper://` | Keeper Secrets Manager |
 | File | `file://` | Read from local file |
 | Environment | `env://` | Read from environment variable |
 | Memory | `memory://` | In-memory storage (testing) |
+
+Keeper (`keeper://`) is not supported — no provider is registered for it,
+so it's rejected at startup with a clear "unknown vault URI scheme" error.
 
 ## OS Compatibility
 
@@ -39,7 +41,6 @@ Credentials are resolved once at startup. Plain string values still work for dev
 |----------|:-----:|:-----:|:-------:|-------|
 | 1Password (`op://`) | :material-check: | :material-check: | :material-close: | Requires 1Password SDK |
 | Bitwarden (`bw://`) | :material-check: | :material-check: | :material-close: | Requires Bitwarden SDK with CGO |
-| Keeper (`keeper://`) | :material-check: | :material-check: | :material-check: | Pure Go implementation |
 | File (`file://`) | :material-check: | :material-check: | :material-check: | Universal |
 | Environment (`env://`) | :material-check: | :material-check: | :material-check: | Universal |
 | Memory (`memory://`) | :material-check: | :material-check: | :material-check: | Universal |
@@ -51,8 +52,7 @@ The 1Password and Bitwarden providers use native SDKs with CGO dependencies that
 **Workarounds for Windows:**
 
 1. **Use `env://` or `file://`** - These work on all platforms
-2. **Use Keeper** - Pure Go implementation works everywhere
-3. **Install native SDKs** - For local development, install the 1Password or Bitwarden CLI tools
+2. **Install native SDKs** - For local development, install the 1Password or Bitwarden CLI tools
 
 ## Provider Setup
 
@@ -123,44 +123,6 @@ export BW_ORGANIZATION_ID="..."
 channels:
   telegram:
     token: "bw://telegram-bot-token"
-```
-
-### Keeper (`keeper://`)
-
-Keeper uses Secrets Manager for programmatic access.
-
-**URI Format:**
-```
-keeper://folder/record-title/field-name
-# or
-keeper://record-uid/field-name
-```
-
-**Environment Variables:**
-
-| Variable | Required | Description |
-|----------|:--------:|-------------|
-| `KSM_TOKEN` | One of these | One-time token (format: `REGION:TOKEN`) |
-| `KSM_CONFIG` | One of these | Base64-encoded config JSON |
-| `KSM_CONFIG_FILE` | One of these | Path to config file |
-
-**Setup:**
-
-1. Create a Secrets Manager application in Keeper
-2. Generate a one-time token or config file
-3. Set the credentials:
-
-```bash
-export KSM_TOKEN="US:abc123..."
-# or
-export KSM_CONFIG_FILE="/path/to/config.json"
-```
-
-**Example:**
-```yaml
-voice:
-  stt:
-    api_key: "keeper://API Keys/Deepgram/api-key"
 ```
 
 ### File (`file://`)
@@ -247,8 +209,7 @@ Check that:
 
 If you see `STATUS_DLL_NOT_FOUND` or similar errors on Windows:
 
-1. Use `env://` or `file://` instead of `op://` or `bw://`
-2. Or use Keeper (`keeper://`) which has a pure Go implementation
+1. Use `env://` or `file://` instead of `op://` or `bw://` — both work on every platform
 
 ### 1Password "unauthorized" errors
 

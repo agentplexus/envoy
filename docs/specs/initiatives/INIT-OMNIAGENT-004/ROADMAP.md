@@ -3,7 +3,7 @@
 **Initiative:** `INIT-OMNIAGENT-004`
 **Repository:** `github.com/plexusone/omniagent`
 **Status:** In progress — the agent-scoped management flow (declaration + API +
-UI) has shipped; the single-operator config-binding path is a follow-on.
+UI) has shipped; the single-operator config-binding path has also shipped.
 
 > RMI IDs are stable and permanent. Commits carry `Refs: RMI-OMNIAGENT-<NNN>`.
 > Phase status is derived from member RMIs. **Core (v1a)** = Phase 1;
@@ -35,14 +35,25 @@ UI) has shipped; the single-operator config-binding path is a follow-on.
 > and OpenAPI skills), RMI-203 (`Agent.filterSecretGated` wired into both
 > `initSkillManager` and `LoadSkills` — a markdown skill with an unmet
 > required secret is excluded with a logged reason instead of silently
-> loading), and the redaction guarantee of RMI-204 (values never reach
-> logs/prompt — injection targets skill env/auth only). **Follow-on
-> (still open):** RMI-201/202 (reusable resolver + single-operator config
-> bindings, `keeper://` wiring), the rest of RMI-204 (no dedicated
-> cross-type redaction test suite covering MCP/compiled/OpenAPI together —
-> RMI-203's tests cover markdown-skill gating only), RMI-210 (MCP global-only
-> guardrail — not started), and RMI-213 (docs shipped; the admin global-bindings view
-> itself does not exist). **Cancelled:** RMI-205, RMI-206.
+> loading), RMI-201/202 (root `Config.Secrets` + per-skill
+> `Skills.Config[name].Secrets` bindings, resolved by the same
+> `ResolveCredentials` machinery already used for the 8 top-level infra
+> credential fields, then merged and threaded into personal-mode's
+> `agentFactory` via `agent.WithSecretEnv` — closing the loop with RMI-203's
+> gating for personal mode, which previously never populated a secret env at
+> all; `keeper://` **removed** rather than wired, since no Keeper provider
+> exists anywhere in this module's dependency tree — it now gets the same
+> immediate "unknown vault URI scheme" error as any other unrecognized
+> scheme instead of an opaque failure deep inside omnivault; `aws-sm://` was
+> never actually implemented and is not added here — no known provider
+> package to add), and the redaction guarantee of RMI-204 (values never
+> reach logs/prompt — injection targets skill env/auth only). **Follow-on
+> (still open):** the rest of RMI-204 (no dedicated cross-type redaction
+> test suite covering MCP/compiled/OpenAPI together — RMI-203's tests cover
+> markdown-skill gating only), RMI-210 (MCP global-only guardrail — not
+> started), and RMI-213 (docs shipped; the admin global-bindings view itself
+> does not exist — now meaningful to build since RMI-202's `Config.Secrets`
+> gives it something to display). **Cancelled:** RMI-205, RMI-206.
 
 ## Phase 1 — Declaration, Binding & Injection
 
@@ -51,11 +62,31 @@ UI) has shipped; the single-operator config-binding path is a follow-on.
 
 - [x] `RMI-OMNIAGENT-200` Secret declaration in SKILL.md frontmatter
   - Acceptance: `requires.secrets` (name/description/required/env) parses in both SKILL.md loaders; a skill can only receive declared secrets
-- [ ] `RMI-OMNIAGENT-201` Reusable omnivault-backed SecretResolver
-  - Acceptance: one resolver serves config + skills; op/bw/file/env/aws-sm refs resolve, plain values pass through; `keeper://` wired or removed
-- [ ] `RMI-OMNIAGENT-202` Global + per-skill secret bindings in config
+- [x] `RMI-OMNIAGENT-201` Reusable omnivault-backed SecretResolver
+  - Shipped by extending the existing `config.ResolveCredentials` machinery
+    (`resolveCredential`/`isVaultURI`/`isUnknownVaultURI`, already
+    reusable/private) rather than adding a new exported resolver — one
+    resolver instance now resolves the original 8 top-level infra fields
+    plus `Config.Secrets` and every `Skills.Config[name].Secrets` map in the
+    same pass. `op://`/`bw://`/`file://`/`env://` resolve as before, plain
+    values pass through unchanged. `keeper://` **removed** from
+    `vaultSchemes` (no provider registered anywhere in the dependency
+    tree — was a silent runtime trap, not a working scheme). `aws-sm://`
+    not added — never implemented, no known provider package.
+- [x] `RMI-OMNIAGENT-202` Global + per-skill secret bindings in config
   - Depends on: `RMI-OMNIAGENT-201`
-  - Acceptance: `secrets:` and `skills.config.<name>.secrets` resolve at load; validation errors are actionable
+  - Shipped: root `Config.Secrets map[string]string` and
+    `SkillsConfig.Config map[string]SkillConfig{Secrets}` (mirroring
+    `TokenConfig.Services`'s map-by-name shape), resolved in place by
+    `ResolveCredentials`, then merged (global base, per-skill overlay) and
+    passed to `agent.WithSecretEnv` in `cmd/omniagent/commands/gateway.go`'s
+    `agentFactory` — personal mode's single wiring point, since both the
+    single-agent and multi-agent construction paths funnel through it.
+    Errors are wrapped with the config path (`secrets.<name>` or
+    `skills.config.<skill>.secrets.<name>`) for actionable messages. Known,
+    documented limit: personal mode has one flat secret env per agent
+    instance, so two skills binding the same env-var name to different
+    values isn't representable — last-merged wins.
 - [x] `RMI-OMNIAGENT-203` Per-skill-type injection + required-secret gating
   - Shipped without the RMI-202 dependency: compiled `SecretsAware` and OpenAPI
     `Auth` already receive only declared secrets (RMI-209's `SetSecrets`/

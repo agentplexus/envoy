@@ -48,7 +48,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 📊 **Observability** - Integrated tracing via omniobserve
 - 🎭 **Agent Profiles** - Bootstrap profiles and lean mode for resource optimization
 - 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
-- 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, Keeper
+- 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, file, or environment
 - 🔗 **OpenAI-Compatible API** - Drop-in replacement for OpenAI client libraries with SSE streaming
 - 🖼️ **Image Generation** - AI image generation via OpenAI (DALL-E) or Fal AI (FLUX)
 - 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
@@ -731,7 +731,6 @@ OmniAgent supports storing credentials in password managers via [omnivault](http
 |----------|------------|---------------------|
 | 1Password | `op://` | `OP_SERVICE_ACCOUNT_TOKEN` |
 | Bitwarden | `bw://` | `BW_ACCESS_TOKEN`, `BW_ORGANIZATION_ID` |
-| Keeper | `keeper://` | `KSM_TOKEN` or `KSM_CONFIG` |
 | File | `file://` | - |
 | Environment | `env://` | - |
 
@@ -753,7 +752,7 @@ channels:
 
   discord:
     enabled: true
-    token: "keeper://Discord Bot/token"      # Resolved from Keeper
+    token: "env://DISCORD_BOT_TOKEN"         # Resolved from environment
 
 voice:
   enabled: true
@@ -802,9 +801,6 @@ The token manager handles:
 | `BW_ORGANIZATION_ID` | Bitwarden | Organization ID |
 | `BW_API_URL` | Bitwarden | Custom API URL (self-hosted) |
 | `BW_IDENTITY_URL` | Bitwarden | Custom Identity URL (self-hosted) |
-| `KSM_TOKEN` | Keeper | One-time token (format: `REGION:TOKEN`) |
-| `KSM_CONFIG` | Keeper | Base64-encoded config JSON |
-| `KSM_CONFIG_FILE` | Keeper | Path to config file |
 
 ## CLI Commands
 
