@@ -10,6 +10,125 @@
   ],
   "releases": [
     {
+      "version": "v0.18.0",
+      "date": "2026-08-16",
+      "highlights": [
+        {
+          "description": "Full skill-secrets lifecycle: SKILL.md declaration, global/per-skill config bindings, per-skill-type injection (MCP, OpenAPI, compiled), required-secret gating, and log/output redaction"
+        },
+        {
+          "description": "Team-mode agent secrets now fall back through the config bindings (per-agent > per-skill global > global), with a read-only admin view of the global bindings"
+        },
+        {
+          "description": "Email+password authentication for team mode (argon2id), alongside magic-link and Google/GitHub SSO"
+        },
+        {
+          "description": "Team-mode SPA redesign: persistent left nav matching claude.ai/ChatGPT/GitHub, plus translate and speech-to-text in the composer"
+        },
+        {
+          "description": "keeper:// vault scheme removed (no working provider ever existed); corrected fabricated Keeper documentation"
+        }
+      ],
+      "added": [
+        {
+          "description": "Declare secrets in SKILL.md frontmatter (`requires.secrets`)",
+          "commit": "232fd68"
+        },
+        {
+          "description": "Agent secrets management API (write-only values, set/list/delete)",
+          "commit": "4f91d05"
+        },
+        {
+          "description": "Agent Secrets panel in the web UI",
+          "commit": "296e5a4"
+        },
+        {
+          "description": "Inject agent-scoped secrets into OpenAPI skill auth",
+          "commit": "d82674b"
+        },
+        {
+          "description": "Report unmet required declared secrets on markdown skills",
+          "commit": "df0ae8d"
+        },
+        {
+          "description": "Gate markdown skills on unmet required secrets",
+          "commit": "f1958c6"
+        },
+        {
+          "description": "Global and per-skill secret bindings in config (`secrets:`, `skills.config.<name>.secrets`)",
+          "commit": "5268219"
+        },
+        {
+          "description": "Resolve agent secrets with config-binding fallback (per-agent > per-skill global > global)",
+          "commit": "348cb3c"
+        },
+        {
+          "description": "Gate compiled skills on unmet required secrets (`compiled.SecretRequirer`, implemented for MCP)",
+          "commit": "7fcb8d8"
+        },
+        {
+          "description": "Read-only admin view of global secret bindings",
+          "commit": "fd5e129"
+        },
+        {
+          "description": "Mask resolved secret values out of log output (new `internal/redact` package)",
+          "commit": "f649419"
+        },
+        {
+          "description": "Email+password credentials (argon2id) and password service",
+          "commit": "42bd554"
+        },
+        {
+          "description": "Password login and change-password HTTP endpoints",
+          "commit": "24862ec"
+        },
+        {
+          "description": "Bootstrap superadmin password from config/env",
+          "commit": "f981f20"
+        },
+        {
+          "description": "Password login, self-service change, and admin-set in the web UI",
+          "commit": "f291f9e"
+        },
+        {
+          "description": "Redesign team-mode SPA with a persistent left nav, add translate + speech-to-text to the composer",
+          "commit": "36b6eb2"
+        },
+        {
+          "description": "Translate API for composer text (`POST /api/translate`)",
+          "commit": "c77672a"
+        }
+      ],
+      "documentation": [
+        {
+          "description": "Document agent secrets flow and reconcile the INIT-004 roadmap",
+          "commit": "472104c"
+        },
+        {
+          "description": "Document email+password login and superadmin password bootstrap",
+          "commit": "2c24674"
+        },
+        {
+          "description": "Document secret bindings; correct stale Keeper documentation",
+          "commit": "429c048"
+        },
+        {
+          "description": "Document the admin global secret bindings view",
+          "commit": "e5f5a13"
+        },
+        {
+          "description": "Document secret redaction and close out the INIT-OMNIAGENT-004 roadmap",
+          "commit": "7611333"
+        }
+      ],
+      "dependencies": [
+        {
+          "description": "Bump golang.org/x/net from 0.57.0 to 0.58.0",
+          "commit": "e35e10d"
+        }
+      ]
+    },
+    {
       "version": "v0.17.0",
       "date": "2026-08-10",
       "highlights": [
