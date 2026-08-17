@@ -53,6 +53,25 @@ func TestSetSecrets_Empty(t *testing.T) {
 	}
 }
 
+// TestRequiredSecrets confirms RequiredSecrets returns Config.RequiredEnv
+// unchanged, implementing compiled.SecretRequirer (RMI-OMNIAGENT-210).
+func TestRequiredSecrets(t *testing.T) {
+	s := NewSkill(Config{Name: "x", Command: []string{"echo"}, RequiredEnv: []string{"GITHUB_TOKEN"}})
+	got := s.RequiredSecrets()
+	if len(got) != 1 || got[0] != "GITHUB_TOKEN" {
+		t.Errorf("RequiredSecrets() = %v, want [GITHUB_TOKEN]", got)
+	}
+}
+
+// TestRequiredSecrets_None confirms a skill with no RequiredEnv declares no
+// required secrets.
+func TestRequiredSecrets_None(t *testing.T) {
+	s := NewSkill(Config{Name: "x", Command: []string{"echo"}})
+	if got := s.RequiredSecrets(); len(got) != 0 {
+		t.Errorf("RequiredSecrets() = %v, want none", got)
+	}
+}
+
 func TestNewSkill(t *testing.T) {
 	skill := NewSkill(Config{
 		Name:    "test",
