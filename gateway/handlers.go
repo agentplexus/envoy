@@ -163,9 +163,18 @@ func (h *DefaultMessageHandler) handleChat(ctx context.Context, client *Client, 
 		}, nil
 	}
 
-	// Process through agent
-	// Use client ID as session ID for conversation continuity
-	response, err := h.gateway.agent.Process(ctx, client.ID, msg.Content)
+	// Process through agent.
+	// Use client ID as session ID for conversation continuity: when the
+	// agent has a durable session store configured, route through
+	// ProcessWithSession so history actually persists (RMI-OMNIAGENT-007);
+	// otherwise fall back to the stateless Process, unchanged from before.
+	var response string
+	var err error
+	if sa, ok := h.gateway.agent.(SessionAwareProcessor); ok && sa.SessionStore() != nil {
+		response, err = sa.ProcessWithSession(ctx, client.ID, msg.Content)
+	} else {
+		response, err = h.gateway.agent.Process(ctx, client.ID, msg.Content)
+	}
 	if err != nil {
 		return NewErrorMessage(msg.ID, err.Error()), nil
 	}

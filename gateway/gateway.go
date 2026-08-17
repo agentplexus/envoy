@@ -35,6 +35,16 @@ type SessionModelConfigurator interface {
 	SetSessionModel(ctx context.Context, sessionID, model string, sticky bool) error
 }
 
+// SessionAwareProcessor is implemented by agents that maintain durable
+// per-session conversation history (RMI-OMNIAGENT-007). Detected via type
+// assertion so an agent without a configured session store keeps today's
+// stateless AgentProcessor.Process behavior — mirrors the SessionTool/
+// SessionModelConfigurator optional-capability pattern above.
+type SessionAwareProcessor interface {
+	ProcessWithSession(ctx context.Context, sessionID, content string) (string, error)
+	SessionStore() *sessions.Store
+}
+
 // Config configures the gateway server.
 type Config struct {
 	Address         string

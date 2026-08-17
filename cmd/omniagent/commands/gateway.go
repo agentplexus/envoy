@@ -60,6 +60,10 @@ func runGateway(cmd *cobra.Command, args []string) error {
 	cfg := getConfig()
 	logger := slog.Default()
 
+	if err := cfg.Storage.Validate(); err != nil {
+		return err
+	}
+
 	// Setup context for graceful shutdown (needed early for skill init)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -169,6 +173,16 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Persistent storage backend for session history and (single-agent)
+	// cron job state (RMI-OMNIAGENT-007). Deferred close runs after
+	// agentRegistry.Close() below (LIFO), so agents/schedulers shut down
+	// before the backing store does.
+	storageBackend, err := buildStorageBackend(cfg.Storage)
+	if err != nil {
+		return fmt.Errorf("open storage backend: %w", err)
+	}
+	defer storageBackend.Close()
+
 	// Create agent factory for registry
 	agentFactory := func(regCfg *registry.AgentConfig) (*agent.Agent, error) {
 		agentConfig := agent.Config{
@@ -194,19 +208,49 @@ func runGateway(cmd *cobra.Command, args []string) error {
 		if len(secretEnv) > 0 {
 			agentOpts = append(agentOpts, agent.WithSecretEnv(secretEnv))
 		}
+		// Storage backend (RMI-OMNIAGENT-007): shared across every agent,
+		// single- or multi-agent mode alike. Always set (independent of
+		// Sessions.Enabled below) since the cron skill also needs it for
+		// job persistence.
+		agentOpts = append(agentOpts, agent.WithStorage(storageBackend))
+		// Durable session history is separately gated on Sessions.Enabled
+		// so it can be turned off even with storage configured (e.g. cron
+		// jobs persisted, chat kept stateless). TTL honors cfg.Sessions.TTL,
+		// falling back to sessions.DefaultSessionTTL when unset.
+		if cfg.Sessions.Enabled {
+			ttl := cfg.Sessions.TTL.Duration()
+			if ttl <= 0 {
+				ttl = sessions.DefaultSessionTTL
+			}
+			agentOpts = append(agentOpts, agent.WithSessionStore(sessions.NewStore(sessions.StoreConfig{
+				Backend: storageBackend,
+				TTL:     ttl,
+			})))
+		}
+		// The cron scheduler owns a background loop that loads every
+		// enabled job from the shared store and fires it on schedule.
+		// Registering it per agent in multi-agent mode would fire each job
+		// once per agent, so it's started only for the single-agent
+		// (backward-compatible) path — this initiative's actual target.
+		if len(cfg.Agents) == 0 {
+			agentOpts = append(agentOpts, agent.WithCronScheduler())
+		}
 
 		ag, err := agent.New(agentConfig, agentOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("create agent: %w", err)
 		}
 
-		// Initialize compiled skills if any were registered
-		opts := getAgentOptions()
-		if len(opts) > 0 {
-			if err := ag.InitCompiledSkills(ctx); err != nil {
-				ag.Close()
-				return nil, fmt.Errorf("init compiled skills: %w", err)
-			}
+		// Initialize compiled skills (unconditional and safe when none were
+		// registered — InitCompiledSkills no-ops on an empty skill list).
+		// This must run regardless of whether getAgentOptions() itself
+		// returned anything: WithCronScheduler above is appended to the
+		// local agentOpts, not the global registry getAgentOptions() reads,
+		// so gating on the latter would silently skip the cron skill's
+		// Init() (which is what actually starts its scheduler).
+		if err := ag.InitCompiledSkills(ctx); err != nil {
+			ag.Close()
+			return nil, fmt.Errorf("init compiled skills: %w", err)
 		}
 
 		// Register search tool if available

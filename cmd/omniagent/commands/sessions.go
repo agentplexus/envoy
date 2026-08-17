@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/plexusone/omniagent/config"
 	"github.com/plexusone/omniagent/sessions"
 	"github.com/plexusone/omnistorage-core/kvs/backend/sqlite"
 )
@@ -61,7 +61,7 @@ var (
 
 func init() {
 	// Flags
-	sessionsCmd.PersistentFlags().StringVar(&sessionsDBPath, "db", "", "database path (default: ~/.local/share/omniagent/data.db)")
+	sessionsCmd.PersistentFlags().StringVar(&sessionsDBPath, "db", "", "database path (default: storage.path from config, or ~/.local/share/omniagent/data.db)")
 	sessionsShowCmd.Flags().BoolVar(&sessionsShowJSON, "json", false, "output as JSON")
 	sessionsClearCmd.Flags().BoolVar(&sessionsForce, "force", false, "skip confirmation")
 
@@ -77,8 +77,13 @@ func init() {
 func getSessionStore() (*sessions.Store, func(), error) {
 	dbPath := sessionsDBPath
 	if dbPath == "" {
-		home := os.Getenv("HOME")
-		dbPath = filepath.Join(home, ".local", "share", "omniagent", "data.db")
+		// Prefer whatever gateway run was actually configured to persist
+		// to (RMI-OMNIAGENT-007), so `sessions list/show/...` inspects the
+		// same file, not just the hardcoded default.
+		dbPath = getConfig().Storage.Path
+	}
+	if dbPath == "" {
+		dbPath = config.DefaultStoragePath()
 	}
 
 	// Check if database exists
