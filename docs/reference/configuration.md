@@ -280,10 +280,15 @@ team:
 
 ## Storage
 
+`gateway run` uses this to persist conversation session history and, in
+single-agent mode, cron job state (RMI-OMNIAGENT-007) — both survive a
+process restart or redeploy once configured with a durable backend.
+
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `storage.type` | string | `memory` | Backend type: `memory`, `sqlite` |
-| `storage.path` | string | - | Database path (for sqlite) |
+| `storage.type` | string | `sqlite` | Backend type: `sqlite`, `redis`, `memory` |
+| `storage.path` | string | `~/.local/share/omniagent/data.db` | Database path (for sqlite) |
+| `storage.redis.url` | string | - | Redis connection URL, e.g. `redis://localhost:6379` (required when `type` is `redis`) |
 
 ```yaml
 storage:
@@ -291,12 +296,20 @@ storage:
   path: /data/omniagent.db
 ```
 
+```yaml
+storage:
+  type: redis
+  redis:
+    url: redis://cache.internal:6379
+```
+
 ### Storage Backends
 
 | Type | Persistence | Use Case |
 |------|-------------|----------|
-| `memory` | None | Development, testing |
 | `sqlite` | Disk | Production, single instance |
+| `redis` | Network | Production, volume-less deployments (e.g. Lightsail Container Service) |
+| `memory` | None | Development, testing |
 
 ## Sessions
 
@@ -311,12 +324,12 @@ sessions:
   ttl: 168h  # 7 days
 ```
 
-!!! note "Programmatic Configuration"
-    Storage and sessions are currently configured programmatically:
-    ```go
-    backend, _ := sqlite.New(sqlite.Config{Path: "data.db"})
-    agent.New(config, agent.WithSessionsFromStorage(backend))
-    ```
+Embedding binaries that build their own `*agent.Agent` (rather than using
+the `omniagent` CLI) still wire storage programmatically:
+```go
+backend, _ := sqlite.New(sqlite.Config{Path: "data.db"})
+agent.New(config, agent.WithSessionsFromStorage(backend))
+```
     YAML configuration support is planned.
 
 ## Voice

@@ -2,6 +2,16 @@
 
 OmniAgent supports scheduled job execution through the `cron` package. Jobs can be scheduled using cron expressions, intervals, or one-time execution, and can perform actions like sending messages, calling webhooks, or invoking tools.
 
+!!! note "omniagent gateway run"
+    As of RMI-OMNIAGENT-007, `omniagent gateway run` starts the cron
+    scheduler automatically in single-agent mode, backed by
+    [`storage.*`](../reference/configuration.md#storage) config — no code
+    required. Multi-agent mode (`agents:` in config) does not start it,
+    since multiple schedulers sharing one job store would each fire the
+    same job. The sections below (`WithCronScheduler()`, programmatic
+    `Store`/`Scheduler`/`Executor` construction) describe the underlying
+    library API, which embedding binaries can still use directly.
+
 ## Quick Start
 
 Enable the cron scheduler when creating your agent:

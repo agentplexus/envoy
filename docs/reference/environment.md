@@ -193,6 +193,19 @@ OMNIAGENT_GATEWAY_ADDRESS="0.0.0.0:8080"    # All interfaces (explicit)
 OMNIAGENT_GATEWAY_ADDRESS="8080"            # Won't work
 ```
 
+## Storage
+
+Persistent backend for session history and (single-agent) cron job state —
+see [Configuration → Storage](configuration.md#storage) (RMI-OMNIAGENT-007).
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OMNIAGENT_STORAGE_TYPE` | Backend: `sqlite`, `redis`, `memory` | `sqlite` |
+| `OMNIAGENT_STORAGE_PATH` | SQLite database path | `~/.local/share/omniagent/data.db` |
+| `OMNIAGENT_STORAGE_REDIS_URL` | Redis connection URL (required when type is `redis`) | - |
+| `OMNIAGENT_SESSIONS_ENABLED` | Enable session persistence (`true`/`false`) | `true` |
+| `OMNIAGENT_SESSIONS_TTL` | Session time-to-live (Go duration, e.g. `168h`) | `168h` |
+
 ## Usage Examples
 
 ### Minimal Setup (WhatsApp + OpenAI)

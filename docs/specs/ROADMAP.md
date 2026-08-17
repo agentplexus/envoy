@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-001`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Executing — 13 of 30 items completed
+**Status:** Executing — 14 of 30 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member RMIs — a phase is complete only when all its required RMIs are complete.
 
@@ -27,12 +27,13 @@
 ## Phase 2 — Deployment Hardening
 
 **Theme:** Make the deployment production-safe: secrets, durable storage, and CI-buildable images.
-**Status:** In progress — 1 of 5 items completed
+**Status:** In progress — 2 of 5 items completed
 
 - [ ] `RMI-OMNIAGENT-006` SSM-backed secret injection in omnideploy Lightsail target
   - - Acceptance: `SecretRef` (`ssm:`/`secretsmanager:`) resolved and injected; secrets never land in plaintext env or Pulumi state (schema exists; target does not yet consume `cfg.Secrets`)
-- [ ] `RMI-OMNIAGENT-007` Durable session/cron storage on Lightsail
+- [x] `RMI-OMNIAGENT-007` Durable session/cron storage on Lightsail
   - - Acceptance: session and cron state survive a redeploy (Lightsail Container Service has no volumes; SQLite at `STORAGE_PATH` is ephemeral)
+  - - Shipped: config-driven `storage.type` (`sqlite`/`redis`/`memory`) + `sessions.enabled`/`sessions.ttl`, matching the surface `docs/reference/configuration.md` had documented as "planned"; `gateway run` now builds the backend and wires `agent.WithStorage`/`WithSessionStore` for every agent, and `agent.WithCronScheduler()` for the single-agent path (multi-agent mode skips it — one shared job store, one scheduler, avoids duplicate firing). Also fixed a real gap found in the process: `gateway/handlers.go`'s Discord/WebSocket chat path called the stateless `Process` unconditionally despite a "conversation continuity" comment — it now dispatches to `ProcessWithSession` via a new `gateway.SessionAwareProcessor` capability check whenever a session store is configured, so persisted history is actually used, not just stored.
 - [x] `RMI-OMNIAGENT-008` Single-replica gateway guard
   - - Acceptance: gateway mode enforces or documents `replicas == 1` (one Discord WebSocket; extra replicas double-answer)
 - [x] `RMI-OMNIAGENT-009` Graceful shutdown on SIGINT/SIGTERM
