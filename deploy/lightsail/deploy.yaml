@@ -1,0 +1,73 @@
+# LightSail deployment config for omniagent (RMI-OMNIAGENT-004), consumed
+# by the `omnideploy` CLI's "omniagent" runtime adapter (detected via the
+# gateway:/agent: top-level keys — see
+# https://github.com/plexusone/omnideploy/blob/main/docs/runtimes/omniagent.md).
+#
+# Preview first (no changes applied — do this before every real `up`):
+#   ANTHROPIC_API_KEY=... DISCORD_BOT_TOKEN=... SERPER_API_KEY=... \
+#     omnideploy preview --config deploy/lightsail/deploy.yaml --target lightsail --backend pulumi
+#
+# Deploy:
+#   ANTHROPIC_API_KEY=... DISCORD_BOT_TOKEN=... SERPER_API_KEY=... \
+#     omnideploy up --config deploy/lightsail/deploy.yaml --target lightsail --backend pulumi
+#
+# Requires: AWS credentials in the environment, a Pulumi backend
+# (PULUMI_BACKEND_URL + PULUMI_CONFIG_PASSPHRASE), and the image below
+# already pushed + public on GHCR (RMI-OMNIAGENT-003 — push a `v*` tag, or
+# run the "Docker Build & Publish" workflow manually for a :smoke build;
+# either way, set the GHCR package visibility to Public once, by hand).
+#
+# Three things worth knowing, found by reading omnideploy's actual Go
+# source (not just its docs) before writing this file — because it's about
+# to touch real AWS infrastructure:
+#
+#   1. The omniagent adapter derives the LightSail container's *port* from
+#      gateway.address, but does not also inject OMNIAGENT_GATEWAY_ADDRESS
+#      into the container's environment. Without the explicit entry below,
+#      the process inside the container binds to its own default
+#      (127.0.0.1:18789), the health check hits the wrong port, and the
+#      deployment never goes healthy.
+#
+#   2. agent.api_key: ${VAR} is intentionally NOT used here. The adapter
+#      converts it into a SecretRef (config.SecretRef{Source: "env:VAR"}),
+#      but backend/pulumi/pulumi.go's deployLightsail() never reads
+#      cfg.Secrets at all — only cfg.Environment. Using agent.api_key would
+#      silently produce a container with no API key. ANTHROPIC_API_KEY is
+#      passed directly via deploy.environment instead, consistent with
+#      docs/specs/PLAN.md's "plaintext env for the smoke test" scoping.
+#      Both of these are still open as RMI-OMNIAGENT-006 (SSM-backed
+#      secrets, plumbed all the way through the backend).
+#
+#   3. Two fixes landed in the omnideploy repo itself (not this one)
+#      alongside this file — pull the latest omnideploy (main, commit
+#      04040a7 or later) before running this:
+#        - ${VAR}/${VAR:-default} expansion: docs/configuration/schema.md
+#          documented this syntax, but no code anywhere in the module
+#          actually expanded it — every ${VAR} would have deployed as
+#          the literal string (bfea43f).
+#        - Deterministic adapter detection: this file's own name
+#          ("deploy.yaml") happened to also match the generic
+#          "container" adapter's broad filename heuristic, and which of
+#          the two adapters won was randomized per run — it could load
+#          fine one run and fail with "name is required" the next
+#          (04040a7).
+
+gateway:
+  address: "0.0.0.0:8080" # must match the Dockerfile's EXPOSE/HEALTHCHECK port
+
+agent:
+  provider: anthropic
+  model: claude-sonnet-5
+
+deploy:
+  name: omniagent-discord
+  region: us-east-1
+  image: ghcr.io/plexusone/omniagent:latest
+  replicas: 1 # required — Discord's WebSocket connection is stateful (RMI-OMNIAGENT-008)
+  resources:
+    size: micro
+  environment:
+    OMNIAGENT_GATEWAY_ADDRESS: "0.0.0.0:8080"
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+    SERPER_API_KEY: ${SERPER_API_KEY}

@@ -21,6 +21,7 @@
 - [ ] `RMI-OMNIAGENT-004` Lightsail deployment via omnideploy
   - Depends on: `RMI-OMNIAGENT-003`
   - - Acceptance: `omnideploy up --target lightsail --backend pulumi` provisions a running service with the Discord/agent/Serper env
+  - - Prep done, not yet run (needs AWS credentials this session doesn't have): `deploy/lightsail/deploy.yaml` written for the `omnideploy` "omniagent" runtime adapter. Also fixed the Dockerfile's `ENTRYPOINT`/`CMD` split — LightSail's `command` field maps to Docker `CMD` (appended to `ENTRYPOINT`, not a replacement), so the adapter's hardcoded `Args: ["gateway", "run"]` would have doubled up against an all-in-`ENTRYPOINT` image. Three bugs found and fixed **in `omnideploy` itself** while verifying this against its actual source (not just its docs): `${VAR}`/`${VAR:-default}` expansion was documented but never implemented anywhere in the module (`bfea43f`); adapter auto-detection iterated a Go map in nondeterministic order, so an ambiguously-named config could resolve to the wrong adapter from run to run (`04040a7`); and `agent.api_key: ${VAR}` converts to a `SecretRef` the Lightsail/Pulumi backend never actually reads (still open — this is exactly `RMI-OMNIAGENT-006`'s scope), worked around here by setting secrets via `deploy.environment` directly instead.
 - [ ] `RMI-OMNIAGENT-005` Deployment smoke test on Lightsail
   - Depends on: `RMI-OMNIAGENT-004`
   - - Acceptance: `/health` green; a Discord message triggers a chunked reply; `web_search` (Serper) returns current results
