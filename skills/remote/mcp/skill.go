@@ -94,6 +94,18 @@ func (s *Skill) SetSecrets(env map[string]string) {
 	s.config.Env = merged
 }
 
+// RequiredSecrets returns the env-var names this MCP server cannot start
+// without, implementing compiled.SecretRequirer (RMI-OMNIAGENT-210).
+func (s *Skill) RequiredSecrets() []string {
+	return s.config.RequiredEnv
+}
+
+var (
+	_ compiled.Skill          = (*Skill)(nil)
+	_ compiled.SecretsAware   = (*Skill)(nil)
+	_ compiled.SecretRequirer = (*Skill)(nil)
+)
+
 // SourceType identifies tools from this skill as MCP-backed, so tool
 // inventories can expose the originating server and tool identity.
 func (s *Skill) SourceType() string {

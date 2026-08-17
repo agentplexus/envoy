@@ -53,6 +53,19 @@ type SecretsAware interface {
 	SetSecrets(env map[string]string)
 }
 
+// SecretRequirer is an optional interface for skills that declare which
+// secrets (env-var names) they cannot function without. If a skill
+// implements this interface, the agent checks the names against the
+// resolved secret env after SecretsAware injection and before Init() is
+// called — a missing required secret excludes the skill (with a logged
+// reason) instead of the skill failing however its underlying provider
+// reacts to an incomplete environment (RMI-OMNIAGENT-210). Mirrors
+// skills.Skill.UnmetRequiredSecrets' gating for markdown-declared skills,
+// for skills registered via agent.Option instead of SKILL.md discovery.
+type SecretRequirer interface {
+	RequiredSecrets() []string
+}
+
 // SkillInfo provides metadata about a skill for introspection.
 type SkillInfo struct {
 	Name        string

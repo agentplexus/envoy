@@ -23,6 +23,12 @@ type Config struct {
 	// Example: map[string]string{"GITHUB_TOKEN": "xxx"}
 	Env map[string]string
 
+	// RequiredEnv names the environment variables this MCP server cannot
+	// start without. If any is absent from Env after SetSecrets injection,
+	// the skill is excluded at registration (RMI-OMNIAGENT-210) instead of
+	// failing however the subprocess reacts to an incomplete environment.
+	RequiredEnv []string
+
 	// LazyConnect defers connection until first tool call (default: false).
 	// When true, Init() returns immediately and connection happens on first use.
 	// When false, Init() connects and discovers tools synchronously.

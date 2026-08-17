@@ -91,6 +91,24 @@ func (a *Agent) RegisterCompiledSkill(skill compiled.Skill) error {
 		sa.SetSecrets(a.secretEnv)
 	}
 
+	// Check if skill declares required secrets and gate registration on them
+	// (RMI-OMNIAGENT-210). Soft-skip, not an error: one skill with an unmet
+	// required secret shouldn't fail the whole agent build, mirroring
+	// filterSecretGated's exclusion of markdown skills with the same problem.
+	if sr, ok := skill.(compiled.SecretRequirer); ok {
+		var missing []string
+		for _, name := range sr.RequiredSecrets() {
+			if _, ok := a.secretEnv[name]; !ok {
+				missing = append(missing, name)
+			}
+		}
+		if len(missing) > 0 {
+			a.logger.Warn("skill unavailable: missing required secret(s)",
+				"name", skill.Name(), "missing", missing)
+			return nil
+		}
+	}
+
 	// Determine the source kind: skills backed by an external protocol
 	// (e.g. MCP) declare it via an optional SourceType method.
 	sourceType := "skill"
