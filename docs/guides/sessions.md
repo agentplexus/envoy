@@ -2,6 +2,18 @@
 
 OmniAgent provides persistent session management for maintaining conversation history across interactions. Sessions are backed by `omnistorage-core/kvs` for reliable storage.
 
+!!! note "omniagent gateway run"
+    As of RMI-OMNIAGENT-007, the `omniagent` CLI wires this up for you —
+    no code required. Set `storage.type`/`storage.path` (or
+    `storage.redis.url`) and `sessions.enabled`/`sessions.ttl` in config
+    (see [Configuration → Storage](../reference/configuration.md#storage))
+    and `gateway run` builds the backend, persists session history for
+    Discord/Telegram/WebSocket chats, and — in single-agent mode — starts
+    the cron scheduler against the same backend. The rest of this guide
+    describes the underlying library API (`agent.WithSessionsFromStorage`,
+    etc.), which embedding binaries that build their own `*agent.Agent`
+    still use directly.
+
 ## Overview
 
 Sessions enable:
@@ -217,7 +229,11 @@ sessionStore := sessions.NewStore(sessions.StoreConfig{
 })
 ```
 
-### YAML Configuration (Coming Soon)
+### YAML Configuration
+
+For the `omniagent` CLI, this is the whole setup — see
+[Configuration → Storage](../reference/configuration.md#storage) for the
+full field list (`storage.type`: `sqlite`/`redis`/`memory`):
 
 ```yaml
 storage:

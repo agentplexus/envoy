@@ -523,7 +523,18 @@ walkthrough.
 
 ## Sessions
 
-OmniAgent supports persistent conversation sessions:
+OmniAgent supports persistent conversation sessions. `omniagent gateway run`
+wires this up from config — no code required:
+
+```yaml
+storage:
+  type: sqlite # or redis, memory
+  path: /data/omniagent.db
+sessions:
+  enabled: true
+```
+
+Embedding binaries that build their own `*agent.Agent` use the library API:
 
 ```go
 import (
@@ -549,7 +560,10 @@ See [Sessions Guide](docs/guides/sessions.md) for details.
 
 ## Scheduled Jobs
 
-OmniAgent supports scheduled job execution via the cron package:
+OmniAgent supports scheduled job execution via the cron package.
+`omniagent gateway run` starts the scheduler automatically in single-agent
+mode, using the same `storage:` config as Sessions above. The library API,
+for embedding binaries:
 
 ```go
 import (

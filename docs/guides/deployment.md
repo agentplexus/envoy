@@ -208,6 +208,17 @@ omnideploy destroy --stack <app-name> --yes
 
 Before deployment, you typically create a custom agent that bundles compiled skills with OmniAgent.
 
+!!! note "Storage no longer requires a custom binary"
+    The `STORAGE_PATH`-driven `RegisterAgentOption(agent.WithStorage(...))`
+    step below predates RMI-OMNIAGENT-007: `omniagent gateway run` now
+    builds a durable storage backend itself from `storage.type`/
+    `storage.path`/`storage.redis.url` config (see
+    [Configuration → Storage](../reference/configuration.md#storage)), and
+    starts the cron scheduler against it in single-agent mode. A custom
+    binary is still the right call for bundling **compiled skills**, but
+    if that's all you needed a custom `main.go` for, the stock binary
+    plus a `storage:` block in your deployment config now covers it.
+
 ### Project Structure
 
 ```
