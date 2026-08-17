@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -550,6 +551,54 @@ func TestTeamHTTP_AdminRenameOtherUser(t *testing.T) {
 
 // TestTeamHTTP_AdminUsers_RequiresCSRF confirms the mutating admin/users
 // route rejects requests without the CSRF header.
+// TestTeamHTTP_AdminSecretBindings covers RMI-OMNIAGENT-213's read-only
+// global-bindings view: superadmin sees the configured snapshot, a member
+// is forbidden, and an unauthenticated request is rejected — mirroring
+// TestTeamHTTP_AdminListUsers's auth-tier coverage.
+func TestTeamHTTP_AdminSecretBindings(t *testing.T) {
+	bindings := []GlobalSecretBinding{
+		{Name: "GITHUB_TOKEN", Source: "github", Set: true},
+		{Name: "UNSET_KEY", Source: "global", Set: false},
+	}
+	f := setupTeamHTTPWithConfig(t, TeamHTTPConfig{CookieSecure: false, GlobalSecretBindings: bindings})
+
+	// Unauthenticated is 401.
+	resp := f.get(t, "/api/admin/secret-bindings")
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("unauth secret-bindings = %d, want 401", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	loginSuperadmin(t, f)
+	kid := loginKid(t, f, "kid@example.com")
+
+	resp = f.get(t, "/api/admin/secret-bindings")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("superadmin secret-bindings = %d, want 200", resp.StatusCode)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if strings.Contains(string(body), `"value"`) {
+		t.Fatalf("response must never carry a value field: %s", body)
+	}
+	var listResp struct {
+		Bindings []GlobalSecretBinding `json:"bindings"`
+	}
+	if err := json.Unmarshal(body, &listResp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(listResp.Bindings) != 2 || listResp.Bindings[0] != bindings[0] || listResp.Bindings[1] != bindings[1] {
+		t.Fatalf("bindings = %+v, want %+v", listResp.Bindings, bindings)
+	}
+
+	// A member cannot see global bindings.
+	resp = kid.get(t, "/api/admin/secret-bindings")
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("member secret-bindings = %d, want 403", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
 func TestTeamHTTP_AdminUsers_RequiresCSRF(t *testing.T) {
 	f := setupTeamHTTP(t)
 	loginSuperadmin(t, f)
