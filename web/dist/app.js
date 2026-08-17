@@ -1858,10 +1858,41 @@
       return card("Members", el("div", {}, [list, status]));
     }
 
+    // globalSecretBindingsCard is read-only: the single-operator config
+    // bindings (secrets:, skills.config.<name>.secrets) are only ever
+    // changed by editing the config file, never through the web UI. Shows
+    // names + set-state, never values (RMI-OMNIAGENT-213).
+    function globalSecretBindingsCard() {
+      var status = el("p", { className: "error" });
+      var list = el("ul", { className: "member-list" });
+
+      jsonFetch("/api/admin/secret-bindings")
+        .then(function (r) { renderList(r.bindings || []); })
+        .catch(function (err) { setErr(status, err); });
+
+      function renderList(bindings) {
+        list.innerHTML = "";
+        if (!bindings.length) {
+          list.appendChild(el("li", { className: "muted", text: "No global secret bindings configured." }));
+          return;
+        }
+        bindings.forEach(function (b) {
+          list.appendChild(el("li", { className: "secret-row" }, [
+            el("span", { className: "secret-name", text: b.name }),
+            el("span", { className: "badge " + (b.set ? "active" : "disabled"), text: b.set ? "set" : "unset" }),
+            el("span", { className: "muted", text: b.source === "global" ? "global" : "skill: " + b.source }),
+          ]));
+        });
+      }
+
+      return card("Global Secret Bindings", el("div", {}, [list, status]));
+    }
+
     var section = el("section", { className: "admin-area" });
     section.appendChild(el("h2", { className: "view-title", text: "Admin" }));
     section.appendChild(allowlistCard());
     section.appendChild(membersCard());
+    section.appendChild(globalSecretBindingsCard());
     return section;
   }
 

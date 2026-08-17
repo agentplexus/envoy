@@ -70,6 +70,21 @@ type TeamHTTPConfig struct {
 	// /api/admin/*).
 	GoogleProvider SSOProvider
 	GitHubProvider SSOProvider
+
+	// GlobalSecretBindings is a startup snapshot of the single-operator
+	// config-level secret bindings (config.Config.Secrets and
+	// Skills.Config[name].Secrets) — names and set-state only, never
+	// values. Served read-only to superadmins (RMI-OMNIAGENT-213).
+	GlobalSecretBindings []GlobalSecretBinding
+}
+
+// GlobalSecretBinding is one configured secret binding's name and
+// set-state — never its value (RMI-OMNIAGENT-213). Source is "global" or
+// the skill name a per-skill binding is scoped to.
+type GlobalSecretBinding struct {
+	Name   string `json:"name"`
+	Source string `json:"source"`
+	Set    bool   `json:"set"`
 }
 
 // TeamHTTP serves the team auth and admin API.
@@ -161,6 +176,7 @@ func (h *TeamHTTP) routes() {
 		h.mux.HandleFunc("/api/admin/allowlist", h.handleAllowlist)
 		h.mux.HandleFunc("GET /api/admin/users", h.handleListUsers)
 		h.mux.HandleFunc("PATCH /api/admin/users/{id}", h.handleUpdateUser)
+		h.mux.HandleFunc("GET /api/admin/secret-bindings", h.handleSecretBindings)
 	}
 }
 
@@ -592,6 +608,16 @@ func (h *TeamHTTP) handleListUsers(w http.ResponseWriter, r *http.Request) {
 		out[i].Identities = identities[u.ID]
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"users": out})
+}
+
+// handleSecretBindings serves the read-only, deployment-wide snapshot of
+// single-operator config secret bindings (RMI-OMNIAGENT-213) — names and
+// set-state only, never values.
+func (h *TeamHTTP) handleSecretBindings(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.actor(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"bindings": h.cfg.GlobalSecretBindings})
 }
 
 type updateUserRequest struct {

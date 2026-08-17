@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
@@ -127,12 +128,13 @@ func setupTeamMode(ctx context.Context, cfg *config.Config, logger *slog.Logger)
 	}
 
 	teamHTTP := gateway.NewTeamHTTP(authSvc, teamSvc, gateway.TeamHTTPConfig{
-		CookieSecure:   secure,
-		SessionTTL:     auth.DefaultSessionTTL,
-		BaseURL:        strings.TrimRight(tc.BaseURL, "/"),
-		Logger:         logger,
-		GoogleProvider: googleProvider,
-		GitHubProvider: githubProvider,
+		CookieSecure:         secure,
+		SessionTTL:           auth.DefaultSessionTTL,
+		BaseURL:              strings.TrimRight(tc.BaseURL, "/"),
+		Logger:               logger,
+		GoogleProvider:       googleProvider,
+		GitHubProvider:       githubProvider,
+		GlobalSecretBindings: globalSecretBindings(cfg),
 	})
 
 	// Agents registry (INIT-OMNIAGENT-005): gates agent-bound chat creation
@@ -350,6 +352,31 @@ func buildSecretService(cfg config.TeamSecretsConfig, logger *slog.Logger) (*sec
 		return nil, nil, err
 	}
 	return svc, v, nil
+}
+
+// globalSecretBindings snapshots cfg.Secrets and cfg.Skills.Config into the
+// admin-visible binding list — names and set-state only, never values
+// (RMI-OMNIAGENT-213). Both maps are already resolved (vault URIs replaced
+// with plain values) by config.ResolveCredentials during config.Load, and
+// never change afterward, so this is a one-time snapshot, not a live query.
+// Sorted for a stable response.
+func globalSecretBindings(cfg *config.Config) []gateway.GlobalSecretBinding {
+	var out []gateway.GlobalSecretBinding
+	for name, v := range cfg.Secrets {
+		out = append(out, gateway.GlobalSecretBinding{Name: name, Source: "global", Set: v != ""})
+	}
+	for skillName, sc := range cfg.Skills.Config {
+		for name, v := range sc.Secrets {
+			out = append(out, gateway.GlobalSecretBinding{Name: name, Source: skillName, Set: v != ""})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Source != out[j].Source {
+			return out[i].Source < out[j].Source
+		}
+		return out[i].Name < out[j].Name
+	})
+	return out
 }
 
 // skillSecretDeclLookup returns a best-effort lookup from a skill name to the
