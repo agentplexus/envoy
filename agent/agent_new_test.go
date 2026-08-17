@@ -151,13 +151,9 @@ func TestAgent_MemoryGetSet(t *testing.T) {
 }
 
 // TestAgent_GetSession_MissingSessionErrors covers GetSession's delegation
-// to the store's GetIfExists for a session that was never created.
-//
-// NOTE (reported, not fixed — out of scope for this RMI): GetSession's doc
-// comment claims it "returns nil if sessions are not configured or session
-// doesn't exist", but sessions.Store.GetIfExists actually returns
-// sessions.ErrSessionNotFound (not a nil, nil result) for a missing
-// session, so GetSession does too. The doc comment appears to be stale.
+// to the store's GetIfExists for a session that was never created: it
+// returns sessions.ErrSessionNotFound, not a nil, nil result (the doc
+// comment on GetSession previously claimed the latter — since corrected).
 func TestAgent_GetSession_MissingSessionErrors(t *testing.T) {
 	ctx := context.Background()
 	store := sessions.NewStore(sessions.StoreConfig{Backend: newMemoryBackend(t)})

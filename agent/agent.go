@@ -900,7 +900,8 @@ func (a *Agent) ProcessWithMemory(ctx context.Context, sessionID, content string
 }
 
 // GetSession retrieves a session by ID.
-// Returns nil if sessions are not configured or session doesn't exist.
+// Returns an error if sessions are not configured, and sessions.ErrSessionNotFound
+// (checkable via errors.Is) if the session doesn't exist.
 func (a *Agent) GetSession(ctx context.Context, sessionID string) (*sessions.Session, error) {
 	if a.sessions == nil {
 		return nil, fmt.Errorf("session store not configured")
