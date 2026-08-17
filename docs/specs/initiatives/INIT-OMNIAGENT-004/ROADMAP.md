@@ -51,14 +51,19 @@ UI) has shipped; the single-operator config-binding path has also shipped.
 > doesn't have a value — per-agent secret ▸ per-skill global binding,
 > scoped to that agent's own enabled skills ▸ global binding — closing the
 > loop between the two secret systems that previously had zero awareness
-> of each other), and the redaction guarantee of RMI-204 (values never
-> reach logs/prompt — injection targets skill env/auth only). **Follow-on
-> (still open):** the rest of RMI-204 (no dedicated cross-type redaction
-> test suite covering MCP/compiled/OpenAPI together — RMI-203's tests cover
-> markdown-skill gating only), RMI-210 (MCP global-only guardrail — not
-> started), and RMI-213 (docs shipped; the admin global-bindings view itself
-> does not exist — now meaningful to build since RMI-202's `Config.Secrets`
-> gives it something to display). **Cancelled:** RMI-205, RMI-206.
+> of each other), RMI-210 (rescoped in place: its original per-user MCP
+> premise didn't survive the rescope — see its own checklist note below —
+> shipped instead as `compiled.SecretRequirer`, extending RMI-203's
+> exclude-don't-fail gating from markdown skills to compiled skills,
+> implemented for MCP), and the redaction guarantee of RMI-204 (values
+> never reach logs/prompt — injection targets skill env/auth only).
+> **Follow-on (still open):** the rest of RMI-204 (no dedicated cross-type
+> redaction test suite covering MCP/compiled/OpenAPI together — RMI-203's
+> tests cover markdown-skill gating only; `SecretRequirer` could extend to
+> OpenAPI as a natural follow-on), and RMI-213 (docs shipped; the admin
+> global-bindings view itself does not exist — now meaningful to build
+> since RMI-202's `Config.Secrets` gives it something to display).
+> **Cancelled:** RMI-205, RMI-206.
 
 ## Phase 1 — Declaration, Binding & Injection
 
@@ -142,9 +147,34 @@ UI) has shipped; the single-operator config-binding path has also shipped.
     `compiled.SecretsAware` for compiled skills, `openapi.Config.Auth.{APIKeyEnv,TokenEnv,PasswordEnv}`
     + `Skill.SetSecrets` for OpenAPI skills. One resolved secret set per agent instance,
     isolated by the per-agent OmniVault namespace — not per-acting-user.
-- [ ] `RMI-OMNIAGENT-210` MCP global-only guardrail + unset-secret prompt
+- [x] `RMI-OMNIAGENT-210` Required-secret gating for compiled skills
   - Depends on: `RMI-OMNIAGENT-208`
-  - Acceptance: per-user MCP declarations warn and fall back to global; a member is told which secret to add when a required one is unset
+  - **Rescoped in place** — the original acceptance criteria didn't survive
+    the agent-scoped rescope: MCP already receives agent-scoped secrets
+    identically to compiled/OpenAPI (a side effect of RMI-209, since
+    `mcp.Skill` implements `compiled.SecretsAware`), so there's no
+    disconnected per-user MCP env path left to warn about or fall back
+    from — "subprocess env fixed at spawn" is simply how every agent
+    instance's secrets already work now (one instance, one resolved
+    secret set, one spawn). And "a member is told which secret to add"
+    presumed a reactive in-chat prompt that exists nowhere, aimed at an
+    actor with no path to act on it (only owner/maintainer can set an
+    agent secret).
+  - **What shipped instead** — the real remaining gap: RMI-203's gating
+    (unmet required secret excludes a skill with a clear log, instead of
+    a later opaque failure) only ever covered markdown `skills.Skill`;
+    compiled skills (MCP, OpenAPI, anything registered via `agent.Option`)
+    had no `Requires()`/declared-secrets concept at all, so one MCP skill
+    with a missing required env var could fail however its subprocess's
+    `Init()` reacted — and because `Agent.InitCompiledSkills` propagates
+    any `Init()` error as a hard failure aborting the whole loop, that
+    could take an agent's *entire* compiled-skill set down, not just
+    itself. Added `compiled.SecretRequirer` (optional interface,
+    `RequiredSecrets() []string`) and a soft-skip gate in
+    `Agent.RegisterCompiledSkill` — mirrors `filterSecretGated`'s
+    exclude-don't-fail behavior. Implemented for MCP via
+    `Config.RequiredEnv`; not retrofitted onto OpenAPI in this pass (a
+    natural, separately-scoped follow-on).
 
 ## Phase 4 — Secrets Management UI (team mode)
 
