@@ -16,6 +16,19 @@ type mockAgentHandler struct {
 	agents   map[string]*AgentInfo
 	tools    []ToolInfo
 	cronJobs map[string]*CronJobInfo
+
+	// Configurable behavior for streaming/error-path tests.
+	chatCompletionErr  error
+	chatCompletionResp *ChatCompletionResponse
+	streamChunks       []*ChatCompletionChunk
+	streamErr          error
+	listModelsErr      error
+	getModelErr        error
+	listToolsErr       error
+
+	// lastChatReq captures the last request seen by ChatCompletion/ChatCompletionStream
+	// so tests can assert on pass-through fields (tools, tool_choice, etc).
+	lastChatReq *ChatCompletionRequest
 }
 
 func newMockAgentHandler() *mockAgentHandler {
@@ -29,6 +42,13 @@ func newMockAgentHandler() *mockAgentHandler {
 // AgentHandler methods
 
 func (m *mockAgentHandler) ChatCompletion(ctx context.Context, req *ChatCompletionRequest) (*ChatCompletionResponse, error) {
+	m.lastChatReq = req
+	if m.chatCompletionErr != nil {
+		return nil, m.chatCompletionErr
+	}
+	if m.chatCompletionResp != nil {
+		return m.chatCompletionResp, nil
+	}
 	return &ChatCompletionResponse{
 		ID:      "chatcmpl-test",
 		Object:  "chat.completion",
@@ -45,10 +65,22 @@ func (m *mockAgentHandler) ChatCompletion(ctx context.Context, req *ChatCompleti
 }
 
 func (m *mockAgentHandler) ChatCompletionStream(ctx context.Context, req *ChatCompletionRequest, onDelta func(*ChatCompletionChunk) error) error {
+	m.lastChatReq = req
+	if m.streamErr != nil {
+		return m.streamErr
+	}
+	for _, chunk := range m.streamChunks {
+		if err := onDelta(chunk); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func (m *mockAgentHandler) ListModels(ctx context.Context) ([]Model, error) {
+	if m.listModelsErr != nil {
+		return nil, m.listModelsErr
+	}
 	models := make([]Model, 0, len(m.agents))
 	for _, a := range m.agents {
 		models = append(models, Model{
@@ -62,6 +94,9 @@ func (m *mockAgentHandler) ListModels(ctx context.Context) ([]Model, error) {
 }
 
 func (m *mockAgentHandler) GetModel(ctx context.Context, modelID string) (*Model, error) {
+	if m.getModelErr != nil {
+		return nil, m.getModelErr
+	}
 	if a, ok := m.agents[modelID]; ok {
 		return &Model{
 			ID:      a.ID,
@@ -74,6 +109,9 @@ func (m *mockAgentHandler) GetModel(ctx context.Context, modelID string) (*Model
 }
 
 func (m *mockAgentHandler) ListTools(ctx context.Context) ([]ToolInfo, error) {
+	if m.listToolsErr != nil {
+		return nil, m.listToolsErr
+	}
 	return m.tools, nil
 }
 
