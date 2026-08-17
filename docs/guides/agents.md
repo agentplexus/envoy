@@ -195,7 +195,14 @@ panel and API are unavailable. The `memory`/`file` providers are **not encrypted
 at rest** — protect the secrets directory with filesystem permissions.
 
 !!! note "Injection coverage"
-    Agent secrets are injected into **compiled** Go skills and **MCP**
-    subprocess skills today. OpenAPI-skill auth injection and a single-operator
-    config-file binding path (`secrets:` / `skills.config.<name>.secrets`) are
-    planned follow-ons.
+    Agent secrets are injected into **compiled** Go skills, **MCP** subprocess
+    skills, and **OpenAPI** skill auth (bearer/API-key/basic). A skill with an
+    unmet *required* secret is excluded from the agent's skill set — with a
+    logged reason — instead of loading and failing later at call time; this
+    applies to markdown `SKILL.md` skills and to compiled skills that declare
+    `RequiredSecrets()` (MCP does today). Precedence when both are configured:
+    per-agent secret before per-skill config binding (scoped to that agent's
+    own enabled skills) before global config binding (see [Secrets](../reference/configuration.md#secrets)
+    for the single-operator `secrets:` / `skills.config.<name>.secrets` config
+    path). Resolved values are masked out of all log output, including
+    `omniagent config show`.

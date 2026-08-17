@@ -14,21 +14,23 @@ and an embedded web UI. It runs in two shapes:
 
 - **Personal mode** (default): one implicit user, SQLite, a single agent.
 - **Team mode** (`team.enabled`): many users, PostgreSQL with row-level
-  security, magic-link/Google/GitHub auth, an admin UI, private/group chats,
-  and **virtual agents** with a catalog. See `docs/guides/team-mode.md`,
-  `docs/guides/team-deployment.md`, and `docs/guides/agents.md`.
+  security, magic-link/email+password/Google/GitHub auth, an admin UI,
+  private/group chats, and **virtual agents** with a catalog. See
+  `docs/guides/team-mode.md`, `docs/guides/team-deployment.md`, and
+  `docs/guides/agents.md`.
 
 ## Package map
 
 | Path | Responsibility |
 |------|----------------|
 | `agent/` | Core agent: config, options, tools, compiled-skill registration, session rollover. `agent.New` builds one instance. |
-| `gateway/` | WebSocket gateway + all HTTP handlers. `team_http.go` (auth incl. SSO start/callback, admin allowlist/users, `RequireAuth`/CSRF middleware), `team_chat_http.go` (chats), `agents_http.go` (virtual-agents API), `web_http.go` (SPA + capabilities). |
-| `team/` | Multi-user domain. `auth/` (magic-link + Google OIDC/GitHub OAuth SSO + Principal — `CompleteSSOLogin` resolves/links a provider identity by verified email, reusing the same session issuance as magic-link), `agents/` (virtual-agents service: CRUD, roles, `Can` authz matrix, registry, catalog), `chats/` (DMs/groups, agent turns, mention policy, memory scope), `secrets/` (ScopedVault multi-tenancy + per-agent secret resolution over OmniVault), `agentruntime/` (lazy bounded per-agent runtime cache + builder), `store/` (Ent + RLS, dialect-aware), `ent/` (generated), `mail/`. |
-| `skills/` | `compiled/` (Go skill interface + `StorageAware`/`AgentAware`/`SecretsAware` injection), `remote/mcp/` (MCP subprocess skill), `web/`, `memory/`, `github/`. |
-| `config/` | Config structs + validation. `team.go` (team + secrets + SSO provider credentials), `capabilities.go` (web-UI capability flags). |
-| `web/dist/` | Embedded vanilla-JS SPA (`app.js`, `style.css`) — no build step, CSP-clean (no external assets). |
-| `cmd/omniagent/commands/` | Cobra CLI + composition root. `gateway.go` mounts handlers; `team.go` (`setupTeamMode`) wires the team services. |
+| `gateway/` | WebSocket gateway + all HTTP handlers. `team_http.go` (auth incl. SSO + password login, admin allowlist/users/secret-bindings, `RequireAuth`/CSRF middleware), `team_chat_http.go` (chats), `agents_http.go` (virtual-agents API), `web_http.go` (SPA + capabilities), `translate_http.go` (one-shot composer translate). |
+| `team/` | Multi-user domain. `auth/` (magic-link + email+password (argon2id) + Google OIDC/GitHub OAuth SSO + Principal — `CompleteSSOLogin` resolves/links a provider identity by verified email, reusing the same session issuance as magic-link), `agents/` (virtual-agents service: CRUD, roles, `Can` authz matrix, registry, catalog), `chats/` (DMs/groups, agent turns, mention policy, memory scope), `secrets/` (ScopedVault multi-tenancy + per-agent secret resolution over OmniVault — `Service.ResolveAgentSecrets`), `agentruntime/` (lazy bounded per-agent runtime cache + builder; `SecretSource` also carries the agent's enabled-skill list so config-binding fallback stays skill-scoped), `store/` (Ent + RLS, dialect-aware), `ent/` (generated), `mail/`. |
+| `skills/` | `compiled/` (Go skill interface + `StorageAware`/`AgentAware`/`SecretsAware`/`SecretRequirer` injection), `remote/mcp/` (MCP subprocess skill), `remote/openapi/` (OpenAPI 3.x skill, `Auth.{APIKeyEnv,TokenEnv,PasswordEnv}` secret injection), `web/`, `memory/`, `github/`. |
+| `config/` | Config structs + validation. `credentials.go` (vault URI resolution — `op://`/`bw://`/`file://`/`env://` — for infra credentials and the `Secrets`/`Skills.Config[name].Secrets` bindings), `team.go` (team + secrets + SSO/password provider credentials), `capabilities.go` (web-UI capability flags incl. `translate`). |
+| `internal/redact/` | Process-wide registry of resolved secret values + an `slog.Handler` wrapper that masks them out of log output; wrapped over the CLI's default logger in `cmd/.../root.go`. |
+| `web/dist/` | Embedded vanilla-JS SPA (`app.js`, `style.css`) — no build step, CSP-clean (no external assets), persistent left-nav shell (`#shell`>`#sidenav`+`#app`). |
+| `cmd/omniagent/commands/` | Cobra CLI + composition root. `gateway.go` mounts handlers; `team.go` (`setupTeamMode`) wires the team services, incl. `mergeSecretEnv`'s 3-tier secret precedence and `globalSecretBindings`'s admin snapshot. |
 | `docs/specs/initiatives/` | Initiative specs + ROADMAPs (`INIT-OMNIAGENT-00N`). |
 
 ## Team-mode architecture (important patterns)
@@ -57,8 +59,20 @@ and an embedded web UI. It runs in two shapes:
 - **Agent-scoped secrets.** `team/secrets.ScopedVault` namespaces an OmniVault
   store per agent (`agents/<id>/…`); isolation is structural (a scoped caller
   cannot address another namespace). Injection flows through
-  `compiled.SecretsAware`/`agent.WithSecretEnv`. `memory`/`file` providers are
-  not encrypted at rest yet.
+  `compiled.SecretsAware`/`agent.WithSecretEnv`, gated by
+  `compiled.SecretRequirer`/markdown `Skill.UnmetRequiredSecrets` (an unmet
+  *required* secret excludes the skill instead of failing later). Precedence
+  when a config binding also exists: per-agent secret then per-skill config
+  binding (scoped to that agent's own enabled skills) then global config
+  binding — `cmd/omniagent/commands/team.go`'s `mergeSecretEnv`. `memory`/`file`
+  providers are not encrypted at rest yet.
+- **Secret redaction.** Every resolved secret value (vault-backed or a plain
+  config literal) is registered with `internal/redact` at the point it's
+  resolved (`config.resolveCredential`, `team/secrets.Service.ResolveAgentSecrets`)
+  so it's masked out of all log output for the process's lifetime — a
+  defense-in-depth backstop on top of injection paths never intentionally
+  logging a value. Register any *new* secret-resolution call site the same
+  way; don't rely solely on "nothing logs it today."
 
 ## Build / test / lint
 

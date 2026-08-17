@@ -49,10 +49,11 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 🎭 **Agent Profiles** - Bootstrap profiles and lean mode for resource optimization
 - 🛡️ **Access Policies** - Per-sender tool access control and channel conformance
 - 🔐 **Vault Credentials** - Secure credential storage via 1Password, Bitwarden, file, or environment
+- 🔑 **Skill Secrets** - GitHub-style `requires.secrets` declaration in `SKILL.md`, global/per-skill config bindings, per-skill-type injection (MCP, OpenAPI, compiled), required-secret gating, and log/output redaction
 - 🔗 **OpenAI-Compatible API** - Drop-in replacement for OpenAI client libraries with SSE streaming
 - 🖼️ **Image Generation** - AI image generation via OpenAI (DALL-E) or Fal AI (FLUX)
 - 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
-- 🏢 **Team Mode** - Multi-user deployments with magic-link/Google/GitHub sign-in, an admin UI, private/group chats, and PostgreSQL row-level isolation
+- 🏢 **Team Mode** - Multi-user deployments with magic-link, email+password, or Google/GitHub sign-in, an admin UI, private/group chats, and PostgreSQL row-level isolation
 - 🪪 **Virtual Agents** - Named personas with per-agent skills, agent-scoped secrets, owner/maintainer roles, and a discoverable catalog
 - 📈 **Usage Analytics** - Token usage tracking, tool call statistics, and cost estimation
 - 🔧 **Tool Visualization** - Real-time tool call display with arguments and results in web UI
@@ -267,6 +268,10 @@ metadata:
   emoji: "🌤️"
   requires:
     bins: ["curl"]
+    secrets:
+      - name: WEATHER_API_KEY
+        description: API key for the weather provider
+        required: true
   install:
     - name: curl
       brew: curl
@@ -287,6 +292,9 @@ Skills are discovered from:
 3. Custom paths via `skills.paths` config
 
 Skills with missing requirements (binaries, env vars) are automatically skipped.
+A skill that declares a *required* secret (`requires.secrets`) with no
+matching binding — see [Secrets](#skill-secrets) below — is skipped the
+same way, with a logged reason instead of failing later at call time.
 
 ### Compiled Skills
 
@@ -361,6 +369,36 @@ agent, err := agent.New(config,
 
 See the [Skills Guide](docs/guides/skills.md#remote-skills) for configuration options.
 
+### Skill Secrets
+
+A skill declares the secrets it needs in `SKILL.md` frontmatter
+(`requires.secrets`, shown above); OmniAgent supplies them, GitHub-Actions
+style. Values come from global or per-skill config bindings, resolved the
+same way as any other credential (plain values or `op://`/`bw://`/
+`file://`/`env://` vault URIs):
+
+```yaml
+# omniagent.yaml
+secrets:
+  GITHUB_TOKEN: "op://Shared/github/token"   # global binding
+
+skills:
+  config:
+    github:
+      secrets:
+        GITHUB_TOKEN: "env://GITHUB_TOKEN_OVERRIDE"  # wins over the global binding
+```
+
+Resolved values are injected into MCP subprocess environments, OpenAPI auth,
+and compiled skills via `agent.WithSecretEnv`; a skill with an unmet
+*required* secret is excluded from the loaded set (with a logged reason)
+instead of loading and failing later. Every resolved value — vault-backed or
+plain — is masked out of log output, including `omniagent config show`. In
+team mode, secrets are instead managed per-agent from the web UI (see
+[Team Mode](#team-mode) below); superadmins get a read-only view of the
+global config bindings under **Admin**. Full reference:
+[Secrets](docs/reference/configuration.md#secrets).
+
 ## Roles
 
 Roles are high-level agent personas that combine skills, workflows, and system prompts into cohesive behaviors. They separate organizational responsibilities from runtime implementations.
@@ -422,9 +460,9 @@ See the [Roles Guide](docs/guides/roles.md) for complete documentation.
 ## Team Mode
 
 Team mode turns a single-operator deployment into a **multi-user** one: real
-accounts, allowlist-closed magic-link (or Google/GitHub) sign-in, private and
-group chats, and **virtual agents** that people discover in a catalog and
-chat with.
+accounts, allowlist-closed sign-in (magic-link email, email+password, or
+Google/GitHub), private and group chats, and **virtual agents** that people
+discover in a catalog and chat with.
 
 ```yaml
 # omniagent.yaml
@@ -467,7 +505,11 @@ DM or group, and superadmins promote agents under **Curation**.
 - Uses PostgreSQL for production (row-level security isolation); a non-`postgres://`
   `app_dsn` selects SQLite for local trials only.
 - Agent-scoped secrets (`team.secrets`) are namespaced per agent so two agents
-  load disjoint secrets with no cross-leak.
+  load disjoint secrets with no cross-leak; superadmins get a read-only view
+  of the deployment-wide config bindings (names and set-state, never values)
+  under **Admin**.
+- Email+password sign-in (argon2id-hashed) is available alongside magic-link,
+  seeded by an optional `team.superadmin_password` bootstrap.
 - Optional Google OIDC and GitHub OAuth sign-in (`team.sso.*`), additive to
   magic-link email — an SSO identity links by verified email to an existing
   account rather than creating a duplicate.

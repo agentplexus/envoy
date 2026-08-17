@@ -261,6 +261,25 @@ Signed-in users get a two-pane chat surface under the **Chats** tab:
 Each chat's memory is scoped to that chat, so context never bleeds across
 conversations.
 
+### Speech-to-text and translate
+
+The composer has two optional icons next to the send button:
+
+- **Speech-to-text** (mic icon) dictates into the message box using the
+  browser's native `SpeechRecognition` API — entirely client-side, no
+  request ever leaves the browser.
+- **Translate** (globe icon) posts the composer's current text to
+  `POST /api/translate` and replaces it with the translation, via a
+  language popover (Spanish, French, German, Chinese, Japanese, Korean,
+  Portuguese, Italian). This is a one-shot, non-persisting LLM call — it
+  never touches chat history or memory.
+
+Both icons only render when supported: the mic icon only if the browser
+exposes `SpeechRecognition`/`webkitSpeechRecognition`; the translate icon
+only if the `translate` capability (`GET /api/capabilities`) is true, which
+requires a deployment-wide LLM (`agent.api_key` configured) — see
+[Configuration](../reference/configuration.md).
+
 ## Virtual agents
 
 The headline of team mode is **virtual agents**: named personas, each bound to a
