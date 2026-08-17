@@ -73,7 +73,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/1password/onepassword-sdk-go v0.4.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/OpenRouterTeam/go-sdk v0.7.51 // indirect
+	github.com/OpenRouterTeam/go-sdk v0.7.52 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/aistandardsio/agent-protocols v0.7.0 // indirect
 	github.com/anthropics/anthropic-sdk-go v1.63.1 // indirect
