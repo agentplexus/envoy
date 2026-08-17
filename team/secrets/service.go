@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/plexusone/omnivault/vault"
+
+	"github.com/plexusone/omniagent/internal/redact"
 )
 
 // Namespace prefixes partition the flat backing vault by tenant. Agent secrets
@@ -80,6 +82,9 @@ func (s *Service) ResolveAgentSecrets(ctx context.Context, agentID uuid.UUID) (m
 			return nil, fmt.Errorf("get agent secret %q: %w", name, err)
 		}
 		env[name] = sec.String()
+		// Register the resolved value so it never appears unmasked in log
+		// output, however it's later handled (RMI-OMNIAGENT-204).
+		redact.Register(sec.String())
 	}
 	return env, nil
 }

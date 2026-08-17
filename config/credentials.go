@@ -9,6 +9,8 @@ import (
 
 	"github.com/plexusone/omnivault"
 	"github.com/plexusone/omnivault/vault"
+
+	"github.com/plexusone/omniagent/internal/redact"
 )
 
 // vaultSchemes are the URI schemes that indicate a vault-backed credential.
@@ -148,6 +150,10 @@ func (c *Config) ResolveCredentials(ctx context.Context) error {
 		}
 
 		if !isVaultURI(*f.value) {
+			// A plain literal is already its final, "resolved" value —
+			// register it too so it's never left unmasked in log output
+			// just because it didn't come from a vault (RMI-OMNIAGENT-204).
+			redact.Register(*f.value)
 			continue
 		}
 
@@ -182,6 +188,9 @@ func resolveSecretMap(ctx context.Context, resolver *credentialResolver, path st
 			return fmt.Errorf("resolve %s.%s: unknown vault URI scheme in %q", path, key, val)
 		}
 		if !isVaultURI(val) {
+			// See the equivalent branch in ResolveCredentials: a plain
+			// literal is already resolved (RMI-OMNIAGENT-204).
+			redact.Register(val)
 			continue
 		}
 		resolved, err := resolveCredential(ctx, resolver, val)
@@ -216,6 +225,10 @@ func resolveCredential(ctx context.Context, resolver *credentialResolver, uri st
 	if err != nil {
 		return "", fmt.Errorf("get secret: %w", err)
 	}
+
+	// Register the resolved value so it never appears unmasked in log output,
+	// however it's later handled (RMI-OMNIAGENT-204).
+	redact.Register(secret.Value)
 
 	return secret.Value, nil
 }

@@ -3,11 +3,13 @@ package commands
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/spf13/cobra"
 
 	"github.com/plexusone/omniagent/agent"
 	"github.com/plexusone/omniagent/config"
+	"github.com/plexusone/omniagent/internal/redact"
 )
 
 var (
@@ -37,6 +39,11 @@ Show configuration:
 		if cmd.Name() == "version" {
 			return nil
 		}
+
+		// Wrap the default logger before config loading resolves any
+		// secrets, so every resolved value is masked in log output for the
+		// lifetime of the process (RMI-OMNIAGENT-204).
+		slog.SetDefault(slog.New(redact.NewHandler(slog.Default().Handler())))
 
 		var err error
 		cfg, err = config.Load(cfgFile)

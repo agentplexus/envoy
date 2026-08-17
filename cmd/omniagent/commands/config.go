@@ -6,6 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+
+	"github.com/plexusone/omniagent/internal/redact"
 )
 
 var (
@@ -34,29 +36,14 @@ func init() {
 func showConfig(cmd *cobra.Command, args []string) error {
 	cfg := getConfig()
 
-	// Redact sensitive values
-	redacted := *cfg
-	if redacted.Agent.APIKey != "" {
-		redacted.Agent.APIKey = "***REDACTED***"
-	}
-	if redacted.Channels.Telegram.Token != "" {
-		redacted.Channels.Telegram.Token = "***REDACTED***"
-	}
-	if redacted.Channels.Discord.Token != "" {
-		redacted.Channels.Discord.Token = "***REDACTED***"
-	}
-	if redacted.Observability.APIKey != "" {
-		redacted.Observability.APIKey = "***REDACTED***"
-	}
-
 	var output []byte
 	var err error
 
 	switch configFormat {
 	case "json":
-		output, err = json.MarshalIndent(redacted, "", "  ")
+		output, err = json.MarshalIndent(cfg, "", "  ")
 	case "yaml":
-		output, err = yaml.Marshal(redacted)
+		output, err = yaml.Marshal(cfg)
 	default:
 		return fmt.Errorf("unknown format: %s (use yaml or json)", configFormat)
 	}
@@ -65,6 +52,10 @@ func showConfig(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("marshal config: %w", err)
 	}
 
-	fmt.Println(string(output))
+	// Every resolved credential/secret value was registered with the
+	// redactor during config loading (RMI-OMNIAGENT-204); scrubbing the
+	// rendered output this way covers all of them uniformly instead of a
+	// hand-maintained per-field list that drifts as fields are added.
+	fmt.Println(redact.String(string(output)))
 	return nil
 }
