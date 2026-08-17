@@ -55,7 +55,11 @@ git push origin main
 
 **Option A: Via GitHub Actions (recommended)**
 
-Pushing to GitHub triggers the build workflow automatically. The image is pushed to `ghcr.io/<owner>/<repo>:latest`.
+Pushing a version tag (`vX.Y.Z`) triggers `.github/workflows/docker.yaml`
+automatically (RMI-OMNIAGENT-003), publishing
+`ghcr.io/<owner>/<repo>:vX.Y.Z`, `:X.Y`, and `:latest`. Trigger a one-off
+build without a tag via **Actions → Docker Build & Publish → Run
+workflow**, which publishes a `:smoke` tag instead.
 
 **Option B: Build locally**
 
