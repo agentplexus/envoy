@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/plexusone/omniagent/internal/redact"
 )
 
 func TestIsUnknownVaultURI(t *testing.T) {
@@ -426,6 +428,34 @@ func TestResolveCredentials_SkillSecretsErrorPath(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "skills.config.github.secrets.GITHUB_TOKEN") {
 		t.Errorf("error = %v, want it to name skills.config.github.secrets.GITHUB_TOKEN", err)
+	}
+}
+
+//nolint:gosec // G101: Test fixture with a fake credential value
+func TestResolveCredentials_RegistersResolvedAndPlainValuesForRedaction(t *testing.T) {
+	t.Cleanup(redact.Reset)
+	os.Setenv("TEST_REDACT_VAULT_SECRET", "vault-resolved-secret-value")
+	defer os.Unsetenv("TEST_REDACT_VAULT_SECRET")
+
+	cfg := &Config{
+		Agent: AgentConfig{APIKey: "env://TEST_REDACT_VAULT_SECRET"},
+		Secrets: map[string]string{
+			"PLAIN_SECRET": "plain-literal-secret-value",
+		},
+	}
+
+	if err := cfg.ResolveCredentials(context.Background()); err != nil {
+		t.Fatalf("ResolveCredentials() error = %v", err)
+	}
+
+	// A vault-resolved value is registered by resolveCredential itself.
+	if got := redact.String("token: vault-resolved-secret-value"); strings.Contains(got, "vault-resolved-secret-value") {
+		t.Errorf("vault-resolved value not registered for redaction: %q", got)
+	}
+	// A plain literal is just as "resolved" and must be registered too —
+	// otherwise only vault-backed secrets would ever be masked in logs.
+	if got := redact.String("token: plain-literal-secret-value"); strings.Contains(got, "plain-literal-secret-value") {
+		t.Errorf("plain literal value not registered for redaction: %q", got)
 	}
 }
 
