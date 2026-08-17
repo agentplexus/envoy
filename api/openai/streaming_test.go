@@ -499,3 +499,104 @@ func TestWriteJSONError(t *testing.T) {
 }
 
 func strPtr(s string) *string { return &s }
+
+// --- Auth enforcement on chat/completions (regression coverage for the
+// auth-bypass fix: POST /chat/completions used to skip BearerAuth
+// entirely because StreamingHandler intercepts POST before ogen's own
+// security-checked routing ever runs). ---
+
+func TestChatCompletion_RequiresAPIKey_NonStreaming(t *testing.T) {
+	handler := newMockAgentHandler()
+	srv, err := New(handler, WithAPIKeys("secret-key"))
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	body := `{"model":"test-model","messages":[{"role":"user","content":"hi"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/openai/v1/chat/completions", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code == http.StatusOK {
+		t.Fatalf("expected request without an API key to be rejected, got 200: %s", w.Body.String())
+	}
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestChatCompletion_RequiresAPIKey_Streaming(t *testing.T) {
+	handler := newMockAgentHandler()
+	srv, err := New(handler, WithAPIKeys("secret-key"))
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	body := `{"model":"test-model","messages":[{"role":"user","content":"hi"}],"stream":true}`
+	req := httptest.NewRequest(http.MethodPost, "/openai/v1/chat/completions", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code == http.StatusOK {
+		t.Fatalf("expected streaming request without an API key to be rejected, got 200: %s", w.Body.String())
+	}
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestChatCompletion_WrongAPIKey(t *testing.T) {
+	handler := newMockAgentHandler()
+	srv, err := New(handler, WithAPIKeys("secret-key"))
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	body := `{"model":"test-model","messages":[{"role":"user","content":"hi"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/openai/v1/chat/completions", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer wrong-key")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code == http.StatusOK {
+		t.Fatalf("expected request with a wrong API key to be rejected, got 200: %s", w.Body.String())
+	}
+}
+
+func TestChatCompletion_CorrectAPIKey(t *testing.T) {
+	handler := newMockAgentHandler()
+	srv, err := New(handler, WithAPIKeys("secret-key"))
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	body := `{"model":"test-model","messages":[{"role":"user","content":"hi"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/openai/v1/chat/completions", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer secret-key")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body=%s", w.Code, http.StatusOK, w.Body.String())
+	}
+}
+
+func TestChatCompletion_NoAPIKeysConfigured_Allowed(t *testing.T) {
+	// No WithAPIKeys(...): server should remain open, matching
+	// Config.APIKeys's documented "empty means no auth required" contract.
+	srv, _ := setupTestServer(t)
+
+	body := `{"model":"test-model","messages":[{"role":"user","content":"hi"}]}`
+	req := httptest.NewRequest(http.MethodPost, "/openai/v1/chat/completions", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	srv.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body=%s", w.Code, http.StatusOK, w.Body.String())
+	}
+}

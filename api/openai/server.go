@@ -273,7 +273,7 @@ func New(handler AgentHandler, opts ...Option) (*Server, error) {
 	s.ogenSrv = ogenSrv
 
 	// 3. Create streaming handler for chat completions
-	streamingHandler := NewStreamingHandler(handler, ogenSrv)
+	streamingHandler := NewStreamingHandler(handler, ogenSrv, secHandler)
 	streamingHandler.SetUsageStore(s.usageStore)
 
 	// 4. Mount ogen routes for OpenAI-compatible endpoints

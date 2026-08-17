@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/plexusone/omniagent/api/openai/internal/ogen"
 )
 
 // SSEWriter wraps http.ResponseWriter for Server-Sent Events.
@@ -69,14 +72,19 @@ func (s *SSEWriter) WriteError(err error) error {
 type StreamingHandler struct {
 	agent       AgentHandler
 	ogenHandler http.Handler
+	secHandler  *securityHandler
 	usageStore  *UsageStore
 }
 
-// NewStreamingHandler creates a new streaming handler.
-func NewStreamingHandler(agent AgentHandler, ogenHandler http.Handler) *StreamingHandler {
+// NewStreamingHandler creates a new streaming handler. secHandler enforces
+// the same BearerAuth check as the ogen-routed endpoints (models, etc.) —
+// this handler bypasses ogen's own routing for SSE support, so it must
+// apply that check itself rather than inherit it for free.
+func NewStreamingHandler(agent AgentHandler, ogenHandler http.Handler, secHandler *securityHandler) *StreamingHandler {
 	return &StreamingHandler{
 		agent:       agent,
 		ogenHandler: ogenHandler,
+		secHandler:  secHandler,
 	}
 }
 
@@ -94,6 +102,21 @@ func (h *StreamingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST requests are handled directly below rather than delegated to
+	// ogenHandler (which can't stream SSE), so they never pass through
+	// ogen's generated BearerAuth check. Apply the same check here using
+	// the identical securityHandler other endpoints use, so a configured
+	// API key/AAuth/AgentAuth requirement can't be bypassed by streaming
+	// or non-streaming chat completions.
+	ctx, err := h.secHandler.HandleBearerAuth(r.Context(), ogen.CreateChatCompletionOperation, ogen.BearerAuth{
+		Token: bearerToken(r.Header),
+	})
+	if err != nil {
+		writeJSONError(w, http.StatusUnauthorized, "invalid_request_error", "invalid or missing API key")
+		return
+	}
+	r = r.WithContext(ctx)
+
 	// Decode request to check if streaming
 	var req ChatCompletionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -109,6 +132,21 @@ func (h *StreamingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Handle streaming request
 	h.handleStreaming(w, r, &req)
+}
+
+// bearerToken extracts the token from an "Authorization: Bearer <token>"
+// header, mirroring the extraction ogen's generated server does internally
+// (unexported there) so StreamingHandler's manual dispatch can reuse the
+// exact same securityHandler.HandleBearerAuth check other endpoints get
+// for free from ogen's routing.
+func bearerToken(h http.Header) string {
+	for _, v := range h["Authorization"] {
+		scheme, value, ok := strings.Cut(v, " ")
+		if ok && strings.EqualFold(scheme, "Bearer") {
+			return value
+		}
+	}
+	return ""
 }
 
 func (h *StreamingHandler) handleNonStreaming(w http.ResponseWriter, r *http.Request, req *ChatCompletionRequest) {
