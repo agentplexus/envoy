@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-001`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Executing — 14 of 30 items completed
+**Status:** Executing — 15 of 30 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member RMIs — a phase is complete only when all its required RMIs are complete.
 
@@ -76,7 +76,7 @@
 ## Phase 5 — Test Coverage
 
 **Theme:** Increase test coverage for critical low-coverage packages.
-**Status:** Planned — 0 of 5 items completed
+**Status:** In progress — 1 of 5 items completed
 
 - [ ] `RMI-OMNIAGENT-021` Agent package test coverage (target: 50%+)
   - - Acceptance: `agent` package coverage increases from 7% to 50%+; covers core Process flow, tool execution, session handling
@@ -86,8 +86,9 @@
   - - Acceptance: `openai` adapter package coverage increases from 19.9% to 50%+; covers multi-agent routing, chat completion, cron handler
 - [ ] `RMI-OMNIAGENT-024` Voice package test coverage (target: 50%+)
   - - Acceptance: `voice` package coverage increases from 22.6% to 50%+; covers gateway, processor, providers
-- [ ] `RMI-OMNIAGENT-025` Skills package test coverage (target: 50%+)
+- [x] `RMI-OMNIAGENT-025` Skills package test coverage (target: 50%+)
   - - Acceptance: `skills` package coverage increases from 37.8% to 50%+; covers skill loading, execution, validation
+  - - Shipped: 41.2% → 96.7%. Covers discovery/loading (directory + embedded-pack sources, dedup precedence, malformed manifests), the `Manager` (Load/Get/All/Count/Available, Includes/Excludes ordering), and `CheckRequirements` install-hint formatting.
 
 ## Phase 6 — Context and Token Management
 
