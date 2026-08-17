@@ -85,6 +85,11 @@ type Config struct {
 	// Memory configuration
 	TenantID string // Tenant ID for multi-tenancy (memory scope)
 	AgentID  string // Agent ID for memory attribution
+
+	// CompactionPrompt overrides the system prompt used when summarizing
+	// older messages for context compaction (RMI-OMNIAGENT-027, see
+	// WithCompaction). Empty uses a sensible default.
+	CompactionPrompt string
 }
 
 // New creates a new agent with optional configuration.
@@ -367,10 +372,14 @@ func (a *Agent) processInternal(ctx context.Context, session *sessions.Session, 
 		Content: content,
 	})
 
-	// Apply context management (windowing, token limits)
+	// Apply context management (windowing, token limits, compaction)
 	if a.contextEngine != nil {
 		beforeCount := len(messages)
-		messages = a.contextEngine.Apply(messages)
+		windowed, ceErr := a.contextEngine.Apply(ctx, messages)
+		if ceErr != nil {
+			a.logger.Warn("context compaction degraded, using recency fallback", "error", ceErr)
+		}
+		messages = windowed
 		if len(messages) < beforeCount {
 			a.logger.Info("applied context windowing",
 				"before", beforeCount,

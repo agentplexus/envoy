@@ -1,10 +1,12 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
 
+	"github.com/plexusone/omnillm/provider"
 	"github.com/plexusone/omnimemory/core"
 	"github.com/plexusone/omniskill/role"
 	"github.com/plexusone/omnistorage-core/kvs"
@@ -220,6 +222,36 @@ func WithMaxMessages(max int) Option {
 	return func(a *Agent) error {
 		a.contextEngine = agentctx.New(agentctx.Config{
 			MaxMessages: max,
+		})
+		return nil
+	}
+}
+
+// WithCompaction enables LLM-based conversation summarization
+// (RMI-OMNIAGENT-027): once the message count exceeds threshold, the
+// oldest messages are condensed into a single summary using the agent's
+// own LLM client/model, instead of just being dropped. Customize the
+// prompt via Config.CompactionPrompt.
+//
+// Call this after WithContextEngine/WithContextConfig/WithMaxMessages if
+// combining them — those options replace the context engine wholesale,
+// which would discard compaction settings applied before them. If no
+// context engine exists yet, WithCompaction creates one with
+// agentctx.DefaultConfig().
+//
+// Example:
+//
+//	agent, err := agent.New(config,
+//	    agent.WithMaxMessages(50),
+//	    agent.WithCompaction(30),
+//	)
+func WithCompaction(threshold int) Option {
+	return func(a *Agent) error {
+		if a.contextEngine == nil {
+			a.contextEngine = agentctx.New(agentctx.DefaultConfig())
+		}
+		a.contextEngine.EnableCompaction(threshold, func(ctx context.Context, messages []provider.Message) (string, error) {
+			return a.summarizeMessages(ctx, messages)
 		})
 		return nil
 	}
