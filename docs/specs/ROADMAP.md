@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-001`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Executing — 19 of 30 items completed
+**Status:** Executing — 20 of 30 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member RMIs — a phase is complete only when all its required RMIs are complete.
 
@@ -97,12 +97,13 @@
 ## Phase 6 — Context and Token Management
 
 **Theme:** Implement the deferred context window and token counting features.
-**Status:** In progress — 4 of 5 items completed
+**Status:** Complete — 5 of 5 items completed
 
 - [x] `RMI-OMNIAGENT-026` Model-specific token counting
   - - Acceptance: `ModelTokenCounter` uses tiktoken for OpenAI models, provider-specific counting for Anthropic/others; accurate to within 5% of actual usage
-- [ ] `RMI-OMNIAGENT-027` LLM-based conversation summarization
+- [x] `RMI-OMNIAGENT-027` LLM-based conversation summarization
   - - Acceptance: `WindowStrategySummarize` calls LLM to summarize older messages; configurable summarization prompt; summary replaces N oldest messages
+  - - Shipped: `Window.applySummarize` (previously a stub) now calls an injected `SummarizeFunc`, keeping the system message + most recent messages verbatim and replacing older ones with a single summary message; falls back to plain recency windowing and returns a `*CompactionError` if summarization fails or isn't configured. `Engine.Apply` gained a `ctx`/error-returning signature and delegates to `Window` internally when `CompactionEnabled`+`CompactionThreshold` are set (`Engine.EnableCompaction`), composing with its existing message/token windowing. `agent.WithCompaction(threshold)` wires this to the agent's own LLM client (`agent/compaction.go`'s `summarizeMessages`, configurable via `Config.CompactionPrompt`) — a pure library capability, matching RMI-026's precedent of no `gateway run`/CLI wiring.
 - [x] `RMI-OMNIAGENT-028` Autoreply template rendering
   - - Acceptance: `autoreply` package template TODO implemented; supports variable substitution in auto-reply messages
 - [x] `RMI-OMNIAGENT-029` WebSocket origin allowlist

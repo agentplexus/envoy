@@ -10,6 +10,7 @@ Long conversations can exceed LLM context windows, causing errors or degraded re
 - **Token Budgeting** - Stay within token limits
 - **System Message Preservation** - Always keep the system prompt
 - **Windowing Strategies** - Different approaches for different use cases
+- **LLM-Based Compaction** - Condense older messages into a summary instead of dropping them (`WithCompaction`)
 
 ## Quick Start
 
@@ -44,6 +45,9 @@ a, _ := agent.New(config,
 | `MaxTokens` | int | 0 | Maximum token budget (0 = unlimited) |
 | `ReserveTokens` | int | 4096 | Tokens reserved for response |
 | `TokenCounter` | TokenCounter | SimpleTokenCounter | Token estimation strategy |
+| `CompactionEnabled` | bool | false | Enable LLM-based summarization of older messages |
+| `CompactionThreshold` | int | 50 | Message count that triggers compaction |
+| `Summarizer` | SummarizeFunc | nil | Called to condense older messages; required for `CompactionEnabled` to do anything (set automatically by `agent.WithCompaction`) |
 
 ### Example Configurations
 
@@ -153,25 +157,67 @@ window := context.NewWindow(context.WindowConfig{
 })
 ```
 
-### Summarize (Future)
+### Summarize
 
-Will summarize older messages using an LLM:
+Condenses older messages into a single summary using an LLM, instead of
+dropping them. The simplest way to enable this is `agent.WithCompaction`,
+which wires the agent's own LLM client into the context engine:
+
+```go
+a, _ := agent.New(config,
+    agent.WithMaxMessages(100), // still enforced as a hard ceiling
+    agent.WithCompaction(50),   // summarize once history exceeds 50 messages
+)
+```
+
+Call `WithCompaction` *after* `WithMaxMessages`/`WithContextConfig`/
+`WithContextEngine` if combining them — those replace the context engine
+wholesale, which would discard compaction settings applied before them.
+
+Customize the summarization prompt via `Config.CompactionPrompt`:
+
+```go
+a, _ := agent.New(agent.Config{
+    CompactionPrompt: "Summarize the discussion, focusing on action items.",
+}, agent.WithCompaction(50))
+```
+
+Compaction keeps the system message and the most recent messages
+verbatim, and replaces everything older with a single synthetic system
+message containing the summary. If summarization fails (no summarizer
+configured, or the LLM call errors), it falls back to the plain recency
+window and the failure is logged — a turn never breaks because
+compaction failed.
+
+Using `Window` directly (e.g. for a custom engine or a standalone use of
+the strategy) requires providing your own `Summarizer`:
 
 ```go
 window := context.NewWindow(context.WindowConfig{
     Strategy:    context.WindowStrategySummarize,
     MaxMessages: 50,
+    Summarizer: func(ctx context.Context, messages []provider.Message) (string, error) {
+        // Call your own LLM here and return the summary text.
+        return callYourLLM(ctx, messages)
+    },
 })
 ```
 
 ## Agent Integration
 
-The context engine is automatically applied during message processing:
+The context engine is automatically applied during message processing.
+`Apply` returns an error alongside the (always usable) messages — non-nil
+only when compaction was enabled and failed, in which case the plain
+recency window was used as a fallback:
 
 ```go
 // In agent.processInternal():
 if a.contextEngine != nil {
-    messages = a.contextEngine.Apply(messages)
+    windowed, err := a.contextEngine.Apply(ctx, messages)
+    if err != nil {
+        logger.Warn("context compaction degraded, using recency fallback", "error", err)
+    }
+    messages = windowed
 }
 ```
 
@@ -185,8 +231,8 @@ engine := context.New(context.DefaultConfig())
 // Estimate tokens
 tokens := engine.EstimateTokens(messages)
 
-// Apply windowing
-windowed := engine.Apply(messages)
+// Apply windowing (and compaction, if enabled)
+windowed, err := engine.Apply(ctx, messages)
 
 // Check available budget
 available := engine.AvailableTokens(messages)
@@ -257,24 +303,30 @@ logger.Info("context tokens", "count", tokens)
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                 processInternal()                   │
-│                                                     │
-│  messages = buildMessages(session, content)         │
-│         │                                           │
-│         ▼                                           │
-│  ┌─────────────────┐                               │
-│  │  Context Engine │                               │
-│  │                 │                               │
-│  │  ├─ Apply()     │◄── MaxMessages, MaxTokens     │
-│  │  ├─ Window      │                               │
-│  │  └─ TokenCounter│                               │
-│  └─────────────────┘                               │
-│         │                                           │
-│         ▼                                           │
-│  windowed messages → LLM request                   │
-└─────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                     processInternal()                     │
+│                                                           │
+│  messages = buildMessages(session, content)               │
+│         │                                                 │
+│         ▼                                                 │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │                   Context Engine                  │   │
+│  │                                                    │   │
+│  │  1. Compaction (if CompactionEnabled + over        │   │
+│  │     CompactionThreshold) — delegates to a Window   │   │
+│  │     configured for WindowStrategySummarize,        │   │
+│  │     calling Summarizer for the older messages      │   │
+│  │  2. applyMessageWindow() ◄── MaxMessages            │   │
+│  │  3. applyTokenWindow()  ◄── MaxTokens, TokenCounter │   │
+│  └───────────────────────────────────────────────────┘   │
+│         │                                                 │
+│         ▼                                                 │
+│  windowed (and possibly compacted) messages → LLM request │
+└───────────────────────────────────────────────────────────┘
 ```
+
+`agent.WithCompaction` is what wires step 1's `Summarizer` to a real LLM
+call, reusing the agent's own client (`agent/compaction.go`).
 
 ## See Also
 
