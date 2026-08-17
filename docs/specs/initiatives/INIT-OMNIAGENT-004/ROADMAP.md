@@ -2,8 +2,8 @@
 
 **Initiative:** `INIT-OMNIAGENT-004`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** In progress — the agent-scoped management flow (declaration + API +
-UI) has shipped; the single-operator config-binding path has also shipped.
+**Status:** Complete — every RMI in this initiative has shipped or been
+cancelled with a documented rescope.
 
 > RMI IDs are stable and permanent. Commits carry `Refs: RMI-OMNIAGENT-<NNN>`.
 > Phase status is derived from member RMIs. **Core (v1a)** = Phase 1;
@@ -55,17 +55,26 @@ UI) has shipped; the single-operator config-binding path has also shipped.
 > premise didn't survive the rescope — see its own checklist note below —
 > shipped instead as `compiled.SecretRequirer`, extending RMI-203's
 > exclude-don't-fail gating from markdown skills to compiled skills,
-> implemented for MCP), and the redaction guarantee of RMI-204 (values
-> never reach logs/prompt — injection targets skill env/auth only).
+> implemented for MCP), and RMI-204 (structural redaction guarantee — values
+> never reach logs/prompt because injection targets skill env/auth only —
+> plus a real defense-in-depth `internal/redact` layer: a global registry of
+> resolved values populated at both resolution choke points
+> (`config.resolveCredential`/`resolveSecretMap` and
+> `team/secrets.Service.ResolveAgentSecrets`), and an `slog.Handler` wrapper
+> masking any of them out of log records, wired over the CLI's default
+> logger in `cmd/omniagent/commands/root.go`. Also fixed `omniagent config
+> show`'s redaction, which predated RMI-201/202 and missed the newer
+> `Secrets`/`Skills.Config[*].Secrets` maps — it now reuses `redact.String`
+> on the rendered output instead of a hand-maintained field list. Cross-type
+> tests (`skills/compiled/redaction_test.go`) cover MCP, OpenAPI, and a
+> generic compiled skill against a fake vault).
 > RMI-213 also shipped (read-only `GET /api/admin/secret-bindings` +
 > `renderAdmin()`'s Global Secret Bindings card, sourced from a
 > `globalSecretBindings(cfg)` snapshot of `Config.Secrets` +
 > `Skills.Config[*].Secrets` taken once at startup — names and set-state
 > only, values never leave the process).
-> **Follow-on (still open):** the rest of RMI-204 (no dedicated cross-type
-> redaction test suite covering MCP/compiled/OpenAPI together — RMI-203's
-> tests cover markdown-skill gating only; `SecretRequirer` could extend to
-> OpenAPI as a natural follow-on).
+> **Follow-on (not scoped by this initiative):** `compiled.SecretRequirer`
+> (RMI-210) could extend to OpenAPI the same way it covers MCP.
 > **Cancelled:** RMI-205, RMI-206.
 
 ## Phase 1 — Declaration, Binding & Injection
@@ -110,9 +119,35 @@ UI) has shipped; the single-operator config-binding path has also shipped.
     a later opaque provider failure. Compiled/MCP/OpenAPI skills registered
     via `agent.Option` have no `Requires()`/declared-secrets concept, so
     there's nothing to gate on that path yet.
-- [ ] `RMI-OMNIAGENT-204` Redaction + cross-type tests
+- [x] `RMI-OMNIAGENT-204` Redaction + cross-type tests
   - Depends on: `RMI-OMNIAGENT-203`
-  - Acceptance: resolved values are masked in logs and never enter prompt/transcript; tests cover MCP/compiled/OpenAPI with a fake vault
+  - Shipped: new `internal/redact` package — a global registry of resolved
+    secret values (`Register`) plus an `slog.Handler` wrapper (`NewHandler`)
+    that masks any registered value out of a log record's message and
+    attributes, including nested groups and error/Stringer `Any` values.
+    Registration happens at both places a value is ever resolved:
+    `config.resolveCredential` (vault-backed) and the plain-literal branches
+    of `ResolveCredentials`/`resolveSecretMap` (a literal value is already
+    "resolved"), and `team/secrets.Service.ResolveAgentSecrets`. The CLI
+    wraps `slog.Default()`'s handler with `redact.NewHandler` in
+    `cmd/omniagent/commands/root.go`'s `PersistentPreRunE`, before config
+    loading resolves anything, so every process-lifetime log line is
+    covered. Also fixed `omniagent config show`, whose own doc string
+    promises "(with sensitive values redacted)" but whose hand-maintained
+    field list predated RMI-201/202 and never covered `Secrets`/
+    `Skills.Config[*].Secrets` (confirmed leaking during manual
+    verification) — it now calls `redact.String` on the rendered output,
+    which is both correct and simpler than the field list it replaced.
+    "Never enter prompt/transcript" was true by construction before this
+    RMI (injection targets skill env/auth structs only, never any
+    LLM-visible tool description) and is now covered by
+    `TestCrossTypeRedaction_PublicSurfaceNeverExposesValue`. Cross-type
+    tests in `skills/compiled/redaction_test.go` resolve a secret from an
+    `omnivault/providers/memory` fake vault and inject it via `SetSecrets`
+    into `mcp.Skill`, `openapi.Skill`, and a generic `compiled.SecretsAware`
+    fake, then assert a redacted logger never leaks the value even when fed
+    a `%+v` dump of the skill (the realistic accidental-leak path, since
+    Go's `fmt` prints unexported struct fields via reflection).
 
 ## Phase 2 — Per-User Encrypted Store (team mode)
 

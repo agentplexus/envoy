@@ -210,6 +210,13 @@ different skills bind the same env-var name to different values, only one
 wins (whichever was merged last). This doesn't come up in team mode, where
 secrets are already isolated per virtual agent.
 
+Every resolved value (vault-backed or a plain literal) is registered with a
+process-wide log redactor as soon as it's resolved, and the default logger
+is wrapped to mask any of them out of log output for the life of the
+process — a defense-in-depth backstop on top of the injection paths
+themselves never intentionally logging a value. `omniagent config show`
+also runs its output through the same redactor before printing it.
+
 ## Team Mode
 
 Multi-user mode: user accounts, magic-link sign-in, chats, and virtual agents.
