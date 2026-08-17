@@ -7,6 +7,8 @@
 package context
 
 import (
+	"context"
+
 	"github.com/plexusone/omnillm/provider"
 )
 
@@ -39,6 +41,11 @@ type Config struct {
 	// TokenCounter estimates token count for messages.
 	// If nil, a simple character-based estimator is used.
 	TokenCounter TokenCounter
+
+	// Summarizer condenses older messages when compaction triggers
+	// (RMI-OMNIAGENT-027). Required for CompactionEnabled to have any
+	// effect beyond a no-op — see EnableCompaction.
+	Summarizer SummarizeFunc
 }
 
 // DefaultConfig returns a default configuration.
@@ -62,13 +69,34 @@ func New(config Config) *Engine {
 }
 
 // Apply applies context management to a list of messages.
-// It returns a potentially reduced set of messages that fits within limits.
-func (e *Engine) Apply(messages []provider.Message) []provider.Message {
+// It returns a potentially reduced set of messages that fits within
+// limits, and any error encountered compacting them (RMI-OMNIAGENT-027).
+// The returned messages are always usable even when err is non-nil —
+// compaction failures fall back to plain windowing, never break the
+// caller's turn.
+func (e *Engine) Apply(ctx context.Context, messages []provider.Message) ([]provider.Message, error) {
 	if len(messages) == 0 {
-		return messages
+		return messages, nil
 	}
 
 	result := messages
+	var compactionErr error
+
+	// Compact (summarize) older messages first, if enabled and over
+	// threshold, by delegating to a Window configured for
+	// WindowStrategySummarize — reusing its split/fallback logic rather
+	// than duplicating it here.
+	if e.config.CompactionEnabled && e.config.CompactionThreshold > 0 && len(result) > e.config.CompactionThreshold {
+		w := NewWindow(WindowConfig{
+			Strategy:     WindowStrategySummarize,
+			MaxMessages:  e.config.CompactionThreshold,
+			TokenCounter: e.config.TokenCounter,
+			Summarizer:   e.config.Summarizer,
+		})
+		compacted, err := w.Apply(ctx, result)
+		compactionErr = err
+		result = compacted
+	}
 
 	// Apply message limit
 	if e.config.MaxMessages > 0 && len(result) > e.config.MaxMessages {
@@ -80,7 +108,16 @@ func (e *Engine) Apply(messages []provider.Message) []provider.Message {
 		result = e.applyTokenWindow(result)
 	}
 
-	return result
+	return result, compactionErr
+}
+
+// EnableCompaction turns on LLM-based conversation summarization
+// (RMI-OMNIAGENT-027): once the message count exceeds threshold, older
+// messages are condensed via fn instead of being dropped outright.
+func (e *Engine) EnableCompaction(threshold int, fn SummarizeFunc) {
+	e.config.CompactionEnabled = true
+	e.config.CompactionThreshold = threshold
+	e.config.Summarizer = fn
 }
 
 // applyMessageWindow keeps only the most recent messages within the limit.
