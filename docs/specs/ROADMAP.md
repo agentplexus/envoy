@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-001`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Executing — 17 of 30 items completed
+**Status:** Executing — 18 of 30 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member RMIs — a phase is complete only when all its required RMIs are complete.
 
@@ -76,12 +76,13 @@
 ## Phase 5 — Test Coverage
 
 **Theme:** Increase test coverage for critical low-coverage packages.
-**Status:** In progress — 3 of 5 items completed
+**Status:** In progress — 4 of 5 items completed
 
 - [ ] `RMI-OMNIAGENT-021` Agent package test coverage (target: 50%+)
   - - Acceptance: `agent` package coverage increases from 7% to 50%+; covers core Process flow, tool execution, session handling
-- [ ] `RMI-OMNIAGENT-022` OpenAI API server test coverage (target: 50%+)
+- [x] `RMI-OMNIAGENT-022` OpenAI API server test coverage (target: 50%+)
   - - Acceptance: `api/openai` package coverage increases from 15.6% to 50%+; covers streaming, models endpoint, tool listing
+  - - Shipped: 18.2% → 66.5%. Covers SSE streaming end-to-end, models list/retrieve with API-key auth, ogen<->internal type conversions, usage/tool-usage stores. **Found in the process (not fixed — see follow-up): `POST /openai/v1/chat/completions` bypasses `securityHandler`/API-key auth entirely** — `StreamingHandler.ServeHTTP` (`streaming.go`) never calls into the ogen-wrapped, auth-checked handler for POST requests, unlike `/models` which correctly enforces it.
 - [x] `RMI-OMNIAGENT-023` OpenAI adapter test coverage (target: 50%+)
   - - Acceptance: `openai` adapter package coverage increases from 19.9% to 50%+; covers multi-agent routing, chat completion, cron handler
   - - Shipped: 19.9% → 91.4%. Covers routing precedence, the `useSession` gate, streaming reassembly, and the cron handler end-to-end against a real in-memory scheduler; a shared httptest-backed fake LLM drives a real `*agent.Agent` with no network access.
