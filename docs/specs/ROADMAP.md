@@ -2,7 +2,7 @@
 
 **Initiative:** `INIT-OMNIAGENT-001`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Executing — 15 of 30 items completed
+**Status:** Executing — 16 of 30 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member RMIs — a phase is complete only when all its required RMIs are complete.
 
@@ -76,14 +76,15 @@
 ## Phase 5 — Test Coverage
 
 **Theme:** Increase test coverage for critical low-coverage packages.
-**Status:** In progress — 1 of 5 items completed
+**Status:** In progress — 2 of 5 items completed
 
 - [ ] `RMI-OMNIAGENT-021` Agent package test coverage (target: 50%+)
   - - Acceptance: `agent` package coverage increases from 7% to 50%+; covers core Process flow, tool execution, session handling
 - [ ] `RMI-OMNIAGENT-022` OpenAI API server test coverage (target: 50%+)
   - - Acceptance: `api/openai` package coverage increases from 15.6% to 50%+; covers streaming, models endpoint, tool listing
-- [ ] `RMI-OMNIAGENT-023` OpenAI adapter test coverage (target: 50%+)
+- [x] `RMI-OMNIAGENT-023` OpenAI adapter test coverage (target: 50%+)
   - - Acceptance: `openai` adapter package coverage increases from 19.9% to 50%+; covers multi-agent routing, chat completion, cron handler
+  - - Shipped: 19.9% → 91.4%. Covers routing precedence, the `useSession` gate, streaming reassembly, and the cron handler end-to-end against a real in-memory scheduler; a shared httptest-backed fake LLM drives a real `*agent.Agent` with no network access.
 - [ ] `RMI-OMNIAGENT-024` Voice package test coverage (target: 50%+)
   - - Acceptance: `voice` package coverage increases from 22.6% to 50%+; covers gateway, processor, providers
 - [x] `RMI-OMNIAGENT-025` Skills package test coverage (target: 50%+)
