@@ -57,12 +57,15 @@ UI) has shipped; the single-operator config-binding path has also shipped.
 > exclude-don't-fail gating from markdown skills to compiled skills,
 > implemented for MCP), and the redaction guarantee of RMI-204 (values
 > never reach logs/prompt — injection targets skill env/auth only).
+> RMI-213 also shipped (read-only `GET /api/admin/secret-bindings` +
+> `renderAdmin()`'s Global Secret Bindings card, sourced from a
+> `globalSecretBindings(cfg)` snapshot of `Config.Secrets` +
+> `Skills.Config[*].Secrets` taken once at startup — names and set-state
+> only, values never leave the process).
 > **Follow-on (still open):** the rest of RMI-204 (no dedicated cross-type
 > redaction test suite covering MCP/compiled/OpenAPI together — RMI-203's
 > tests cover markdown-skill gating only; `SecretRequirer` could extend to
-> OpenAPI as a natural follow-on), and RMI-213 (docs shipped; the admin
-> global-bindings view itself does not exist — now meaningful to build
-> since RMI-202's `Config.Secrets` gives it something to display).
+> OpenAPI as a natural follow-on).
 > **Cancelled:** RMI-205, RMI-206.
 
 ## Phase 1 — Declaration, Binding & Injection
@@ -187,6 +190,19 @@ UI) has shipped; the single-operator config-binding path has also shipped.
 - [x] `RMI-OMNIAGENT-212` Settings › Secrets UI panel
   - Depends on: `RMI-OMNIAGENT-211`, `RMI-OMNIAGENT-003` web UI (`RMI-OMNIAGENT-115`)
   - Acceptance: per-skill declared secrets shown with paste-to-set, set/unset indicator, delete; values write-only after save
-- [ ] `RMI-OMNIAGENT-213` Admin global-bindings view + docs
+- [x] `RMI-OMNIAGENT-213` Admin global-bindings view + docs
   - Depends on: `RMI-OMNIAGENT-212`, `RMI-OMNIAGENT-003` admin UI (`RMI-OMNIAGENT-119`)
-  - Acceptance: superadmin sees global binding names + set-state (no values); testing guide covers the full member flow
+  - Shipped: `GlobalSecretBinding{Name,Source,Set}` + `GET
+    /api/admin/secret-bindings` (superadmin-only, mirrors
+    `handleListUsers`'s `h.actor` gate; 401 unauthenticated, 403
+    non-superadmin — covered by `TestTeamHTTP_AdminSecretBindings` against
+    a real Postgres instance, and manually verified live against a
+    trial gateway). Snapshot built once at startup by
+    `cmd/omniagent/commands/team.go`'s `globalSecretBindings(cfg)`
+    (sorted by source then name) and threaded into
+    `TeamHTTPConfig.GlobalSecretBindings` — no per-request recomputation,
+    since these config-file bindings are static for the process's
+    lifetime. `web/dist/app.js`'s `globalSecretBindingsCard()` renders it
+    read-only in the Admin tab, reusing RMI-212's `secret-row`/`badge`
+    visual language. `docs/guides/team-mode.md`'s Admin section documents
+    the card and route.

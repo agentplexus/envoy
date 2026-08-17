@@ -167,6 +167,13 @@ Only allowlisted emails (plus the superadmin) can sign in. Superadmins see an
   Disabling ends a member's access immediately; their data stays scoped and
   inaccessible to others, and it is a disable, not a delete. A superadmin
   cannot disable their own account (lockout guard).
+- **Global Secret Bindings** — a read-only list of the deployment-wide
+  `secrets:`/`skills.config.<name>.secrets` bindings from the config file
+  (see [Secrets](../reference/configuration.md#secrets)), showing each
+  binding's name, source (`global` or a skill name), and whether it's set —
+  never the value. These are static for the process's lifetime; change them
+  by editing the config, not through the UI. This is the deployment-wide
+  counterpart to the per-agent Secrets panel on each agent's own page.
 
 The same operations are available over the admin API, useful for scripting:
 
@@ -179,6 +186,9 @@ DELETE /api/admin/allowlist?email=teammate@example.com
 # Members
 GET    /api/admin/users
 PATCH  /api/admin/users/{id}       {"status":"disabled"}   # or {"username":"..."}
+
+# Global secret bindings (read-only)
+GET    /api/admin/secret-bindings
 ```
 
 ### SSO (Google, GitHub)
