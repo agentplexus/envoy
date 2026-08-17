@@ -2,21 +2,22 @@
 
 **Initiative:** `INIT-OMNIAGENT-001`
 **Repository:** `github.com/plexusone/omniagent`
-**Status:** Executing — 20 of 30 items completed
+**Status:** Executing — 21 of 30 items completed
 
 > RMI IDs are stable and permanent. Commits implementing an item carry the trailer `Refs: RMI-OMNIAGENT-<NNN>`. Phase status is derived from member RMIs — a phase is complete only when all its required RMIs are complete.
 
 ## Phase 1 — Cloud Deployment
 
 **Theme:** Ship OmniAgent as a Discord bot on AWS Lightsail via omnideploy from a public GHCR image.
-**Status:** In progress — 1 of 5 items completed
+**Status:** In progress — 2 of 5 items completed
 
 - [x] `RMI-OMNIAGENT-001` Discord 2000-character message chunking in omnichat
   - - Acceptance: replies over 2000 chars split into multiple messages; rune-based, breaks on paragraph/newline/space; shipped as omnichat v0.8.1 and linked into the omniagent binary
 - [x] `RMI-OMNIAGENT-002` Standalone multi-stage Dockerfile for omniagent
   - - Acceptance: `docker build --platform linux/amd64` succeeds with no local replace mounts; runs `gateway run`; serves `/health`
-- [ ] `RMI-OMNIAGENT-003` Publish container image to GHCR (public)
+- [x] `RMI-OMNIAGENT-003` Publish container image to GHCR (public)
   - Depends on: `RMI-OMNIAGENT-002`
+  - - Shipped: `.github/workflows/docker.yaml` builds and pushes `ghcr.io/plexusone/omniagent` on `v*` tag push (`:vX.Y.Z`, `:X.Y`, `:latest`), or `:smoke` via manual `workflow_dispatch`. `docs/guides/deployment.md` corrected to describe the actual tag-triggered behavior instead of "any push." One manual one-time step remains outside CI's reach: an admin must set the GHCR package visibility to Public after the first push (already documented in the guide's "GHCR Authentication" section) — `GITHUB_TOKEN` can't do this itself.
 - [ ] `RMI-OMNIAGENT-004` Lightsail deployment via omnideploy
   - Depends on: `RMI-OMNIAGENT-003`
   - - Acceptance: `omnideploy up --target lightsail --backend pulumi` provisions a running service with the Discord/agent/Serper env
