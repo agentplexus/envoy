@@ -8,6 +8,7 @@ type Config struct {
 	Gateway       GatewayConfig       `json:"gateway" yaml:"gateway"`
 	Agent         AgentConfig         `json:"agent" yaml:"agent"`
 	Agents        []AgentConfig       `json:"agents,omitempty" yaml:"agents,omitempty"` // Multi-agent configs
+	Storage       StorageConfig       `json:"storage" yaml:"storage"`
 	Sessions      SessionsConfig      `json:"sessions" yaml:"sessions"`
 	Auth          AuthConfig          `json:"auth" yaml:"auth"`
 	Web           WebConfig           `json:"web" yaml:"web"`
@@ -59,8 +60,38 @@ type GatewayConfig struct {
 
 // SessionsConfig configures session behavior.
 type SessionsConfig struct {
+	// Enabled turns on persistent session history for the gateway's
+	// Discord/Telegram/WebSocket message path (RMI-OMNIAGENT-007). Defaults
+	// to true; set false to keep today's stateless-per-message behavior
+	// even when Storage is configured.
+	Enabled bool `json:"enabled" yaml:"enabled"`
+
+	// TTL is how long an idle session is kept before expiring. Zero means
+	// the session store's own default (sessions.DefaultSessionTTL, 7 days).
+	TTL Duration `json:"ttl" yaml:"ttl"`
+
 	// Rollover configures automatic session rollover.
 	Rollover RolloverConfig `json:"rollover" yaml:"rollover"`
+}
+
+// StorageConfig configures the persistent backend used for session history
+// and (single-agent) cron job state (RMI-OMNIAGENT-007).
+type StorageConfig struct {
+	// Type selects the backend: "sqlite" (default), "redis", or "memory".
+	Type string `json:"type" yaml:"type"`
+
+	// Path is the SQLite database file path. Used only when Type is
+	// "sqlite" (or empty). Defaults to DefaultStoragePath().
+	Path string `json:"path" yaml:"path"`
+
+	// Redis configures the Redis backend. Required when Type is "redis".
+	Redis RedisConfig `json:"redis" yaml:"redis"`
+}
+
+// RedisConfig configures a Redis-backed storage connection.
+type RedisConfig struct {
+	// URL is the Redis connection URL, e.g. "redis://localhost:6379".
+	URL string `json:"url" yaml:"url"`
 }
 
 // RolloverConfig configures automatic session rollover: when triggered, a

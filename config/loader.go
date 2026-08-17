@@ -98,6 +98,27 @@ func loadEnv(cfg *Config) {
 		}
 	}
 
+	// Storage
+	if v := os.Getenv("OMNIAGENT_STORAGE_TYPE"); v != "" {
+		cfg.Storage.Type = v
+	}
+	if v := os.Getenv("OMNIAGENT_STORAGE_PATH"); v != "" {
+		cfg.Storage.Path = v
+	}
+	if v := os.Getenv("OMNIAGENT_STORAGE_REDIS_URL"); v != "" {
+		cfg.Storage.Redis.URL = v
+	}
+
+	// Sessions
+	if v := os.Getenv("OMNIAGENT_SESSIONS_ENABLED"); v != "" {
+		cfg.Sessions.Enabled = v == "true"
+	}
+	if v := os.Getenv("OMNIAGENT_SESSIONS_TTL"); v != "" {
+		// Invalid values are ignored, same as other loadEnv fields that
+		// don't currently surface a load-time error (e.g. SMTP port above).
+		_ = cfg.Sessions.TTL.set(v)
+	}
+
 	// Telegram
 	if v := os.Getenv("TELEGRAM_BOT_TOKEN"); v != "" {
 		cfg.Channels.Telegram.Token = v
