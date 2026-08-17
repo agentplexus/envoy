@@ -1,7 +1,10 @@
 package context
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/plexusone/omnillm/provider"
@@ -21,7 +24,7 @@ func TestEngine_ApplyMessageWindow(t *testing.T) {
 		}
 	}
 
-	result := engine.Apply(messages)
+	result, _ := engine.Apply(context.Background(), messages)
 
 	if len(result) != 5 {
 		t.Errorf("Apply() returned %d messages, want 5", len(result))
@@ -50,7 +53,7 @@ func TestEngine_PreservesSystemMessage(t *testing.T) {
 		{Role: provider.RoleUser, Content: "E"},
 	}
 
-	result := engine.Apply(messages)
+	result, _ := engine.Apply(context.Background(), messages)
 
 	if len(result) != 3 {
 		t.Errorf("Apply() returned %d messages, want 3", len(result))
@@ -76,7 +79,7 @@ func TestEngine_NoLimitWhenUnderMax(t *testing.T) {
 		{Role: provider.RoleUser, Content: "C"},
 	}
 
-	result := engine.Apply(messages)
+	result, _ := engine.Apply(context.Background(), messages)
 
 	if len(result) != 3 {
 		t.Errorf("Apply() returned %d messages, want 3", len(result))
@@ -137,7 +140,7 @@ func TestEngine_TokenWindow(t *testing.T) {
 		{Role: provider.RoleUser, Content: "EEEEEEEEEE"},      // 10 + 4 = 14
 	}
 
-	result := engine.Apply(messages)
+	result, _ := engine.Apply(context.Background(), messages)
 
 	// Budget is 100 - 20 = 80 tokens
 	// System (10) + some messages should fit
@@ -200,7 +203,7 @@ func TestWindow_ApplyRecent(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "F"},
 	}
 
-	result, err := window.Apply(messages)
+	result, err := window.Apply(context.Background(), messages)
 	if err != nil {
 		t.Errorf("Apply() unexpected error: %v", err)
 	}
@@ -331,7 +334,7 @@ func TestEngine_ApplyTokenWindow_ZeroBudget(t *testing.T) {
 		{Role: provider.RoleUser, Content: "Hello"},
 	}
 
-	result := engine.Apply(messages)
+	result, _ := engine.Apply(context.Background(), messages)
 
 	// With zero budget, should return original messages (no trimming)
 	if len(result) != 1 {
@@ -355,7 +358,7 @@ func TestEngine_ApplyTokenWindow_OverBudget(t *testing.T) {
 		}
 	}
 
-	result := engine.Apply(messages)
+	result, _ := engine.Apply(context.Background(), messages)
 
 	// Should have fewer messages due to token limit
 	if len(result) >= len(messages) {
@@ -376,10 +379,134 @@ func TestEngine_ApplyEmptyMessages(t *testing.T) {
 	})
 
 	var messages []provider.Message
-	result := engine.Apply(messages)
+	result, _ := engine.Apply(context.Background(), messages)
 
 	if len(result) != 0 {
 		t.Errorf("Apply() on empty should return empty, got %d", len(result))
+	}
+}
+
+func TestEngine_Compaction_TriggersOverThreshold(t *testing.T) {
+	engine := New(Config{
+		CompactionEnabled:   true,
+		CompactionThreshold: 10,
+		Summarizer: func(_ context.Context, messages []provider.Message) (string, error) {
+			return fmt.Sprintf("summary of %d messages", len(messages)), nil
+		},
+	})
+
+	messages := summarizeMessagesForTest(14) // System + 14 = 15, over threshold
+	result, err := engine.Apply(context.Background(), messages)
+	if err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+
+	// Compaction ran (System + summary + 5 kept = 7), and since
+	// MaxMessages/MaxTokens are unset here, nothing further trims it.
+	if len(result) != 7 {
+		t.Fatalf("Apply() returned %d messages, want 7 (compacted)", len(result))
+	}
+	if !strings.Contains(result[1].Content, "summary of 9 messages") {
+		t.Errorf("summary message = %+v, want it to reference the summarizer's output", result[1])
+	}
+}
+
+func TestEngine_Compaction_DisabledByDefault(t *testing.T) {
+	called := false
+	engine := New(Config{
+		Summarizer: func(context.Context, []provider.Message) (string, error) {
+			called = true
+			return "x", nil
+		},
+	})
+	// CompactionEnabled defaults to false — Summarizer alone must not
+	// trigger compaction.
+
+	messages := summarizeMessagesForTest(14)
+	if _, err := engine.Apply(context.Background(), messages); err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+	if called {
+		t.Error("summarizer should not be called when CompactionEnabled is false")
+	}
+}
+
+func TestEngine_Compaction_UnderThresholdNoOp(t *testing.T) {
+	called := false
+	engine := New(Config{})
+	engine.EnableCompaction(20, func(context.Context, []provider.Message) (string, error) {
+		called = true
+		return "x", nil
+	})
+
+	messages := summarizeMessagesForTest(5) // well under threshold
+	result, err := engine.Apply(context.Background(), messages)
+	if err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+	if called {
+		t.Error("summarizer should not be called under threshold")
+	}
+	if len(result) != len(messages) {
+		t.Errorf("Apply() returned %d messages, want %d (unchanged)", len(result), len(messages))
+	}
+}
+
+func TestEngine_Compaction_ComposesWithMessageWindow(t *testing.T) {
+	engine := New(Config{MaxMessages: 5})
+	engine.EnableCompaction(10, func(_ context.Context, messages []provider.Message) (string, error) {
+		return "summary", nil
+	})
+
+	messages := summarizeMessagesForTest(14) // System + 14 = 15
+	result, err := engine.Apply(context.Background(), messages)
+	if err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+	// Compaction first reduces 15 -> 7 (System + summary + 5 kept), then
+	// MaxMessages=5 windowing trims that further.
+	if len(result) != 5 {
+		t.Fatalf("Apply() returned %d messages, want 5 (windowed after compaction)", len(result))
+	}
+	if result[0].Role != provider.RoleSystem {
+		t.Error("should preserve system message through both steps")
+	}
+}
+
+func TestEngine_Compaction_ErrorStillReturnsUsableMessages(t *testing.T) {
+	engine := New(Config{})
+	engine.EnableCompaction(10, func(context.Context, []provider.Message) (string, error) {
+		return "", errors.New("llm down")
+	})
+
+	messages := summarizeMessagesForTest(14)
+	result, err := engine.Apply(context.Background(), messages)
+
+	if !errors.Is(err, ErrCompactionFailed) {
+		t.Errorf("Apply() error = %v, want a CompactionError", err)
+	}
+	if len(result) == 0 {
+		t.Error("Apply() should still return usable messages on compaction failure")
+	}
+}
+
+func TestEngine_EnableCompaction(t *testing.T) {
+	engine := New(DefaultConfig())
+	if engine.config.CompactionEnabled {
+		t.Fatal("CompactionEnabled should start false")
+	}
+
+	fn := func(context.Context, []provider.Message) (string, error) { return "", nil }
+	engine.EnableCompaction(42, fn)
+
+	if !engine.config.CompactionEnabled {
+		t.Error("EnableCompaction should set CompactionEnabled")
+	}
+	if engine.config.CompactionThreshold != 42 {
+		t.Errorf("CompactionThreshold = %d, want 42", engine.config.CompactionThreshold)
+	}
+	if engine.config.Summarizer == nil {
+		t.Error("EnableCompaction should set Summarizer")
 	}
 }
 
@@ -480,39 +607,130 @@ func TestSimpleTokenCounter_WithToolCalls(t *testing.T) {
 	}
 }
 
-func TestWindow_ApplySummarize(t *testing.T) {
+// summarizeMessagesForTest builds System + N numbered user/assistant
+// messages, for tests exercising applySummarize's split logic (which
+// floors recentCount at 5, so small message sets never trigger real
+// summarization — see TestWindow_ApplySummarize_NotEnoughOlderMessages).
+func summarizeMessagesForTest(n int) []provider.Message {
+	messages := []provider.Message{{Role: provider.RoleSystem, Content: "System"}}
+	for i := 0; i < n; i++ {
+		messages = append(messages, provider.Message{
+			Role:    provider.RoleUser,
+			Content: fmt.Sprintf("msg-%d", i),
+		})
+	}
+	return messages
+}
+
+func TestWindow_ApplySummarize_Success(t *testing.T) {
+	var gotMessages []provider.Message
+	window := NewWindow(WindowConfig{
+		Strategy:    WindowStrategySummarize,
+		MaxMessages: 10,
+		Summarizer: func(_ context.Context, messages []provider.Message) (string, error) {
+			gotMessages = messages
+			return "the gist of it", nil
+		},
+	})
+
+	messages := summarizeMessagesForTest(14) // System + 14 = 15 total
+	result, err := window.Apply(context.Background(), messages)
+	if err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+
+	// recentCount = max(10/2, 5) = 5; startIdx = 1 (system); splitIdx =
+	// 15 - 5 = 10. Summarized: messages[1:10] (9 messages). Kept
+	// verbatim: messages[10:15] (5 messages).
+	if len(gotMessages) != 9 {
+		t.Fatalf("summarizer called with %d messages, want 9", len(gotMessages))
+	}
+	if gotMessages[0].Content != "msg-0" || gotMessages[8].Content != "msg-8" {
+		t.Errorf("summarizer received wrong slice: first=%q last=%q", gotMessages[0].Content, gotMessages[8].Content)
+	}
+
+	// result = [system, summary, msg-9..msg-13] = 7 messages
+	if len(result) != 7 {
+		t.Fatalf("Apply() returned %d messages, want 7", len(result))
+	}
+	if result[0].Role != provider.RoleSystem || result[0].Content != "System" {
+		t.Errorf("first message = %+v, want the original system message", result[0])
+	}
+	if result[1].Role != provider.RoleSystem || !strings.Contains(result[1].Content, "the gist of it") {
+		t.Errorf("summary message = %+v, want a system message containing the summary", result[1])
+	}
+	if result[2].Content != "msg-9" || result[6].Content != "msg-13" {
+		t.Errorf("kept messages = %q..%q, want msg-9..msg-13", result[2].Content, result[6].Content)
+	}
+}
+
+func TestWindow_ApplySummarize_SummarizerError(t *testing.T) {
+	window := NewWindow(WindowConfig{
+		Strategy:    WindowStrategySummarize,
+		MaxMessages: 10,
+		Summarizer: func(context.Context, []provider.Message) (string, error) {
+			return "", errors.New("llm unavailable")
+		},
+	})
+
+	messages := summarizeMessagesForTest(14)
+	result, err := window.Apply(context.Background(), messages)
+
+	if !errors.Is(err, ErrCompactionFailed) {
+		t.Errorf("Apply() error = %v, want a CompactionError", err)
+	}
+	var ce *CompactionError
+	if !errors.As(err, &ce) || ce.Cause == nil || ce.Cause.Error() != "llm unavailable" {
+		t.Errorf("Apply() error = %v, want CompactionError wrapping the summarizer's error", err)
+	}
+	// Falls back to plain recency windowing — still fully usable.
+	if len(result) != 10 {
+		t.Errorf("Apply() returned %d messages, want 10 (recency fallback)", len(result))
+	}
+}
+
+func TestWindow_ApplySummarize_NoSummarizerConfigured(t *testing.T) {
 	window := NewWindow(WindowConfig{
 		Strategy:    WindowStrategySummarize,
 		MaxMessages: 3,
 	})
 
-	messages := []provider.Message{
-		{Role: provider.RoleSystem, Content: "System"},
-		{Role: provider.RoleUser, Content: "A"},
-		{Role: provider.RoleAssistant, Content: "B"},
-		{Role: provider.RoleUser, Content: "C"},
-		{Role: provider.RoleAssistant, Content: "D"},
-		{Role: provider.RoleUser, Content: "E"},
-	}
+	messages := summarizeMessagesForTest(5) // System + 5 = 6 total
+	result, err := window.Apply(context.Background(), messages)
 
-	result, err := window.Apply(messages)
-
-	// Summarize returns CompactionError since it's not implemented
-	if err == nil {
-		t.Error("Apply() should return CompactionError for summarize strategy")
-	}
 	if !errors.Is(err, ErrCompactionFailed) {
-		t.Errorf("Apply() error = %v, want CompactionError", err)
+		t.Errorf("Apply() error = %v, want a CompactionError", err)
 	}
-
-	// Still returns recent strategy result as fallback
 	if len(result) != 3 {
-		t.Errorf("Apply() returned %d messages, want 3", len(result))
+		t.Errorf("Apply() returned %d messages, want 3 (recency fallback)", len(result))
 	}
+}
 
-	// Should have System, D, E (most recent)
-	if result[0].Content != "System" {
-		t.Errorf("first message = %q, want System", result[0].Content)
+func TestWindow_ApplySummarize_NotEnoughOlderMessages(t *testing.T) {
+	// 6 messages total; applySummarize's recentCount floors at 5, so
+	// there's only 1 "older" message — not worth summarizing. No error:
+	// this is a legitimate no-op, not a failure.
+	called := false
+	window := NewWindow(WindowConfig{
+		Strategy:    WindowStrategySummarize,
+		MaxMessages: 3,
+		Summarizer: func(context.Context, []provider.Message) (string, error) {
+			called = true
+			return "should not be called", nil
+		},
+	})
+
+	messages := summarizeMessagesForTest(5) // System + 5 = 6 total
+	result, err := window.Apply(context.Background(), messages)
+
+	if err != nil {
+		t.Errorf("Apply() error = %v, want nil", err)
+	}
+	if called {
+		t.Error("summarizer should not have been called")
+	}
+	if len(result) != 3 {
+		t.Errorf("Apply() returned %d messages, want 3 (recency fallback)", len(result))
 	}
 }
 
@@ -537,7 +755,7 @@ func TestWindow_ApplyImportant(t *testing.T) {
 		{Role: provider.RoleUser, Content: "Q5"},
 	}
 
-	result, err := window.Apply(messages)
+	result, err := window.Apply(context.Background(), messages)
 	if err != nil {
 		t.Errorf("Apply() unexpected error: %v", err)
 	}
@@ -573,7 +791,7 @@ func TestWindow_ApplyImportant_SmallWindow(t *testing.T) {
 		{Role: provider.RoleUser, Content: "Q6"},
 	}
 
-	result, err := window.Apply(messages)
+	result, err := window.Apply(context.Background(), messages)
 	if err != nil {
 		t.Errorf("Apply() unexpected error: %v", err)
 	}
@@ -613,7 +831,7 @@ func TestWindow_NoTrimNeeded(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "B"},
 	}
 
-	result, err := window.Apply(messages)
+	result, err := window.Apply(context.Background(), messages)
 	if err != nil {
 		t.Errorf("Apply() unexpected error: %v", err)
 	}
@@ -635,7 +853,7 @@ func TestEngine_MessageWindowEdgeCases(t *testing.T) {
 			{Role: provider.RoleAssistant, Content: "B"},
 		}
 
-		result := engine.Apply(messages)
+		result, _ := engine.Apply(context.Background(), messages)
 
 		// Should keep system + at least 1 recent message
 		if len(result) < 1 {
@@ -658,7 +876,7 @@ func TestEngine_MessageWindowEdgeCases(t *testing.T) {
 			{Role: provider.RoleAssistant, Content: "D"},
 		}
 
-		result := engine.Apply(messages)
+		result, _ := engine.Apply(context.Background(), messages)
 
 		if len(result) != 2 {
 			t.Errorf("Apply() returned %d messages, want 2", len(result))

@@ -10,6 +10,8 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/plexusone/omnillm/provider"
+
 	agentctx "github.com/plexusone/omniagent/context"
 	"github.com/plexusone/omniagent/skills/compiled"
 	"github.com/plexusone/omniskill/skill"
@@ -129,6 +131,59 @@ func TestWithMaxMessages(t *testing.T) {
 
 	if a.contextEngine == nil {
 		t.Error("context engine not created")
+	}
+}
+
+func TestWithCompaction(t *testing.T) {
+	fp := &fakeProvider{responses: []*provider.ChatCompletionResponse{textResponse("condensed")}}
+	a := processTestAgent(t, fp)
+
+	opt := WithCompaction(3)
+	if err := opt(a); err != nil {
+		t.Fatalf("WithCompaction failed: %v", err)
+	}
+	if a.contextEngine == nil {
+		t.Fatal("context engine not created")
+	}
+
+	messages := summarizeMessagesForTest(14) // well over threshold=3
+	result, err := a.contextEngine.Apply(context.Background(), messages)
+	if err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+	if fp.callCount() != 1 {
+		t.Fatalf("summarizer LLM call count = %d, want 1 (compaction should have triggered)", fp.callCount())
+	}
+	if len(result) >= len(messages) {
+		t.Errorf("Apply() returned %d messages, want fewer than the original %d", len(result), len(messages))
+	}
+}
+
+func TestWithCompaction_PreservesExistingMaxMessagesWhenCalledAfter(t *testing.T) {
+	// WithMaxMessages/WithContextConfig/WithContextEngine replace the
+	// context engine wholesale, so WithCompaction must be applied after
+	// them to compose rather than being wiped out — verify the reverse
+	// composes correctly (WithCompaction called after WithMaxMessages).
+	fp := &fakeProvider{responses: []*provider.ChatCompletionResponse{textResponse("condensed")}}
+	a := processTestAgent(t, fp)
+
+	for _, opt := range []Option{WithMaxMessages(5), WithCompaction(10)} {
+		if err := opt(a); err != nil {
+			t.Fatalf("option failed: %v", err)
+		}
+	}
+
+	messages := summarizeMessagesForTest(14)
+	result, err := a.contextEngine.Apply(context.Background(), messages)
+	if err != nil {
+		t.Fatalf("Apply() unexpected error: %v", err)
+	}
+	if fp.callCount() != 1 {
+		t.Errorf("summarizer LLM call count = %d, want 1", fp.callCount())
+	}
+	// MaxMessages=5 still applies after compaction.
+	if len(result) != 5 {
+		t.Errorf("Apply() returned %d messages, want 5 (MaxMessages preserved)", len(result))
 	}
 }
 
