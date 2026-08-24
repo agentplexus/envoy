@@ -55,6 +55,7 @@ OmniAgent is a personal AI assistant that routes messages across multiple commun
 - 👥 **Multi-Agent Support** - Run multiple agents with different models and configurations
 - 🏢 **Team Mode** - Multi-user deployments with magic-link, email+password, or Google/GitHub sign-in, an admin UI, private/group chats, and PostgreSQL row-level isolation
 - 🪪 **Virtual Agents** - Named personas with per-agent skills, agent-scoped secrets, owner/maintainer roles, and a discoverable catalog
+- 🛒 **Agent Marketplace Primitives** - Reusable agent and skill listings, filters, and provider interfaces for host apps such as UIForge
 - 📈 **Usage Analytics** - Token usage tracking, tool call statistics, and cost estimation
 - 🔧 **Tool Visualization** - Real-time tool call display with arguments and results in web UI
 
@@ -518,6 +519,7 @@ DM or group, and superadmins promote agents under **Curation**.
 
 See the [Team Mode guide](docs/guides/team-mode.md),
 [Virtual Agents guide](docs/guides/agents.md), and
+[Agent Marketplace guide](docs/guides/marketplace.md),
 [Team Deployment guide](docs/guides/team-deployment.md) for the full
 walkthrough.
 

@@ -68,6 +68,7 @@ nav:
     - Voice Integration: guides/voice.md
     - Panel Discussions: guides/panel-discussions.md
     - LLM Providers: guides/providers.md
+    - Agent Marketplace: guides/marketplace.md
     - Skills Development: guides/skills.md
     - Memory Skill: guides/memory.md
     - GitHub Skill: guides/github.md
