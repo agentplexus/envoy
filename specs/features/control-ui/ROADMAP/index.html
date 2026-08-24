@@ -1,0 +1,3900 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Your AI representative across communication channels">
+      
+      
+      
+        <link rel="canonical" href="https://plexusone.github.io/omniagent/specs/features/control-ui/ROADMAP/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>OmniAgent Control UI Roadmap - OmniAgent</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://plexusone.dev/css/plexusone-mkdocs.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#omniagent-control-ui-roadmap" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+<!-- PlexusOne Unified Navigation -->
+<div id="plexus-nav-root"></div>
+<script src="https://plexusone.dev/js/plexus-nav.js"></script>
+
+
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="OmniAgent" class="md-header__button md-logo" aria-label="OmniAgent" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            OmniAgent
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              OmniAgent Control UI Roadmap
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/plexusone/omniagent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plexusone/omniagent
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="OmniAgent" class="md-nav__button md-logo" aria-label="OmniAgent" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    OmniAgent
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/plexusone/omniagent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plexusone/omniagent
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/openai-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenAI-Compatible API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/images/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/team-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/team-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web UI Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Virtual Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/multi-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Agent Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/twilio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Twilio Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/whatsapp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WhatsApp Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/voice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Voice Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/panel-discussions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Panel Discussions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/marketplace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Marketplace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/github/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/sessions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions & Storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/cron/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scheduled Jobs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/sandboxing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandboxing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/policies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Access Policies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browser Automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/vault-credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/web/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Content Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/autoreply/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Auto-Reply
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Roadmap
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../PARITY-ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Voice Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Voice Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../design/voice_notes/SPEC/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../design/voice_notes/CASE_STUDY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Releases
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.18.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.18.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.17.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.17.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.16.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.16.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.15.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.15.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.14.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.14.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.13.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.13.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.12.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.12.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.11.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.11.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.10.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.10.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.9.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.9.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.8.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.8.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.7.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.7.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_13" id="__nav_8_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.6.0
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    v0.6.0
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.6.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.6.0/PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.6.0/TASKS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.5.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.5.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.4.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.3.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.3.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.2.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#current-features-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Features (Implemented)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0120-additions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.12.0 Additions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-1-tools-skills-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Tools &amp; Skills Panel
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 1: Tools &amp; Skills Panel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-reasoning-tool-call-streams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Reasoning &amp; Tool Call Streams
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2: Reasoning &amp; Tool Call Streams">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3-system-status-bar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: System Status Bar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: System Status Bar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-endpoints_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-4-settings-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Settings Panel
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 4: Settings Panel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Persistence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-5-activity-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 5: Activity Log
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 5: Activity Log">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#event-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Event Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-6-enhanced-session-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 6: Enhanced Session Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 6: Enhanced Session Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-7-cronscheduled-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 7: Cron/Scheduled Jobs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 7: Cron/Scheduled Jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-endpoints_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-files_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-8-multi-agent-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 8: Multi-Agent Support
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 8: Multi-Agent Support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-endpoints_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-files_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-9-usage-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 9: Usage Analytics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 9: Usage Analytics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-endpoints_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Pricing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-files_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-10-memorycontext-panel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 10: Memory/Context Panel
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 10: Memory/Context Panel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-endpoints_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ui-components_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UI Components
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-files_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technical-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Technical Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-router-stack-chi-huma-ogen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Router Stack (Chi + Huma + ogen)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Router Stack (Chi + Huma + ogen)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#component-responsibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Responsibilities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openapi-spec-merging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenAPI Spec Merging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-files_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frontend-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frontend Stack
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backend-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#state-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="omniagent-control-ui-roadmap">OmniAgent Control UI Roadmap<a class="headerlink" href="#omniagent-control-ui-roadmap" title="Permanent link">&para;</a></h1>
+<p>Feature roadmap for the OmniAgent web-based Control UI, inspired by OpenClaw's dashboard architecture.</p>
+<h2 id="current-features-implemented">Current Features (Implemented)<a class="headerlink" href="#current-features-implemented" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] Chat interface with message history</li>
+<li>[x] Conversation sidebar with localStorage persistence</li>
+<li>[x] Voice input (Web Speech API)</li>
+<li>[x] Translation feature</li>
+<li>[x] Chart rendering (ECharts + ChartIR)</li>
+<li>[x] Dark theme support</li>
+<li>[x] Stop button to cancel generation</li>
+<li>[x] Phone number display for voice calls</li>
+<li>[x] Model selection dropdown</li>
+</ul>
+<h2 id="v0120-additions">v0.12.0 Additions<a class="headerlink" href="#v0120-additions" title="Permanent link">&para;</a></h2>
+<p>The following features were added in v0.12.0:</p>
+<ul>
+<li>[x] <strong>Image Generation</strong> - OpenAI-compatible image endpoints via omniimage (DALL-E, FLUX)</li>
+<li>[x] <strong>GitHub Skill</strong> - Search issues, PRs, and code across repositories</li>
+<li>[x] <strong>Web Content Skill</strong> - Extract and process content from URLs</li>
+<li>[x] <strong>Auto-Reply System</strong> - Automatic message responses with configurable triggers</li>
+<li>[x] <strong>Setup Wizard</strong> - Interactive CLI setup with <code>omniagent setup</code></li>
+<li>[x] <strong>Doctor Command</strong> - Diagnose configuration and connectivity with <code>omniagent doctor</code></li>
+<li>[x] <strong>Sessions Command</strong> - Manage conversation sessions via CLI</li>
+</ul>
+<h2 id="phase-1-tools-skills-panel">Phase 1: Tools &amp; Skills Panel<a class="headerlink" href="#phase-1-tools-skills-panel" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented (Core Features)</p>
+<p>Display registered agent tools and their capabilities.</p>
+<h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Tools sidebar panel (collapsible)</li>
+<li>[x] List all registered tools with icons</li>
+<li>[x] Tool descriptions and parameter schemas</li>
+<li>[x] Tool detail modal with parameter info</li>
+<li>[x] Tools grouped by category</li>
+<li>[x] Tool usage statistics (call count, last used)</li>
+<li>[ ] Tool invocation history in chat</li>
+</ul>
+<h3 id="api-endpoints">API Endpoints<a class="headerlink" href="#api-endpoints" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] <code>GET /api/v1/tools</code> - List available tools</li>
+<li>[ ] <code>GET /api/v1/tools/{name}</code> - Get tool details</li>
+</ul>
+<h3 id="ui-components">UI Components<a class="headerlink" href="#ui-components" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Tools panel toggle button in header (gear icon)</li>
+<li>[x] Collapsible tools list (right sidebar)</li>
+<li>[x] Tool detail modal/popover</li>
+<li>[ ] Tool call indicators in chat messages</li>
+</ul>
+<h3 id="implementation-files">Implementation Files<a class="headerlink" href="#implementation-files" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>api/openai/handler.go</code> - Added <code>ListTools</code> to <code>AgentHandler</code> interface</li>
+<li><code>api/openai/server.go</code> - Added <code>/api/v1/tools</code> endpoint</li>
+<li><code>openai/adapter.go</code> - Implemented <code>ListTools</code> method</li>
+<li><code>api/openai/web/index.html</code> - Added tools panel UI</li>
+</ul>
+<h2 id="phase-2-reasoning-tool-call-streams">Phase 2: Reasoning &amp; Tool Call Streams<a class="headerlink" href="#phase-2-reasoning-tool-call-streams" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented (Thinking Blocks)</p>
+<p>Show the agent's thinking process and tool calls during responses.</p>
+<h3 id="features_1">Features<a class="headerlink" href="#features_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Collapsible "Thinking" sections in assistant messages</li>
+<li>[x] Real-time thinking block display during streaming</li>
+<li>[x] Animated "Thinking..." indicator while processing</li>
+<li>[x] Parse <code>&lt;thinking&gt;</code> and <code>&lt;think&gt;</code> tags</li>
+<li>[x] Tool call visualization with expand/collapse</li>
+<li>[x] Tool arguments display (formatted JSON)</li>
+<li>[ ] Tool result preview</li>
+<li>[ ] Execution timeline</li>
+</ul>
+<h3 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Parse <code>&lt;thinking&gt;</code> tags from responses (both streaming and completed)</li>
+<li>[x] Render thinking blocks with collapsible UI</li>
+<li>[x] Purple accent color for thinking blocks</li>
+<li>[x] Detect tool_calls in streaming responses</li>
+<li>[x] Render tool calls as expandable cards</li>
+<li>[ ] Show tool results inline or in modal</li>
+</ul>
+<h3 id="ui-features">UI Features<a class="headerlink" href="#ui-features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Thinking blocks display with brain icon</li>
+<li>Real-time streaming inside thinking blocks</li>
+<li>"Thinking..." animates while processing, changes to "Thought" when complete</li>
+<li>Click to expand/collapse thinking content</li>
+<li>Proper handling of mixed thinking + regular content</li>
+</ul>
+<h2 id="phase-3-system-status-bar">Phase 3: System Status Bar<a class="headerlink" href="#phase-3-system-status-bar" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>Real-time system status and health monitoring.</p>
+<h3 id="features_2">Features<a class="headerlink" href="#features_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Connection status indicator (connected/disconnected)</li>
+<li>[x] Current model info display</li>
+<li>[x] Token usage counter (current session)</li>
+<li>[x] Response time metrics</li>
+<li>[x] Health check polling (every 30s)</li>
+<li>[x] Gateway version display</li>
+</ul>
+<h3 id="api-endpoints_1">API Endpoints<a class="headerlink" href="#api-endpoints_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] <code>GET /health</code> - Health check (already exists)</li>
+<li>[x] <code>GET /api/v1/status</code> - Detailed status including version</li>
+</ul>
+<h3 id="ui-components_1">UI Components<a class="headerlink" href="#ui-components_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Status bar at bottom of input area</li>
+<li>[x] Green/red connection indicator dot</li>
+<li>[x] Model name display (synced with model select)</li>
+<li>[x] Token count with icon</li>
+<li>[x] Response time display</li>
+</ul>
+<h3 id="implementation_1">Implementation<a class="headerlink" href="#implementation_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Health check polling every 30 seconds</li>
+<li>Token estimation (~4 chars/token)</li>
+<li>Response time tracked per message</li>
+<li>Token count updates on:</li>
+<li>Sending messages</li>
+<li>Receiving responses</li>
+<li>Switching conversations</li>
+<li>Creating new conversations</li>
+</ul>
+<h2 id="phase-4-settings-panel">Phase 4: Settings Panel<a class="headerlink" href="#phase-4-settings-panel" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>User-configurable agent settings from the UI.</p>
+<h3 id="features_3">Features<a class="headerlink" href="#features_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Settings modal/drawer</li>
+<li>[x] Temperature slider (0.0 - 2.0)</li>
+<li>[x] Max tokens input</li>
+<li>[x] System prompt editor</li>
+<li>[x] API key configuration (masked input)</li>
+<li>[x] Theme toggle (light/dark/system)</li>
+<li>[x] Voice settings (language selection)</li>
+<li>[ ] Voice continuous mode toggle</li>
+</ul>
+<h3 id="persistence">Persistence<a class="headerlink" href="#persistence" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Store settings in localStorage</li>
+<li>[ ] Sync to server via API (optional)</li>
+</ul>
+<h3 id="ui-components_2">UI Components<a class="headerlink" href="#ui-components_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Settings sliders icon in header</li>
+<li>[x] Modal with grouped sections</li>
+<li>[x] Form validation</li>
+<li>[x] Reset to defaults button</li>
+<li>[x] Apply settings without reload</li>
+</ul>
+<h3 id="implementation_2">Implementation<a class="headerlink" href="#implementation_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Settings stored in <code>omniagent_settings</code> localStorage key</li>
+<li>Default values: temperature=0.7, maxTokens=4096, theme=system</li>
+<li>Theme applies immediately (light/dark/system with media query)</li>
+<li>API calls include temperature, maxTokens, and optional apiKey</li>
+<li>System prompt prepended to messages when set</li>
+</ul>
+<h2 id="phase-5-activity-log">Phase 5: Activity Log<a class="headerlink" href="#phase-5-activity-log" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>Real-time event stream showing agent activity.</p>
+<h3 id="features_4">Features<a class="headerlink" href="#features_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Expandable activity log panel (bottom drawer)</li>
+<li>[x] Event types: chat, tool, error, system</li>
+<li>[x] Timestamp and duration display</li>
+<li>[x] Filter by event type</li>
+<li>[x] Search within logs</li>
+<li>[x] Export logs (JSON format)</li>
+<li>[x] Clear log functionality</li>
+</ul>
+<h3 id="event-types">Event Types<a class="headerlink" href="#event-types" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CHAT    - User messages, assistant responses
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>TOOL    - Tool loading events
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>ERROR   - Connection failures, request errors
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>SYSTEM  - App startup, settings changes, generation stops
+</code></pre></div>
+<h3 id="ui-components_3">UI Components<a class="headerlink" href="#ui-components_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Toggle button in header (clipboard icon)</li>
+<li>[x] Bottom drawer panel (collapsible)</li>
+<li>[x] Filter buttons (All/Chat/Tools/System/Errors)</li>
+<li>[x] Search input with real-time filtering</li>
+<li>[x] Export and clear buttons</li>
+<li>[x] Color-coded event types with badges</li>
+</ul>
+<h3 id="implementation_3">Implementation<a class="headerlink" href="#implementation_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Activity events stored in memory (max 500 events)</li>
+<li>Relative timestamps ("Just now", "5m ago", "2h ago")</li>
+<li>Duration tracking for response times</li>
+<li>Events logged for:</li>
+<li>User message sent</li>
+<li>Assistant response received (with tokens and duration)</li>
+<li>Generation stopped</li>
+<li>Connection status changes</li>
+<li>Tools loaded</li>
+<li>Settings saved</li>
+<li>App initialization</li>
+</ul>
+<h2 id="phase-6-enhanced-session-management">Phase 6: Enhanced Session Management<a class="headerlink" href="#phase-6-enhanced-session-management" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>Advanced conversation/session features.</p>
+<h3 id="features_5">Features<a class="headerlink" href="#features_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Session metadata display (created, message count, tokens)</li>
+<li>[x] Export conversation as markdown</li>
+<li>[x] Export conversation as JSON</li>
+<li>[x] Session archival (hide without delete)</li>
+<li>[x] Session duplication (copy full conversation)</li>
+<li>[x] Session forking (fork from message) - infrastructure ready</li>
+<li>[x] Session search (across title, tags, and messages)</li>
+<li>[x] Session tags/labels (add, remove, display)</li>
+<li>[x] Session title editing</li>
+</ul>
+<h3 id="ui-components_4">UI Components<a class="headerlink" href="#ui-components_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Session info modal (metadata, tags, export, actions)</li>
+<li>[x] Search bar in sidebar</li>
+<li>[x] Toggle archived conversations</li>
+<li>[x] Tags display in conversation list</li>
+<li>[x] Fork indicator for forked conversations</li>
+<li>[x] Message count in conversation list</li>
+</ul>
+<h3 id="implementation_4">Implementation<a class="headerlink" href="#implementation_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Client-side localStorage persistence</li>
+<li>Search filters title, tags, and message content</li>
+<li>Archived sessions hidden by default (toggle to show)</li>
+<li>Tags stored as array in conversation object</li>
+<li>Export formats: Markdown (readable) and JSON (structured)</li>
+<li>Duplicate creates full copy with "(Copy)" suffix</li>
+<li>Fork ready for per-message branching UI</li>
+</ul>
+<h2 id="phase-7-cronscheduled-jobs">Phase 7: Cron/Scheduled Jobs<a class="headerlink" href="#phase-7-cronscheduled-jobs" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>Schedule automated agent tasks.</p>
+<h3 id="features_6">Features<a class="headerlink" href="#features_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] List scheduled jobs</li>
+<li>[x] Create/edit/delete jobs</li>
+<li>[x] Cron expression builder (with presets)</li>
+<li>[x] Run job manually (trigger)</li>
+<li>[x] Enable/disable jobs</li>
+<li>[x] Interval and one-time scheduling</li>
+<li>[ ] Job execution history (future)</li>
+</ul>
+<h3 id="action-types">Action Types<a class="headerlink" href="#action-types" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>send_message</strong> - Send a message to an agent session</li>
+<li><strong>call_webhook</strong> - Make HTTP request to a webhook URL</li>
+<li><strong>call_tool</strong> - Invoke a registered agent tool</li>
+</ul>
+<h3 id="api-endpoints_2">API Endpoints<a class="headerlink" href="#api-endpoints_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/cron/jobs</code> - List all scheduled jobs</li>
+<li><code>POST /api/v1/cron/jobs</code> - Create a new job</li>
+<li><code>GET /api/v1/cron/jobs/{id}</code> - Get job details</li>
+<li><code>PUT /api/v1/cron/jobs/{id}</code> - Update a job</li>
+<li><code>DELETE /api/v1/cron/jobs/{id}</code> - Delete a job</li>
+<li><code>POST /api/v1/cron/jobs/{id}/trigger</code> - Run job immediately</li>
+<li><code>POST /api/v1/cron/jobs/{id}/enable</code> - Enable a job</li>
+<li><code>POST /api/v1/cron/jobs/{id}/disable</code> - Disable a job</li>
+</ul>
+<h3 id="ui-components_5">UI Components<a class="headerlink" href="#ui-components_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Cron toggle button in header (clock icon)</li>
+<li>[x] Collapsible cron jobs panel (right sidebar)</li>
+<li>[x] Job cards with status, schedule, actions</li>
+<li>[x] Create/edit modal with:</li>
+<li>Schedule type tabs (Cron/Interval/Once)</li>
+<li>Cron expression presets</li>
+<li>Action type selector</li>
+<li>Dynamic action fields</li>
+<li>[x] Quick actions (trigger, enable/disable, delete)</li>
+</ul>
+<h3 id="implementation-files_1">Implementation Files<a class="headerlink" href="#implementation-files_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>cron/executor.go</code> - Job action execution handler</li>
+<li><code>cron/tools.go</code> - Cron skill with AgentAware interface</li>
+<li><code>api/openai/handler.go</code> - Cron types and AgentHandler interface</li>
+<li><code>api/openai/server.go</code> - REST API endpoints</li>
+<li><code>openai/adapter.go</code> - AgentHandler implementation</li>
+<li><code>api/openai/web/index.html</code> - Web UI cron panel</li>
+</ul>
+<h2 id="phase-8-multi-agent-support">Phase 8: Multi-Agent Support<a class="headerlink" href="#phase-8-multi-agent-support" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>Support for multiple agent configurations.</p>
+<h3 id="features_7">Features<a class="headerlink" href="#features_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Agent switcher dropdown (via model selector)</li>
+<li>[x] Agent configuration editor (create/edit modal)</li>
+<li>[x] Per-agent tool assignments (allowed_tools, denied_tools)</li>
+<li>[x] Agent-specific system prompts</li>
+<li>[x] Agent cloning</li>
+<li>[x] Agent registry with KVS persistence</li>
+<li>[x] Multi-agent adapter for request routing</li>
+<li>[x] REST API for agent management</li>
+</ul>
+<h3 id="api-endpoints_3">API Endpoints<a class="headerlink" href="#api-endpoints_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/agents</code> - List all configured agents</li>
+<li><code>POST /api/v1/agents</code> - Create a new agent</li>
+<li><code>GET /api/v1/agents/{id}</code> - Get agent details</li>
+<li><code>PUT /api/v1/agents/{id}</code> - Update an agent</li>
+<li><code>DELETE /api/v1/agents/{id}</code> - Delete an agent</li>
+<li><code>POST /api/v1/agents/{id}/clone</code> - Clone an agent</li>
+</ul>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>Agents can be configured via YAML:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Single agent (backward compatible)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">agent</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">api_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${ANTHROPIC_API_KEY}</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Multiple agents</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nt">agents</span><span class="p">:</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">General Assistant</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"You</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">helpful</span><span class="nv"> </span><span class="s">assistant."</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coder</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Code Expert</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"You</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">an</span><span class="nv"> </span><span class="s">expert</span><span class="nv"> </span><span class="s">programmer..."</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="nt">allowed_tools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">read</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">write</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">edit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">glob</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">grep</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="ui-components_6">UI Components<a class="headerlink" href="#ui-components_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Agents toggle button in header (users icon)</li>
+<li>[x] Collapsible agents panel (right sidebar)</li>
+<li>[x] Agent cards with name, model, status</li>
+<li>[x] Create/Edit modal with form fields</li>
+<li>[x] Quick actions (switch, edit, clone, delete)</li>
+</ul>
+<h3 id="implementation-files_2">Implementation Files<a class="headerlink" href="#implementation-files_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>agent/registry/config.go</code> - AgentConfig type</li>
+<li><code>agent/registry/store.go</code> - KVS persistence</li>
+<li><code>agent/registry/registry.go</code> - Registry management</li>
+<li><code>agent/registry/registry_test.go</code> - Registry unit tests</li>
+<li><code>config/config.go</code> - Config enhancements</li>
+<li><code>openai/multi_adapter.go</code> - Multi-agent routing</li>
+<li><code>openai/multi_adapter_test.go</code> - Multi-agent adapter tests</li>
+<li><code>openai/cron_handler.go</code> - Shared cron handler (embedded by adapters)</li>
+<li><code>api/openai/handler.go</code> - Agent types and interface</li>
+<li><code>api/openai/server.go</code> - REST API endpoints</li>
+<li><code>api/openai/server_test.go</code> - API handler tests</li>
+<li><code>cmd/omniagent/commands/openai.go</code> - CLI integration</li>
+<li><code>cmd/omniagent/commands/gateway.go</code> - Gateway integration</li>
+<li><code>api/openai/web/index.html</code> - Web UI agents panel</li>
+</ul>
+<h2 id="phase-9-usage-analytics">Phase 9: Usage Analytics<a class="headerlink" href="#phase-9-usage-analytics" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>Token usage tracking, cost estimation, and visualization.</p>
+<h3 id="features_8">Features<a class="headerlink" href="#features_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Token usage tracking per request</li>
+<li>[x] Cost estimation based on model pricing</li>
+<li>[x] Latency metrics</li>
+<li>[x] Time-series data aggregation (hourly/daily)</li>
+<li>[x] Summary statistics (total requests, tokens, cost)</li>
+<li>[x] Usage breakdown by model</li>
+<li>[x] ECharts visualizations (tokens, cost, model distribution)</li>
+<li>[x] Recent requests history table</li>
+</ul>
+<h3 id="api-endpoints_4">API Endpoints<a class="headerlink" href="#api-endpoints_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/usage</code> - Usage summary for time range</li>
+<li><code>GET /api/v1/usage/timeseries</code> - Time-bucketed usage data</li>
+<li><code>GET /api/v1/usage/records</code> - Recent usage records</li>
+<li><code>GET /api/v1/usage/chart/tokens</code> - Token chart (ChartIR format)</li>
+<li><code>GET /api/v1/usage/chart/cost</code> - Cost chart (ChartIR format)</li>
+<li><code>GET /api/v1/usage/chart/models</code> - Model distribution chart (ChartIR format)</li>
+</ul>
+<h3 id="query-parameters">Query Parameters<a class="headerlink" href="#query-parameters" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>since</code> - Start time (RFC3339 or relative: 1h, 24h, 7d, 30d)</li>
+<li><code>until</code> - End time (RFC3339, defaults to now)</li>
+<li><code>interval</code> - Bucket size (minute, hour, day)</li>
+<li><code>limit</code> - Max records for /records endpoint</li>
+</ul>
+<h3 id="model-pricing">Model Pricing<a class="headerlink" href="#model-pricing" title="Permanent link">&para;</a></h3>
+<p>Default pricing for cost estimation:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Input $/1M tokens</th>
+<th>Output $/1M tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>claude-sonnet-4*</td>
+<td>3.00</td>
+<td>15.00</td>
+</tr>
+<tr>
+<td>claude-opus-4*</td>
+<td>15.00</td>
+<td>75.00</td>
+</tr>
+<tr>
+<td>claude-haiku-4*</td>
+<td>0.25</td>
+<td>1.25</td>
+</tr>
+<tr>
+<td>gpt-4o*</td>
+<td>2.50</td>
+<td>10.00</td>
+</tr>
+<tr>
+<td>gpt-4o-mini*</td>
+<td>0.15</td>
+<td>0.60</td>
+</tr>
+<tr>
+<td>default</td>
+<td>1.00</td>
+<td>2.00</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ui-components_7">UI Components<a class="headerlink" href="#ui-components_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Usage toggle button in header (chart icon)</li>
+<li>[x] Usage analytics modal with:</li>
+<li>Time range selector (1h, 24h, 7d, 30d)</li>
+<li>Summary cards (requests, tokens, cost, latency)</li>
+<li>Token usage stacked bar chart</li>
+<li>Cost line chart with area fill</li>
+<li>Model distribution pie chart</li>
+<li>Model breakdown table</li>
+<li>Recent requests table</li>
+</ul>
+<h3 id="implementation-files_3">Implementation Files<a class="headerlink" href="#implementation-files_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>api/openai/usage.go</code> - Usage types, store, and chart generation</li>
+<li><code>api/openai/handler.go</code> - UsageHandler interface</li>
+<li><code>api/openai/server.go</code> - Usage API endpoints</li>
+<li><code>api/openai/streaming.go</code> - Usage tracking in chat handler</li>
+<li><code>api/openai/web/index.html</code> - Usage analytics UI</li>
+</ul>
+<h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>github.com/grokify/echartify/chartir</code> - ECharts IR generation</li>
+</ul>
+<h2 id="phase-10-memorycontext-panel">Phase 10: Memory/Context Panel<a class="headerlink" href="#phase-10-memorycontext-panel" title="Permanent link">&para;</a></h2>
+<p><strong>Status:</strong> Implemented</p>
+<p>Semantic memory for storing and retrieving information across conversations.</p>
+<h3 id="features_9">Features<a class="headerlink" href="#features_9" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Memory panel (right sidebar)</li>
+<li>[x] Collection selector</li>
+<li>[x] Semantic search with query input</li>
+<li>[x] Memory list with content, key, metadata</li>
+<li>[x] Add memory modal</li>
+<li>[x] Delete memory functionality</li>
+<li>[x] Collection refresh</li>
+</ul>
+<h3 id="api-endpoints_5">API Endpoints<a class="headerlink" href="#api-endpoints_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/memories</code> - List memories in collection</li>
+<li><code>POST /api/v1/memories</code> - Store new memory</li>
+<li><code>GET /api/v1/memories/search</code> - Semantic search</li>
+<li><code>DELETE /api/v1/memories/{key}</code> - Delete memory</li>
+<li><code>GET /api/v1/memories/collections</code> - List collections</li>
+</ul>
+<h3 id="query-parameters_1">Query Parameters<a class="headerlink" href="#query-parameters_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>collection</code> - Collection name (default: "default")</li>
+<li><code>q</code> - Search query (for /search endpoint)</li>
+<li><code>limit</code> - Max results</li>
+</ul>
+<h3 id="ui-components_8">UI Components<a class="headerlink" href="#ui-components_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Memory toggle button in header (lightbulb icon)</li>
+<li>[x] Collection dropdown with refresh button</li>
+<li>[x] Search input with Enter to search</li>
+<li>[x] Memory cards with content, key, metadata, score</li>
+<li>[x] Add memory modal with content, key, collection, metadata</li>
+<li>[x] Delete confirmation</li>
+</ul>
+<h3 id="integration">Integration<a class="headerlink" href="#integration" title="Permanent link">&para;</a></h3>
+<p>The memory panel connects to the omnimemory library which provides:</p>
+<ul>
+<li>Short-term memory (conversation context)</li>
+<li>Long-term memory (persistent knowledge)</li>
+<li>Vector embeddings for semantic search</li>
+<li>Collection-based organization</li>
+<li>Metadata support</li>
+<li>KVS persistence</li>
+</ul>
+<h3 id="implementation-files_4">Implementation Files<a class="headerlink" href="#implementation-files_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>api/openai/handler.go</code> - MemoryHandler interface and types</li>
+<li><code>api/openai/server.go</code> - Memory API endpoints</li>
+<li><code>api/openai/web/index.html</code> - Memory panel UI</li>
+<li><code>skills/compiled/memory/memory.go</code> - Memory skill (omnimemory integration)</li>
+</ul>
+<h2 id="technical-architecture">Technical Architecture<a class="headerlink" href="#technical-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="api-router-stack-chi-huma-ogen">API Router Stack (Chi + Huma + ogen)<a class="headerlink" href="#api-router-stack-chi-huma-ogen" title="Permanent link">&para;</a></h3>
+<p>The API server uses a hybrid architecture combining three routing technologies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Chi Router (base)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── /openai/v1/chat/completions  → StreamingHandler → ogen (SSE streaming)
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── /openai/v1/models            → ogen handler
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── /openai/v1/models/{model}    → ogen handler
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>├── /openai/v1/images/*          → Huma (image generation via omniimage)
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>├── /api/v1/tools                → Huma (auto-generated OpenAPI)
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>├── /api/v1/agents/*             → Huma
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>├── /api/v1/cron/jobs/*          → Huma
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>├── /api/v1/usage/*              → Huma
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>├── /api/v1/memories/*           → Huma
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>├── /api/health                  → Huma
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>├── /api/openapi.json            → Merged spec (ogen input + Huma generated)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>├── /docs                        → Scalar UI
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>└── /                            → Web UI (static)
+</code></pre></div>
+<h4 id="component-responsibilities">Component Responsibilities<a class="headerlink" href="#component-responsibilities" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Chi Router (github.com/go-chi/chi/v5)</strong>: Base HTTP router with middleware support (RealIP, Recoverer). Provides clean path-based routing and compatibility with standard <code>http.Handler</code>.</p>
+</li>
+<li>
+<p><strong>ogen (github.com/ogen-go/ogen)</strong>: Handles OpenAI-compatible endpoints (<code>/openai/v1/chat/completions</code>, <code>/openai/v1/models</code>). Used for SSE streaming support and type-safe request/response handling generated from OpenAPI spec.</p>
+</li>
+<li>
+<p><strong>Huma (github.com/danielgtaylor/huma/v2)</strong>: Handles OmniAgent extension endpoints (tools, agents, cron, usage, memory, health). Provides automatic OpenAPI 3.1 schema generation from Go types with validation.</p>
+</li>
+<li>
+<p><strong>Scalar (github.com/bdpiprava/scalar-go)</strong>: Serves interactive API documentation at <code>/docs</code> with modern UI, dark mode, and search.</p>
+</li>
+</ul>
+<h4 id="openapi-spec-merging">OpenAPI Spec Merging<a class="headerlink" href="#openapi-spec-merging" title="Permanent link">&para;</a></h4>
+<p>The <code>/openapi.json</code> endpoint serves a merged OpenAPI specification that combines:</p>
+<ol>
+<li><strong>ogen input spec</strong> (<code>openapi/openai-minimal.yaml</code>): OpenAI-compatible chat completion and models endpoints</li>
+<li><strong>Huma-generated spec</strong>: Auto-generated from registered Huma operations (tools, agents, cron, usage, memory, health)</li>
+</ol>
+<p>This provides a complete, accurate API reference for all endpoints.</p>
+<h4 id="implementation-files_5">Implementation Files<a class="headerlink" href="#implementation-files_5" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>api/openai/server.go</code> - Chi router setup, Huma integration, route mounting</li>
+<li><code>api/openai/operations/*.go</code> - Huma operation definitions (types, tools, agents, cron, usage, memory, health, images)</li>
+<li><code>api/openai/image_handler.go</code> - ImageHandler interface and omniimage integration</li>
+<li><code>api/openai/openapi_merge.go</code> - OpenAPI spec merging logic</li>
+<li><code>api/openai/docs.go</code> - Scalar documentation handler</li>
+<li><code>api/openai/streaming.go</code> - SSE streaming handler for chat completions</li>
+<li><code>api/openai/internal/ogen/</code> - Generated ogen code from OpenAPI spec</li>
+</ul>
+<h3 id="frontend-stack">Frontend Stack<a class="headerlink" href="#frontend-stack" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Vanilla JavaScript (current)</li>
+<li>Tailwind CSS for styling</li>
+<li>ECharts for visualization</li>
+<li>Web Speech API for voice</li>
+</ul>
+<h3 id="backend-integration">Backend Integration<a class="headerlink" href="#backend-integration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>OpenAI-compatible API endpoints</li>
+<li>Server-Sent Events (SSE) for streaming</li>
+<li>WebSocket for real-time updates (future)</li>
+</ul>
+<h3 id="state-management">State Management<a class="headerlink" href="#state-management" title="Permanent link">&para;</a></h3>
+<ul>
+<li>localStorage for persistence</li>
+<li>In-memory state for session</li>
+<li>Server sync for settings (optional)</li>
+</ul>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://docs.openclaw.ai/web/dashboard">OpenClaw Control UI</a></li>
+<li><a href="https://platform.openai.com/docs/api-reference">OpenAI API Specification</a></li>
+<li><a href="https://echarts.apache.org/">ECharts Documentation</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/plexusone/omniagent" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

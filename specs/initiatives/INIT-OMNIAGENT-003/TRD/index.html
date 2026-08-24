@@ -1,0 +1,3204 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Your AI representative across communication channels">
+      
+      
+      
+        <link rel="canonical" href="https://plexusone.github.io/omniagent/specs/initiatives/INIT-OMNIAGENT-003/TRD/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>OmniAgent Team Agent — Technical Requirements Document - OmniAgent</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://plexusone.dev/css/plexusone-mkdocs.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#omniagent-team-agent-technical-requirements-document" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+<!-- PlexusOne Unified Navigation -->
+<div id="plexus-nav-root"></div>
+<script src="https://plexusone.dev/js/plexus-nav.js"></script>
+
+
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="OmniAgent" class="md-header__button md-logo" aria-label="OmniAgent" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            OmniAgent
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              OmniAgent Team Agent — Technical Requirements Document
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/plexusone/omniagent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plexusone/omniagent
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="OmniAgent" class="md-nav__button md-logo" aria-label="OmniAgent" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    OmniAgent
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/plexusone/omniagent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plexusone/omniagent
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/openai-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenAI-Compatible API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/images/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/team-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/team-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web UI Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Virtual Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/multi-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Agent Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/twilio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Twilio Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/whatsapp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WhatsApp Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/voice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Voice Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/panel-discussions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Panel Discussions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/marketplace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Marketplace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/github/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/sessions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions & Storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/cron/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scheduled Jobs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/sandboxing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandboxing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/policies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Access Policies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browser Automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/vault-credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/web/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Content Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guides/autoreply/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Auto-Reply
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Roadmap
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../PARITY-ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Voice Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Voice Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../design/voice_notes/SPEC/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../design/voice_notes/CASE_STUDY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Releases
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.18.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.18.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.17.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.17.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.16.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.16.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.15.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.15.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.14.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.14.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.13.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.13.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.12.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.12.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.11.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.11.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.10.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.10.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.9.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.9.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.8.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.8.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.7.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.7.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_13" id="__nav_8_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.6.0
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    v0.6.0
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.6.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.6.0/PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.6.0/TASKS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.5.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.5.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.4.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.3.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.3.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.2.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../releases/v0.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-architecture-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Architecture Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1a-deployment-modes-three-orthogonal-axes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1a. Deployment Modes (three orthogonal axes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-data-model-ent-on-postgresql-or-sqlite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Data Model (Ent on PostgreSQL or SQLite)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-row-level-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Row-Level Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Authentication
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Authentication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-magic-link-v1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Magic Link (v1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-superadmin-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Superadmin Bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-sso-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 SSO (v2)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-websocket-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 WebSocket Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-chats-agent-participation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Chats &amp; Agent Participation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-web-ui-embedded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Web UI (embedded)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-deployment-profiles-ecosystem-alignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Deployment Profiles &amp; Ecosystem Alignment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Deployment Profiles &amp; Ecosystem Alignment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sizing-postgresql-on-a-small-lightsail-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sizing (PostgreSQL on a small Lightsail instance)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-deployment-lightsail-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Deployment (Lightsail, compose)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-cross-initiative-sequencing-init-005" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Cross-Initiative Sequencing (INIT-005)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Open Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="omniagent-team-agent-technical-requirements-document">OmniAgent Team Agent — Technical Requirements Document<a class="headerlink" href="#omniagent-team-agent-technical-requirements-document" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Initiative:</strong> <code>INIT-OMNIAGENT-003</code>
+<strong>Status:</strong> Draft
+<strong>Companion:</strong> <a href="../PRD/">PRD.md</a> · <a href="../PLAN/">PLAN.md</a> · <a href="../ROADMAP/">ROADMAP.md</a></p>
+</blockquote>
+<h2 id="1-architecture-overview">1. Architecture Overview<a class="headerlink" href="#1-architecture-overview" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                    ┌──────────────────────── Lightsail instance ───────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  Browser ── HTTPS ─►  Caddy (TLS, reverse proxy)                                       │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                    │      │                                                            │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                    │      ▼                                                            │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                    │  omniagent (single Go binary)                                     │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                    │   ├─ embedded web UI (go:embed, web/dist)                         │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                    │   ├─ auth: magic link + cookie sessions        ┌─────────────┐    │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                    │   ├─ team service (users/allowlist/chats) ────►│ PostgreSQL  │    │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                    │   ├─ gateway WS (chat fan-out by membership)   │  (RLS)      │    │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                    │   └─ agent core (LLM, tools, memory)           └─────────────┘    │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                    │        └─ sessions/cron/memory: existing KVS (sqlite file)        │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                    └───────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<p>The diagram above shows <strong>team mode</strong>. Personal mode (§1a) is a strict subset:
+same binary and web UI, SQLite instead of PostgreSQL, no RLS, no Caddy required.</p>
+<p><strong>Storage split (deliberate):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Team mode</th>
+<th>Personal mode</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Users, identities, allowlist, auth sessions, magic-link tokens, chats, memberships, <strong>messages</strong></td>
+<td>PostgreSQL + RLS</td>
+<td>SQLite (Ent, no RLS)</td>
+<td>Team mode isolates N users as a security property; personal mode has one implicit user, so isolation is moot — see §1a</td>
+</tr>
+<tr>
+<td>Agent conversation context (LLM window), cron jobs, skill state</td>
+<td>Existing KVS (<code>omnistorage-core</code>, sqlite file)</td>
+<td>same</td>
+<td>Derived/truncatable state (rollover applies); no cross-user exposure — keyed by chat</td>
+</tr>
+<tr>
+<td>Semantic memory</td>
+<td>omnimemory (KVS provider at v1)</td>
+<td>same</td>
+<td>Scoped <code>TenantID=team</code>, <code>SubjectID=chat</code>; may move to its Postgres provider later</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>canonical chat transcript lives in the relational store</strong> (PostgreSQL in
+team mode, SQLite in personal mode); the agent's <code>sessions.Store</code> context (keyed
+<code>chat:&lt;id&gt;</code>) is a derived working set that rollover/compaction may truncate
+without losing the durable record.</p>
+<h2 id="1a-deployment-modes-three-orthogonal-axes">1a. Deployment Modes (three orthogonal axes)<a class="headerlink" href="#1a-deployment-modes-three-orthogonal-axes" title="Permanent link">&para;</a></h2>
+<p>"Personal vs team" is not one switch but three independent axes. This keeps the
+current no-dependency single-operator experience first-class while the same
+binary and UI scale up to a hosted team.</p>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>Options</th>
+<th>Config</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Isolation (RLS)</strong></td>
+<td>off (1 user) · on (N users)</td>
+<td><code>team.enabled</code></td>
+</tr>
+<tr>
+<td><strong>Auth</strong></td>
+<td>none · single-account · allowlist + magic-link</td>
+<td><code>auth.enabled</code> (independent of <code>team.enabled</code>)</td>
+</tr>
+<tr>
+<td><strong>Storage</strong></td>
+<td>SQLite (Ent) · PostgreSQL (Ent + RLS) · <em>[Dolt: deferred, see §7]</em></td>
+<td>dialect inferred from DSN</td>
+</tr>
+</tbody>
+</table>
+<p>Two supported profiles at v1 (other combinations are valid but unsupported):</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Users</th>
+<th>Storage</th>
+<th>RLS</th>
+<th>Auth</th>
+<th>UI surface</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Personal</strong> (default)</td>
+<td>1 implicit</td>
+<td>SQLite</td>
+<td>no</td>
+<td>optional (single account)</td>
+<td>chat list + history; no admin / membership / catalog</td>
+</tr>
+<tr>
+<td><strong>Team</strong></td>
+<td>N</td>
+<td>PostgreSQL</td>
+<td>yes</td>
+<td>magic-link + allowlist</td>
+<td>full</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Invariants:</strong></p>
+<ul>
+<li><strong>PostgreSQL is required only for team mode.</strong> RLS is its sole driver, and RLS
+  only means anything with more than one user. Personal mode never needs Postgres.</li>
+<li><strong>Auth is decoupled from multi-user.</strong> A personal deployment exposed on a VPS
+  can require a single account (reusing the magic-link machinery minus the
+  allowlist, or a configured credential) without any RLS apparatus. Localhost
+  personal use stays no-auth. This is the browser-facing form of the existing
+  <code>gateway.APIKeys</code> on/off auth.</li>
+<li><strong>One SPA, capability-driven.</strong> <code>GET /api/capabilities</code> reports
+  <code>{multiUser, authRequired, groupChats, admin, catalog}</code>; the UI hides
+  login / allowlist / group-chat / catalog affordances when a capability is off.
+  No separate builds.</li>
+<li><strong>RLS applies only on the PostgreSQL dialect.</strong> <code>store.AsUser</code> / <code>AsSystem</code>
+  set GUCs and the <code>0001–0003_*.sql</code> policy migrations run only when the dialect
+  is <code>postgres</code>; on SQLite <code>AsUser</code> is a pass-through (one implicit user), and
+  the RLS migration steps are skipped.</li>
+</ul>
+<h2 id="2-data-model-ent-on-postgresql-or-sqlite">2. Data Model (Ent on PostgreSQL or SQLite)<a class="headerlink" href="#2-data-model-ent-on-postgresql-or-sqlite" title="Permanent link">&para;</a></h2>
+<p>ORM: <strong>Ent</strong> (org default), targeting PostgreSQL (team mode) or SQLite (personal
+mode) from the same schema. Versioned migrations (Atlas-generated) embedded via
+<code>embed.FS</code>, applied at startup. RLS policies are hand-written SQL appended as
+custom migration steps (Ent does not model them) and run <strong>only on the postgres
+dialect</strong> — see §3. Dialect-specific types (<code>citext</code> on Postgres →
+<code>COLLATE NOCASE</code> on SQLite) resolve per dialect.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>users            id (uuid pk) · email (citext unique) · username (citext unique)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                 display_name · role (superadmin|member) · status (active|disabled)
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>                 created_at · updated_at
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>identities       id · user_id fk · provider (magic_link|google|github)
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>                 provider_subject (unique per provider) · verified_email · created_at
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>allowlist        id · email (citext unique) · added_by fk users · note · created_at
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>magic_link_tokens id · email · token_hash (sha256, unique) · expires_at
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>                 consumed_at (null) · created_ip · created_at
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>auth_sessions    id · user_id fk · token_hash (sha256, unique) · created_at
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>                 last_seen_at · expires_at · user_agent · created_ip
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>chats            id (uuid pk) · agent_id fk agents · type (private|group)
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>                 name (null for private) · created_by fk users · created_at
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>                 -- partial unique index: one DM (private chat) per user per agent
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>                 UNIQUE (created_by, agent_id) WHERE type = 'private'
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>chat_members     chat_id fk · user_id fk · role (owner|member) · joined_at
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>                 PRIMARY KEY (chat_id, user_id)
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>                 -- chat roles govern membership only; they are orthogonal to
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>                 -- agent_roles (owner/maintainer) and confer no config rights
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>messages         id (uuid pk) · chat_id fk · author_type (user|agent)
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>                 author_user_id (fk, null when agent) · content (text)
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>                 created_at · idx (chat_id, created_at)
+</code></pre></div>
+<blockquote>
+<p><strong>Rescope (INIT-OMNIAGENT-005 dependency):</strong> the <code>agents</code>, <code>agent_roles</code>, and
+<code>agent_skills</code> tables that <code>chats.agent_id</code> references are defined and migrated
+by <a href="../../INIT-OMNIAGENT-005/TRD/">INIT-OMNIAGENT-005</a> (Virtual Agents, Roles &amp;
+Registry). Phase 3 here consumes that model; it does not define agents. See §5
+for how a chat binds to its agent, and §10 for the sequencing constraint.</p>
+</blockquote>
+<h2 id="3-row-level-security">3. Row-Level Security<a class="headerlink" href="#3-row-level-security" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Team mode only.</strong> This entire section applies to the PostgreSQL dialect. In
+personal mode (SQLite, one implicit user) there is nothing to isolate: the
+<code>0001–0003_*.sql</code> policy/function/grant migrations are skipped, the two-role
+owner/app split collapses to a single connection, and <code>store.AsUser</code> /
+<code>AsSystem</code> become pass-throughs binding the sole user. The service-layer
+authorization checks (the primary gate) still run in both modes.</p>
+</blockquote>
+<p><strong>Connection model (two roles, as built):</strong> migrations run as the <strong>owner</strong>
+role (<code>MigrateDSN</code>); the app connects as the <strong>non-owner</strong> <code>omniagent_app</code>
+(<code>AppDSN</code>), so plain <code>ENABLE ROW LEVEL SECURITY</code> binds every policy for the
+app. The owner's RLS bypass is deliberate: the <code>SECURITY DEFINER</code> membership
+helpers (<code>team_is_chat_member/owner/creator</code>) are owner-owned so policies on
+<code>chats</code>/<code>chat_members</code>/<code>messages</code> can consult <code>chat_members</code> without policy
+recursion. (<code>FORCE</code> is intentionally not used — it would break those
+helpers.) Per request, inside a transaction:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">set_config</span><span class="p">(</span><span class="s1">'app.current_user_id'</span><span class="p">,</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">),</span><span class="w">  </span><span class="c1">-- SET LOCAL semantics</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">       </span><span class="n">set_config</span><span class="p">(</span><span class="s1">'app.is_superadmin'</span><span class="p">,</span><span class="w">  </span><span class="err">$</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">),</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">       </span><span class="n">set_config</span><span class="p">(</span><span class="s1">'app.is_system'</span><span class="p">,</span><span class="w">      </span><span class="err">$</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span><span class="w">   </span><span class="c1">-- auth layer / agent</span>
+</code></pre></div>
+<p><code>team/store</code> exposes exactly two entry points — <code>AsUser(userID, superadmin,
+fn)</code> and <code>AsSystem(fn)</code> — which open the transaction, set the GUCs, and hand
+the scoped <code>*ent.Tx</code> to the service layer. <strong>No query path may bypass them</strong>
+(the raw <code>*sql.DB</code> is unexported). <code>app.is_system</code> marks the auth layer and
+agent plumbing: it is the only context that may touch <code>magic_link_tokens</code>,
+create users/identities/sessions, or author <code>agent</code> messages.</p>
+<p><strong>Policies (informal):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>SELECT</th>
+<th>INSERT/UPDATE/DELETE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>users</code></td>
+<td>own row; superadmin: all</td>
+<td>own display fields; superadmin: all</td>
+</tr>
+<tr>
+<td><code>allowlist</code></td>
+<td>superadmin</td>
+<td>superadmin</td>
+</tr>
+<tr>
+<td><code>auth_sessions</code></td>
+<td>own</td>
+<td>own (logout); superadmin: revoke any</td>
+</tr>
+<tr>
+<td><code>chats</code></td>
+<td>member of chat</td>
+<td>create (INSERT gated at the app layer by <code>Can(actor, agent_id, CapCreateChat)</code>; RLS backstop requires the creator be a permitted starter of the bound agent); owner/superadmin: update/delete</td>
+</tr>
+<tr>
+<td><code>chat_members</code></td>
+<td>member of same chat</td>
+<td>chat owner invites/removes; self-leave</td>
+</tr>
+<tr>
+<td><code>messages</code></td>
+<td>member of chat</td>
+<td>member of chat inserts (author = self)</td>
+</tr>
+<tr>
+<td><code>magic_link_tokens</code></td>
+<td><em>no app-role access</em> — touched only by the auth layer via SECURITY DEFINER functions or a separate narrowly-granted role</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Defense-in-depth:</strong> the service layer performs the same authorization checks;
+RLS is the backstop that makes an app-layer bug a non-event. Policy behavior is
+pinned by SQL-level tests (member A cannot read member B's private chat even
+with a hand-crafted query through the app role).</p>
+<p><strong>Agent writes:</strong> the agent authors messages with <code>author_type='agent'</code>. Agent
+inserts run under a dedicated <code>app.current_user_id = &lt;system sentinel&gt;</code> context
+that policies allow only for <code>messages</code> in chats where the write was triggered
+by a member turn (service-layer invariant; RLS allows sentinel inserts to any
+chat — acceptable at v1, tightened later if needed).</p>
+<h2 id="4-authentication">4. Authentication<a class="headerlink" href="#4-authentication" title="Permanent link">&para;</a></h2>
+<p>Auth is an axis independent of multi-user (§1a), gated by <code>auth.enabled</code>:</p>
+<ul>
+<li><strong>Personal, no auth</strong> (<code>auth.enabled=false</code>, default): localhost/trusted use;
+  the single implicit user is always authenticated. This is today's behavior.</li>
+<li><strong>Personal, single-account</strong> (<code>auth.enabled=true</code>, <code>team.enabled=false</code>): the
+  browser UI requires login for one account, reusing the magic-link/cookie
+  machinery below <strong>minus the allowlist and user creation</strong> (the sole account is
+  the configured owner). Suits a personal agent exposed on a VPS.</li>
+<li><strong>Team</strong> (<code>team.enabled=true</code>, implies <code>auth.enabled=true</code>): full magic-link +
+  allowlist + sessions as specified in §4.1–4.4.</li>
+</ul>
+<p><code>auth.enabled=true</code> with <code>team.enabled=false</code> uses the same cookie-session and
+CSRF mechanisms (§4.1.3–4.1.4); it just skips allowlist checks and multi-user
+bootstrap. The rest of §4 describes team mode.</p>
+<h3 id="41-magic-link-v1">4.1 Magic Link (v1)<a class="headerlink" href="#41-magic-link-v1" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>POST /auth/magic-link {email}</code> — <strong>uniform response regardless of outcome</strong>
+   (no email enumeration). If the email is allowlisted (or is the configured
+   superadmin email), issue a token: 256-bit random, stored <strong>SHA-256 hashed</strong>,
+   TTL 15 min, single-use. Send via SMTP (<code>config: team.smtp.*</code>).
+   Request path is rate-limited by the existing gateway escalating-delay
+   limiter, keyed by client IP <strong>and</strong> by email.</li>
+<li><code>GET /auth/verify?token=...</code> — constant-time lookup by hash; must be
+   unexpired and unconsumed; marks consumed; creates the user on first login
+   (email → user; username defaults from the email local part, uniquified);
+   opens an auth session.</li>
+<li><strong>Session cookie:</strong> <code>__Host-oa_session</code>, <code>HttpOnly</code>, <code>Secure</code>,
+   <code>SameSite=Lax</code>; value is a 256-bit random token stored hashed in
+   <code>auth_sessions</code>; sliding expiry 30 days; logout deletes the row.</li>
+<li><strong>CSRF:</strong> state-changing HTTP endpoints require the <code>X-OmniAgent-CSRF: 1</code>
+   custom header (forbidden header pattern) in addition to <code>SameSite=Lax</code>.</li>
+</ol>
+<h3 id="42-superadmin-bootstrap">4.2 Superadmin Bootstrap<a class="headerlink" href="#42-superadmin-bootstrap" title="Permanent link">&para;</a></h3>
+<p><code>team.superadmin_email</code> in config. On first successful login by that email the
+user is created with <code>role=superadmin</code>. Changing the config value later does
+not demote the existing superadmin (explicit DB action required); it only
+governs bootstrap. The superadmin can change their <code>username</code> (US-3) via the
+users API — usernames are unique, <code>citext</code>.</p>
+<h3 id="43-sso-v2">4.3 SSO (v2)<a class="headerlink" href="#43-sso-v2" title="Permanent link">&para;</a></h3>
+<p>Google (OIDC, <code>coreos/go-oidc</code>) and GitHub (OAuth2). Callback resolves the
+provider's <strong>verified</strong> email → existing user (identity linked) or, if
+allowlisted, creates one. A user may hold multiple identities. SSO never
+bypasses the allowlist.</p>
+<h3 id="44-websocket-authentication">4.4 WebSocket Authentication<a class="headerlink" href="#44-websocket-authentication" title="Permanent link">&para;</a></h3>
+<p>Browser WS connects with the session cookie; the upgrade handler authenticates
+<strong>before upgrade</strong> (replacing the in-band <code>auth</code> message for team mode) and
+binds the <code>Client</code> to the user ID. The legacy API-key path remains for
+non-team/programmatic use behind the existing config.</p>
+<h2 id="5-chats-agent-participation">5. Chats &amp; Agent Participation<a class="headerlink" href="#5-chats-agent-participation" title="Permanent link">&para;</a></h2>
+<p>Every chat binds to exactly one <strong>agent</strong> (<code>chats.agent_id</code>, defined by
+INIT-OMNIAGENT-005). "The agent" below means that chat's bound agent, not a
+single deployment-wide agent. Which agents a user may start a chat with — and
+therefore which agents they can DM or open a group around — is governed by the
+INIT-005 registry via <code>Can(actor, agent, CapCreateChat)</code> (listed agents: any
+allowlisted user; private agents: the agent's owner/maintainers and people they
+invite). Per-agent roles (owner/maintainer) are orthogonal to chat membership:
+being a chat member never confers the right to configure the bound agent.</p>
+<ul>
+<li><strong>Private chat (DM with an agent):</strong> created on demand when a permitted user
+  first opens a DM with an agent (<code>type=private</code>, sole member), not blanket at
+  first login. At most one DM per (user, agent). Every member message triggers
+  the agent (current single-agent behavior, now per bound agent).</li>
+<li><strong>Group chat:</strong> any user permitted to start a chat with the agent creates one
+  (<code>type=group</code>, becomes chat <code>owner</code>); invites by username/email (must be
+  existing members of the team); invited members join as <strong>conversants</strong> — they
+  can talk but hold no configuration rights over the agent. Members can leave;
+  the chat owner or superadmin can remove members.</li>
+<li><strong>Fan-out:</strong> the gateway maintains chat-scoped rooms. On message insert
+  (transaction committed), the server broadcasts to connected members of that
+  chat. Subscription requests are validated against <code>chat_members</code>.</li>
+<li><strong>Mention policy:</strong> the agent's handle is its slug (INIT-005 <code>agents.slug</code>);
+  no global <code>team.agent_handle</code>. In group chats the agent processes a message
+  only when it matches <code>(^|\s)@&lt;slug&gt;\b</code> (case-insensitive). In private chats it
+  always processes. The agent never responds to its own messages.</li>
+<li><strong>Agent session &amp; runtime:</strong> one session per chat, key <code>chat:&lt;id&gt;</code> — group
+  members share context by design. <code>TenantID = team</code>, <code>SubjectID/SessionID =
+  chat:&lt;id&gt;</code> for memory scoping. The chat's turns run on the bound agent's
+  runtime instance (persona + enabled skills + agent-scoped secrets), per
+  INIT-005 §6 — the deployment no longer runs one implicit agent. Skills, model,
+  and persona are <strong>agent</strong> configuration (owner/maintainer-managed via INIT-005),
+  not per-chat overrides mutable by chat members. Chat-scoped session features
+  that remain per chat (rollover, memory) apply per chat.</li>
+<li><strong>Ordering/limits:</strong> message length capped (config, default 32 KiB); history
+  API paginates by <code>(created_at, id)</code> keyset.</li>
+</ul>
+<h2 id="6-web-ui-embedded">6. Web UI (embedded)<a class="headerlink" href="#6-web-ui-embedded" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Lives in <code>web/</code> (this repo); built as a static SPA; output embedded with
+  <code>go:embed</code> and served by the gateway mux at <code>/</code> (API under <code>/api/</code>, WS at
+  <code>/ws</code>). No CDN/external assets. Caddy does TLS only.</li>
+<li><strong>One SPA, capability-driven.</strong> <code>GET /api/capabilities</code> returns
+  <code>{multiUser, authRequired, groupChats, admin, catalog}</code> derived from the
+  active mode (§1a). The UI renders only what is enabled — there are no separate
+  personal/team builds.</li>
+<li><strong>Full surface (team):</strong> login (request/verify magic link) · chat list ·
+  private chat · group chat (create/invite/member list, @-mention affordance) ·
+  minimal admin (allowlist CRUD, member list, rename username) · logout.</li>
+<li><strong>Personal surface:</strong> chat list + chat history + send; login/logout only when
+  <code>authRequired</code>; the group-chat, catalog, and admin affordances are hidden
+  (<code>multiUser=false</code>). The same components render against the same API shapes.</li>
+<li><strong>Route registration:</strong> the SPA and <code>/api/*</code> chat routes register whenever the
+  web UI is enabled (personal or team). Team-only routes (<code>/api/admin/*</code>,
+  allowlist, membership) register only when <code>team.enabled=true</code>. When the web UI
+  is disabled entirely, the existing single-operator gateway/channel behavior is
+  unchanged.</li>
+</ul>
+<h2 id="7-deployment-profiles-ecosystem-alignment">7. Deployment Profiles &amp; Ecosystem Alignment<a class="headerlink" href="#7-deployment-profiles-ecosystem-alignment" title="Permanent link">&para;</a></h2>
+<p>Deployment profiles coexist under <code>PROG-OMNIAGENT-LIGHTSAIL</code>; the deciding
+variable is <strong>whether multiple users exist</strong>, not storage preference:</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Initiative</th>
+<th>Shape</th>
+<th>Storage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bot</strong> (headless single-operator)</td>
+<td><code>INIT-GROKIFYOMNIAGENT-001</code></td>
+<td>Static binary + systemd, outbound-only, SSH-only firewall, no Caddy, no web UI</td>
+<td>SQLite KVS on <code>/data</code></td>
+</tr>
+<tr>
+<td><strong>Personal</strong> (single-user + web UI)</td>
+<td><code>INIT-OMNIAGENT-003</code> (this)</td>
+<td>Static binary, embedded UI, optional single-account auth; no Caddy/Postgres required</td>
+<td>SQLite (Ent) for chat data + KVS for agent-internal state</td>
+</tr>
+<tr>
+<td><strong>Team</strong> (multi-user)</td>
+<td><code>INIT-OMNIAGENT-003</code> (this)</td>
+<td>Compose: Caddy + omniagent + PostgreSQL, inbound HTTPS</td>
+<td>PostgreSQL + RLS for user data; KVS for agent-internal state</td>
+</tr>
+</tbody>
+</table>
+<p>Policy: <strong>PostgreSQL wherever multiple users exist; SQLite/KVS otherwise.</strong> RLS
+is the requirement that forces Postgres in team mode; nothing forces it on the
+bot or personal profiles, where the zero-dependency single binary is a feature.
+The Personal profile adds the embedded web UI (and optional auth) over the bot's
+single-operator model without introducing Postgres. The bot initiative's deploy
+scripts and nightly-backup pattern are the reference implementations the team
+profile's compose/backup RMIs consolidate (<code>relates</code> links recorded:
+124↔GROKIFY-007, 126↔GROKIFY-010, 127↔GROKIFY-009).</p>
+<p><strong>Dolt (deferred, not v1):</strong> Dolt is MySQL-wire-compatible — a <em>third</em> Ent
+dialect distinct from SQLite, offering versioned/time-travel history that could
+be attractive for a personal agent's transcript. It is deliberately out of v1
+scope: MySQL/Dolt lacks partial unique indexes (the <code>UNIQUE (created_by,
+agent_id) WHERE type='private'</code> DM constraint would need a trigger or app-level
+enforcement) and RLS, so it is a considered later backend, not a free option
+alongside SQLite.</p>
+<h3 id="sizing-postgresql-on-a-small-lightsail-instance">Sizing (PostgreSQL on a small Lightsail instance)<a class="headerlink" href="#sizing-postgresql-on-a-small-lightsail-instance" title="Permanent link">&para;</a></h3>
+<p><code>postgres:16-alpine</code> idles at ~30–50 MB RSS; a ≤25-user team is single-digit
+QPS at worst. Recommended: the <strong>2 GB RAM / 1 vCPU instance (~$10/mo)</strong> —
+Caddy (~30 MB) + omniagent (~100–150 MB) + Postgres
+(<code>shared_buffers=128–256MB</code>) with ample headroom. The 1 GB instance works with
+<code>shared_buffers=64MB</code> + swap but is tight. Lightsail <em>managed</em> Postgres
+(≥$15/mo) costs more than the whole instance and is unnecessary at this scale;
+the co-located container plus tested <code>pg_dump</code> restore is the chosen path.</p>
+<h2 id="8-deployment-lightsail-compose">8. Deployment (Lightsail, compose)<a class="headerlink" href="#8-deployment-lightsail-compose" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">services</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">caddy</span><span class="p">:</span><span class="w">      </span><span class="c1"># :443 → omniagent:8080; automatic HTTPS for team domain</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">omniagent</span><span class="p">:</span><span class="w">  </span><span class="c1"># single binary, embedded UI + migrations-on-start</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">postgres</span><span class="p">:</span><span class="w">   </span><span class="c1"># postgres:16; volume-backed; not exposed publicly</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">caddy_data, pg_data, omniagent_data</span><span class="w">   </span><span class="c1"># omniagent_data = KVS sqlite</span>
+</code></pre></div>
+<ul>
+<li>Migrations apply on startup (advisory-locked so restarts are safe).</li>
+<li>Backups: nightly <code>pg_dump</code> sidecar (or host cron) to the instance disk with
+  documented off-host copy step; restore procedure documented and tested.</li>
+<li>Secrets (SMTP, LLM API keys, DB password) via compose <code>env_file</code>; never in
+  the image. Postgres reachable only on the compose network.</li>
+</ul>
+<h2 id="9-security-considerations">9. Security Considerations<a class="headerlink" href="#9-security-considerations" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Closed signup: allowlist checked <strong>before</strong> any token is issued.</li>
+<li>Tokens (magic link, session) stored only as SHA-256 hashes; constant-time
+  comparison; single-use links; short TTLs.</li>
+<li>Rate limiting: reuse <code>gateway</code> escalating-delay limiter for magic-link
+  requests and verify attempts (keyed by IP and email); loopback never locked out.</li>
+<li>RLS as backstop + app-layer checks as primary; both tested.</li>
+<li>Uniform auth responses (no user/allowlist enumeration).</li>
+<li>Group invite restricted to existing team members — invites never create accounts.</li>
+<li>Audit trail: allowlist and membership changes recorded (<code>added_by</code>,
+  timestamps); superadmin actions loggable via existing hooks (<code>agent_end</code>,
+  <code>session.*</code> events unaffected).</li>
+</ul>
+<h2 id="10-cross-initiative-sequencing-init-005">10. Cross-Initiative Sequencing (INIT-005)<a class="headerlink" href="#10-cross-initiative-sequencing-init-005" title="Permanent link">&para;</a></h2>
+<p>Phase 3 (Private &amp; Group Chats) depends on
+<a href="../../INIT-OMNIAGENT-005/PRD/">INIT-OMNIAGENT-005</a> (Virtual Agents, Roles &amp;
+Registry), which owns the <code>agents</code>/<code>agent_roles</code>/<code>agent_skills</code> model,
+<code>Can(...)</code> authorization, and per-agent runtime binding that <code>chats.agent_id</code>
+and start-chat authz rest on. Phases 1–2 (identity, magic-link auth) and Phase 4
+(web UI) and Phase 6 (deployment) carry no such dependency. Concretely:</p>
+<ul>
+<li><strong>INIT-003 RMI-110</strong> (chat/membership service) provides the base that INIT-005
+  <strong>RMI-308</strong> extends by adding <code>chats.agent_id</code> and the <code>Can(CapCreateChat)</code>
+  gate — so RMI-110 lands first, then RMI-308, then the remaining Phase 3 RMIs
+  (111–114) build on the agent-anchored model.</li>
+<li>INIT-005 Phases 1–3 (agent entity → per-agent roles → registry + start-chat
+  authz) must be delivered before INIT-003 Phase 3 completes.</li>
+<li>Dependencies are modeled at <strong>RMI granularity</strong> in VisionStudio, where the
+  graph stays acyclic: INIT-005 <code>RMI-308 requires RMI-110</code> (agent_id integration
+  builds on the chat base), and INIT-003 <code>RMI-113 requires RMI-308</code> +
+  <code>RMI-113 requires RMI-309</code> (agent turns need <code>chats.agent_id</code> and the per-agent
+  runtime). No initiative-level <code>requires</code> edge is used: the two initiatives
+  interleave at different phases, so projecting the relationship up to initiative
+  granularity would falsely imply a cycle.</li>
+</ul>
+<h2 id="11-open-questions">11. Open Questions<a class="headerlink" href="#11-open-questions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Should the superadmin be able to <em>read</em> group chats they are not a member
+   of? v1: <strong>no</strong> — superadmin power is administrative (membership), not
+   content access. Revisit if moderation is needed.</li>
+<li>omnimemory on Postgres (its <code>postgres</code> provider) with RLS alignment —
+   deferred; v1 keeps KVS memory keyed by chat.</li>
+<li>Streaming responses in group chats (token streaming to all members) — v1
+   sends complete agent messages; streaming is a UI enhancement later.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/plexusone/omniagent" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

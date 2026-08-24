@@ -1,0 +1,3284 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Your AI representative across communication channels">
+      
+      
+      
+        <link rel="canonical" href="https://plexusone.github.io/omniagent/specs/parity-2026-07-30/PORT-SPEC/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>OpenClaw Parity — Port Spec (Track 1) - OmniAgent</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="https://plexusone.dev/css/plexusone-mkdocs.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#openclaw-parity-port-spec-track-1" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+<!-- PlexusOne Unified Navigation -->
+<div id="plexus-nav-root"></div>
+<script src="https://plexusone.dev/js/plexus-nav.js"></script>
+
+
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="OmniAgent" class="md-header__button md-logo" aria-label="OmniAgent" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            OmniAgent
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              OpenClaw Parity — Port Spec (Track 1)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/plexusone/omniagent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plexusone/omniagent
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="OmniAgent" class="md-nav__button md-logo" aria-label="OmniAgent" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    OmniAgent
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/plexusone/omniagent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    plexusone/omniagent
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/openai-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OpenAI-Compatible API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/images/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/team-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/team-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Team Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web UI Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Virtual Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/multi-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Agent Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/twilio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Twilio Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/whatsapp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WhatsApp Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/voice/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Voice Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/panel-discussions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Panel Discussions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/marketplace/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Marketplace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/github/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/sessions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions & Storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/cron/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scheduled Jobs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/sandboxing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sandboxing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/profiles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Profiles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/policies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Access Policies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Browser Automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/vault-credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/web/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Content Skill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../guides/autoreply/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Auto-Reply
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Roadmap
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../PARITY-ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Control UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_1" id="__nav_7_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Voice Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Voice Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design/voice_notes/SPEC/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../design/voice_notes/CASE_STUDY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Case Study
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Releases
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.18.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.18.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.17.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.17.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.16.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.16.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.15.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.15.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.14.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.14.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.13.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.13.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.12.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.12.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.11.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.11.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.10.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.10.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.9.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.9.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.8.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.8.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.7.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.7.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_13" id="__nav_8_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.6.0
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    v0.6.0
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.6.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.6.0/PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.6.0/TASKS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.5.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.5.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.4.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.4.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.3.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.3.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.2.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.2.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../releases/v0.1.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v0.1.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#master-verdict-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Master verdict table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#port-items-implementable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PORT items (implementable)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="PORT items (implementable)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cee6203f448-cron-fail-closed-on-removed-authorizing-account-security-l" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. cee6203f448 — Cron fail-closed on removed authorizing account · security · L
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-c661061d4a7-stop-dropping-pre-tool-assistant-text-bug-m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. c661061d4a7 — Stop dropping pre-tool assistant text · bug · M
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-c63fdc631f0-release-session-cache-on-close-bug-s-quick-win" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. c63fdc631f0 — Release session cache on Close · bug · S (quick win)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-ea967be0df6-auth-failure-escalating-delay-security-m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. ea967be0df6 — Auth-failure escalating delay · security · M
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-750dc999038-adjacent-realtime-readloop-silent-drop-bug-m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 750dc999038-adjacent — Realtime readLoop silent drop · bug · M
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-54e273e6953-temporal-context-in-system-prompt-correctness-m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 54e273e6953 — Temporal context in system prompt · correctness · M
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-a877fe1b32a-prevent-duplicate-concurrent-cron-runs-rmi-064-narrowed-m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. a877fe1b32a — Prevent duplicate concurrent cron runs · RMI-064 (narrowed) · M
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-8fefe62ba41-emit-agent_end-on-all-exit-paths-enabling-l" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 8fefe62ba41 — Emit agent_end on all exit paths · enabling · L
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#9-adf3178ae6c-expose-mcp-tool-identity-rmi-068-m-l-with-deniedbysession" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. adf3178ae6c — Expose MCP tool identity · RMI-068 · M (L with deniedBySession)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-42e23c11e0f-per-turn-tool-narrowing-in-prompt-hooks-rmi-066-l" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 42e23c11e0f — Per-turn tool narrowing in prompt hooks · RMI-066 · L
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#11-a37a5a65753-per-session-tool-overrides-rmi-067-l" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. a37a5a65753 — Per-session tool overrides · RMI-067 · L
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-73b5e7aab49-save-memory-on-automatic-session-rollover-rmi-061-l" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 73b5e7aab49 — Save memory on automatic session rollover · RMI-061 · L
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-eee5e029e36-persist-last-used-session-model-as-default-gap-l-blocked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. eee5e029e36 — Persist last-used session model as default · gap · L (blocked)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#n-a-items-strike-or-rescope-in-planmd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N-A items (strike or rescope in PLAN.md)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-rmi-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended RMI changes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sequencing-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sequencing / dependencies
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="openclaw-parity-port-spec-track-1">OpenClaw Parity — Port Spec (Track 1)<a class="headerlink" href="#openclaw-parity-port-spec-track-1" title="Permanent link">&para;</a></h1>
+<p>Diff-level analysis of the unmapped/in-flight commits behind <code>INIT-OMNIAGENT-002</code>,
+verified against the actual OpenClaw source (TypeScript) checked out at the plan's
+target commit and the plexusone (Go) target repos.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reference source</td>
+<td><code>~/go/src/github.com/openclaw/openclaw</code> @ <code>3e7ecb3a</code> (= plan target)</td>
+</tr>
+<tr>
+<td>Sync base</td>
+<td><code>2001b15f</code> (2026-06-28)</td>
+</tr>
+<tr>
+<td>Commits analyzed</td>
+<td>24 (10 RMIs 060–069 + 10 applicable gaps + 4 PARTIALs)</td>
+</tr>
+<tr>
+<td>Method</td>
+<td>Read the real diff per commit → locate the Go target → PORT / N-A verdict + acceptance criteria</td>
+</tr>
+<tr>
+<td>Nature</td>
+<td><strong>Cross-language behavior port</strong> (TS→Go). Diffs are reference behavior, not applyable patches.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">Executive summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p><strong>Can we complete the roadmap as written? No.</strong> The plan's four remaining phases were
+triaged from commit <em>one-line messages</em>. Reading the actual diffs shows <strong>4 of the 10
+proposed RMIs (060, 063, 065, 069) target OpenClaw subsystems omniagent does not have</strong>,
+and a 5th (062) only exists as a rider on an unbuilt one (061). They cannot be delivered
+as ports and must be struck or rescoped.</p>
+<p>At the same time, the diff analysis surfaced <strong>real, in-scope work the RMI set never
+captured</strong> — including two security items and three correctness bugs.</p>
+<p>Net verdict: <strong>12 PORT / 12 N-A</strong>.</p>
+<ul>
+<li><strong>12 PORT</strong> — genuinely applicable; 3 are security/correctness bugs live in the tree today.</li>
+<li><strong>12 N-A</strong> — no landing surface (subsystem absent, or the defect can't occur in Go).</li>
+</ul>
+<h2 id="master-verdict-table">Master verdict table<a class="headerlink" href="#master-verdict-table" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Title</th>
+<th>RMI / kind</th>
+<th>Verdict</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cee6203f448</code></td>
+<td>Deny all tools when scheduled authority names removed account</td>
+<td>gap · <strong>security</strong></td>
+<td><strong>PORT</strong></td>
+<td>L</td>
+</tr>
+<tr>
+<td><code>c661061d4a7</code></td>
+<td>Keep streamed pre-tool assistant text in final output</td>
+<td>gap · <strong>bug</strong></td>
+<td><strong>PORT</strong></td>
+<td>M</td>
+</tr>
+<tr>
+<td><code>c63fdc631f0</code></td>
+<td>Release closed session/SQLite entry caches</td>
+<td>gap · <strong>bug</strong></td>
+<td><strong>PORT</strong></td>
+<td>S</td>
+</tr>
+<tr>
+<td><code>ea967be0df6</code></td>
+<td>Loopback auth-failure escalating delay</td>
+<td>gap · <strong>security</strong></td>
+<td><strong>PORT</strong> (delay half)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><code>750dc999038</code>†</td>
+<td>Realtime readLoop silently drops events</td>
+<td>adjacent · <strong>bug</strong></td>
+<td><strong>PORT</strong></td>
+<td>M</td>
+</tr>
+<tr>
+<td><code>54e273e6953</code></td>
+<td>Keep date reasoning current (temporal context)</td>
+<td>gap · correctness</td>
+<td><strong>PORT</strong></td>
+<td>M</td>
+</tr>
+<tr>
+<td><code>a877fe1b32a</code></td>
+<td>Prevent duplicate concurrent cron runs</td>
+<td>RMI-064 (narrowed)</td>
+<td><strong>PORT</strong></td>
+<td>M</td>
+</tr>
+<tr>
+<td><code>8fefe62ba41</code></td>
+<td>Emit agent_end on aborted runs</td>
+<td>gap (enabling)</td>
+<td><strong>PORT</strong></td>
+<td>L</td>
+</tr>
+<tr>
+<td><code>adf3178ae6c</code></td>
+<td>Expose MCP tool identity in effective tools</td>
+<td>RMI-068</td>
+<td><strong>PORT</strong></td>
+<td>M–L</td>
+</tr>
+<tr>
+<td><code>42e23c11e0f</code></td>
+<td>Per-turn tool narrowing in prompt hooks</td>
+<td>RMI-066</td>
+<td><strong>PORT</strong></td>
+<td>L</td>
+</tr>
+<tr>
+<td><code>a37a5a65753</code></td>
+<td>Per-session tool overrides</td>
+<td>RMI-067</td>
+<td><strong>PORT</strong></td>
+<td>L</td>
+</tr>
+<tr>
+<td><code>73b5e7aab49</code></td>
+<td>Save memory on automatic session rollover</td>
+<td>RMI-061</td>
+<td><strong>PORT</strong></td>
+<td>L</td>
+</tr>
+<tr>
+<td><code>eee5e029e36</code></td>
+<td>Persist last-used session model as default</td>
+<td>gap</td>
+<td>PORT (blocked)</td>
+<td>L</td>
+</tr>
+<tr>
+<td><code>d9525663852</code></td>
+<td>Preserve user notes in MEMORY.md compaction</td>
+<td>RMI-060</td>
+<td><strong>N-A</strong> (no subsystem)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>82af1bf7d40</code></td>
+<td>Stop replaying old schedule slots after edit</td>
+<td>RMI-063</td>
+<td><strong>N-A</strong> (no catch-up)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>5496cff9653</code></td>
+<td>Include run time in cron failure alerts</td>
+<td>RMI-065</td>
+<td><strong>N-A</strong> (no alert subsystem)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>9560e171855</code></td>
+<td>Add persistent hook session mode</td>
+<td>RMI-069</td>
+<td><strong>N-A</strong> (no inbound gateway)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>3f918d4b3ca</code></td>
+<td>Honor user timezone in session memory</td>
+<td>RMI-062</td>
+<td><strong>N-A</strong> (rider on 061)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>e5cee36b46c</code></td>
+<td>Retry failed queued session targets</td>
+<td>gap</td>
+<td><strong>N-A</strong> (no async queue)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>280c1627533</code></td>
+<td>Bound GPT-Live sideband startup frames</td>
+<td>PARTIAL</td>
+<td><strong>N-A</strong> (no sideband)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>6b37d46b179</code></td>
+<td>Bound GPT-Live delegation work</td>
+<td>PARTIAL</td>
+<td><strong>N-A</strong> (no delegation broker)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>ad1dc602594</code></td>
+<td>Scope realtime readiness state</td>
+<td>PARTIAL</td>
+<td><strong>N-A</strong> (Go block scoping)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>750dc999038</code></td>
+<td>Preserve playback acknowledgement order</td>
+<td>ABSENT</td>
+<td><strong>N-A</strong> (no playback marks)†</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>29497b4e1e8</code></td>
+<td>UTF-16 surrogate safety in run-ID mask</td>
+<td>PARTIAL</td>
+<td><strong>N-A</strong> (can't occur in Go)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>46ec7a43a8a</code></td>
+<td>Prevent model runtime startup timeout</td>
+<td>ABSENT</td>
+<td><strong>N-A</strong> (no model catalog)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>† <code>750dc999038</code> itself is N-A (no playback-mark subsystem), but the audit surfaced a
+distinct, live bug in the same file — <code>readLoop</code> silently drops server events (audio /
+transcript deltas) when the cap-100 channel is full — which IS actionable. Tracked as its
+own PORT row above.</p>
+<hr />
+<h2 id="port-items-implementable">PORT items (implementable)<a class="headerlink" href="#port-items-implementable" title="Permanent link">&para;</a></h2>
+<p>Ordered by recommended priority. Each is a behavior port — implement the intent in Go,
+do not transliterate the TypeScript.</p>
+<h3 id="1-cee6203f448-cron-fail-closed-on-removed-authorizing-account-security-l">1. <code>cee6203f448</code> — Cron fail-closed on removed authorizing account · <strong>security · L</strong><a class="headerlink" href="#1-cee6203f448-cron-fail-closed-on-removed-authorizing-account-security-l" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> A scheduled run executes under the authority of the account/session that
+  created it. When that account is gone, tool policy must fail <strong>closed</strong> (deny all).</li>
+<li><strong>Go target:</strong> <code>cron/job.go</code> (add authorizing principal to <code>Job</code>); <code>cron/executor.go:198</code>
+  <code>executeCallTool</code> (add existence check + deny-all branch before dispatch).</li>
+<li><strong>Why it matters:</strong> omniagent's cron is currently <strong>fail-OPEN</strong> — <code>executeCallTool</code> calls
+  <code>agent.Tools().Execute(...)</code> unconditionally (<code>cron/executor.go:215</code>); <code>Job</code> has no
+  owner field at all (<code>cron/job.go:44-83</code>). A stored <code>call_tool</code> job runs any tool
+  (incl. <code>exec</code>-class) regardless of who created it or whether they still exist. This is
+  strictly more permissive than the upstream bug.</li>
+<li><strong>Acceptance:</strong> (1) <code>Job</code> carries a non-spoofable <code>OwnerAccountID</code>/<code>OwnerSessionKey</code>
+  stamped at create time. (2) Before dispatch, resolve principal against configured
+  accounts; if removed/unknown, return <code>Success:false</code> denying <strong>all</strong> tools. (3) Deny is a
+  wildcard deny, never "empty allowlist = allow all". (4) Configured-principal jobs run as
+  today. (5) Test: job whose owner is later removed → deny-all, tool not invoked.</li>
+<li><strong>Prereq:</strong> needs an account/identity source the cron package doesn't yet import.</li>
+</ul>
+<h3 id="2-c661061d4a7-stop-dropping-pre-tool-assistant-text-bug-m">2. <code>c661061d4a7</code> — Stop dropping pre-tool assistant text · <strong>bug · M</strong><a class="headerlink" href="#2-c661061d4a7-stop-dropping-pre-tool-assistant-text-bug-m" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> When a turn emits answer text <em>and</em> a tool call, the pre-tool text must
+  survive into the final output.</li>
+<li><strong>Go target:</strong> <code>agent/agent.go:352-369</code> (run loop final-string construction).</li>
+<li><strong>Why it matters:</strong> live user-visible content loss. On a tool-call turn the assistant
+  message is appended with <code>ToolCalls</code> but <strong>without</strong> <code>choice.Message.Content</code>
+  (<code>agent.go:365-369</code>), and only the terminal no-tool-call <code>Content</code> is returned
+  (<code>agent.go:359</code>). The faked-streaming adapter then chunks exactly that string, so
+  "Let me check X" before a tool call is gone forever. (Do <strong>not</strong> port the upstream
+  JSONL parser — it's specific to their CLI streaming; port only the behavior.)</li>
+<li><strong>Acceptance:</strong> (1) Non-empty <code>Content</code> on a tool-call turn is accumulated and joined
+  (blank-line separator) into the returned string. (2) The appended tool-call assistant
+  message also carries its <code>Content</code> for faithful history. (3) "text → tool → text" returns
+  both segments. (4) No double-spacing. (5) Single-turn output unchanged.</li>
+</ul>
+<h3 id="3-c63fdc631f0-release-session-cache-on-close-bug-s-quick-win">3. <code>c63fdc631f0</code> — Release session cache on Close · <strong>bug · S</strong> <em>(quick win)</em><a class="headerlink" href="#3-c63fdc631f0-release-session-cache-on-close-bug-s-quick-win" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> A keyed entry cache must not outlive the resource it belongs to.</li>
+<li><strong>Go target:</strong> <code>sessions/store.go:218</code> <code>Store.Close</code>.</li>
+<li><strong>Why it matters:</strong> <code>ClearCache</code> exists (<code>store.go:211</code>) but <code>Close</code> never calls it
+  (<code>store.go:218-220</code>) — a closed <code>Store</code> retains every cached <code>*Session</code>. (Go has no
+  <code>WeakMap</code>; the idiomatic port is release-on-close, not weak refs.)</li>
+<li><strong>Acceptance:</strong> (1) <code>Close</code> releases the cache under <code>s.mu</code>. (2) Idempotent, no race with
+  Get/Save. (3) Backend still closed, error still returned. (4) Test: cache len 0 after Close.</li>
+</ul>
+<h3 id="4-ea967be0df6-auth-failure-escalating-delay-security-m">4. <code>ea967be0df6</code> — Auth-failure escalating delay · <strong>security · M</strong><a class="headerlink" href="#4-ea967be0df6-auth-failure-escalating-delay-security-m" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> Failed gateway auth incurs a bounded, escalating, <strong>post-comparison</strong> delay
+  (base ~250ms, doubling, ~5s cap); loopback is never locked out but still pays the delay.</li>
+<li><strong>Go target:</strong> new <code>gateway/auth_ratelimit.go</code>, wired into the failure branch of
+  <code>handleAuth</code> (<code>gateway/handlers.go:147-159</code>); key off client IP from the HTTP upgrade
+  (<code>gateway/gateway.go:157</code>).</li>
+<li><strong>Why it matters:</strong> <code>handleAuth</code> returns immediately on mismatch — no delay, no failure
+  counting (<code>gateway/handlers.go:138-159</code>); <code>gateway/ratelimit.go</code> is a message-throughput
+  bucket, unrelated. <strong>Scope down to the delay limiter only</strong> — the commit's other half
+  (<code>autoApproveLocal</code> device pairing) has no counterpart and is N-A.</li>
+<li><strong>Acceptance:</strong> (1) Escalating delay on repeated failures. (2) Loopback delayed, never
+  locked out. (3) Delay only after credential compare (correct creds never delayed).
+  (4) Concurrent failures for one key share one bounded penalty (no timer/goroutine growth).
+  (5) Success resets penalty.</li>
+</ul>
+<h3 id="5-750dc999038-adjacent-realtime-readloop-silent-drop-bug-m">5. <code>750dc999038</code>-adjacent — Realtime readLoop silent drop · <strong>bug · M</strong><a class="headerlink" href="#5-750dc999038-adjacent-realtime-readloop-silent-drop-bug-m" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> Never silently drop ordered server events under backpressure.</li>
+<li><strong>Go target:</strong> <code>omni-openai/omnivoice/realtime/client.go:302-308</code>.</li>
+<li><strong>Why it matters:</strong> <code>readLoop</code>'s <code>select</code>-send to <code>eventsCh</code> has a <code>default:</code> that drops
+  parsed events (audio/transcript deltas) when the cap-100 channel is full — silent
+  loss/reordering under load. (This is the true "preserve order / no loss" analog of the
+  N-A playback-mark commit.)</li>
+<li><strong>Acceptance:</strong> (1) Events are not silently dropped — block on send honoring <code>closeCh</code>, or
+  surface an explicit overflow error. (2) No goroutine leak on close.</li>
+</ul>
+<h3 id="6-54e273e6953-temporal-context-in-system-prompt-correctness-m">6. <code>54e273e6953</code> — Temporal context in system prompt · <strong>correctness · M</strong><a class="headerlink" href="#6-54e273e6953-temporal-context-in-system-prompt-correctness-m" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> Inject a fresh <strong>date + timezone</strong> block, recomputed each turn, so
+  long-running sessions don't reason with a stale date.</li>
+<li><strong>Go target:</strong> <code>agent/agent.go:590</code> <code>buildSystemPromptWithMemories</code>.</li>
+<li><strong>Why it matters:</strong> omniagent injects <strong>no</strong> date at all — the prompt has no
+  date/time/timezone line (<code>agent.go:590-620</code>). (Upstream's subtlety of moving it out of the
+  cached prefix only matters once prompt caching exists; building it fresh-per-turn from the
+  start is correct regardless.)</li>
+<li><strong>Acceptance:</strong> (1) Assembled prompt includes a temporal block with current date +
+  timezone. (2) Recomputed at build time each turn (session spanning midnight updates).
+  (3) Coarse date stamp, not precise HH:MM. (4) Configurable timezone, default UTC.
+  (5) If caching lands later, block sits outside the cached prefix.</li>
+</ul>
+<h3 id="7-a877fe1b32a-prevent-duplicate-concurrent-cron-runs-rmi-064-narrowed-m">7. <code>a877fe1b32a</code> — Prevent duplicate concurrent cron runs · RMI-064 (narrowed) · <strong>M</strong><a class="headerlink" href="#7-a877fe1b32a-prevent-duplicate-concurrent-cron-runs-rmi-064-narrowed-m" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> An interval job whose execution outlasts its interval must not start a second
+  concurrent run.</li>
+<li><strong>Go target:</strong> <code>cron/scheduler.go:198-209</code> <code>checkSpecialJobs</code> + <code>executeJob</code>.</li>
+<li><strong>Why it matters:</strong> <code>checkSpecialJobs</code> launches <code>go executeJob</code> whenever
+  <code>now - LastRunAt &gt;= interval</code>, but <code>LastRunAt</code> is written only at the <em>end</em> of
+  <code>executeJob</code> (<code>scheduler.go:257-287</code>) — a long run is re-launched every tick. The
+  in-memory <code>JobStatusRunning</code> set (<code>executeJob:238</code>) isn't consulted before launch. (The
+  upstream commit's other two parts — stalled-slot reaper, heartbeat, file-lock canonical —
+  are N-A: omniagent has none of those.)</li>
+<li><strong>Acceptance:</strong> (1) No second concurrent execution while a prior run of the job ID is in
+  flight (guard the in-flight set, set <code>LastRunAt</code> at start, or <code>cron.SkipIfStillRunning</code>).
+  (2) One-time jobs fire exactly once. (3) A failing maintenance step never blocks future
+  ticks (add regression test).</li>
+</ul>
+<h3 id="8-8fefe62ba41-emit-agent_end-on-all-exit-paths-enabling-l">8. <code>8fefe62ba41</code> — Emit agent_end on all exit paths · enabling · <strong>L</strong><a class="headerlink" href="#8-8fefe62ba41-emit-agent_end-on-all-exit-paths-enabling-l" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> Guaranteed single lifecycle emission on every terminal path (normal / error /
+  abort), with abort-outranks-error classification.</li>
+<li><strong>Go target:</strong> new <code>EventAgentEnd</code> in <code>hooks/event.go:28-49</code>; deferred finalize in the run
+  loop <code>agent/agent.go:318-411</code>.</li>
+<li><strong>Why it matters:</strong> no <code>agent_end</code>/after-turn event exists — the run loop returns via early
+  <code>return</code> or max-iteration error with no finalization emit; abort is bare <code>ctx</code> cancellation.
+  This event is <strong>enabling substrate</strong> several other behaviors (incl. RMI-061) would build on.</li>
+<li><strong>Acceptance:</strong> (1) Introduce <code>agent_end</code> event + payload (messages, <code>success</code>, <code>error</code>,
+  <code>durationMs</code>). (2) Emitted on every terminal path via <code>defer</code>. (3) On abort
+  (<code>errors.Is(err, context.Canceled)</code>): <code>success=false</code>, empty <code>error</code>; abort outranks a
+  concurrent error. (4) Timeout not reported as error when cause was abort. (5) Tests for
+  normal/error/abort each emitting exactly one correctly-classified event.</li>
+</ul>
+<h3 id="9-adf3178ae6c-expose-mcp-tool-identity-rmi-068-m-l-with-deniedbysession">9. <code>adf3178ae6c</code> — Expose MCP tool identity · RMI-068 · <strong>M</strong> (L with deniedBySession)<a class="headerlink" href="#9-adf3178ae6c-expose-mcp-tool-identity-rmi-068-m-l-with-deniedbysession" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> Effective-tools inventory entries gain <code>source</code> + <code>mcpServer</code> + <code>mcpToolName</code>
+  (+ <code>deniedBySession</code> once 067 lands).</li>
+<li><strong>Go target:</strong> <code>gateway/tools_rpc.go:273</code> <code>ToolInfo</code>/<code>ToolsListHandler</code>; MCP identity
+  metadata originates in <code>skills/remote/mcp/skill.go</code>, surfaced via <code>agent/tools.go</code>.</li>
+<li><strong>Why it matters:</strong> <code>ToolInfo</code> is name/description/parameters only; MCP servers are flat
+  compiled skills with no server/tool-name metadata. No "effective tools" endpoint exists —
+  extend <code>ToolsListHandler</code>.</li>
+<li><strong>Acceptance:</strong> (1) MCP tools expose originating server + original tool name. (2) Listing
+  includes <code>source:"mcp"</code> + identity fields. (3) [needs 067] denied MCP tools still listable
+  with <code>deniedBySession:true</code>. (4) Non-MCP tools omit MCP fields.</li>
+<li><strong>Note:</strong> criteria 1–2 are independent; criterion 3 depends on RMI-067.</li>
+</ul>
+<h3 id="10-42e23c11e0f-per-turn-tool-narrowing-in-prompt-hooks-rmi-066-l">10. <code>42e23c11e0f</code> — Per-turn tool narrowing in prompt hooks · RMI-066 · <strong>L</strong><a class="headerlink" href="#10-42e23c11e0f-per-turn-tool-narrowing-in-prompt-hooks-rmi-066-l" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> A before-turn hook can return a tool-allow set narrowing <code>req.Tools</code> for that
+  turn only (omitted = unchanged; empty = drop optional; list = intersection).</li>
+<li><strong>Go target:</strong> <code>agent/agent.go</code> <code>processInternal</code> tool-build (~310-333) + a <strong>new
+  synchronous, return-value-bearing hook stage</strong> (<code>hooks/</code>, e.g. <code>hooks/prompt.go</code>).</li>
+<li><strong>Why it matters:</strong> tools are resolved globally once (<code>agent.go:310</code> <code>GetTools()</code>); hooks
+  are fire-and-forget (<code>EmitAsync</code>, return discarded — <code>hooks/registry.go:176-206</code>). This
+  synchronous hook stage is <strong>shared substrate</strong> RMI-067 also needs.</li>
+<li><strong>Acceptance:</strong> (1) Pre-turn hook narrows <code>req.Tools</code> without mutating the registry.
+  (2) Omitted = unchanged; empty = drop optional; list = hook ∩ registered. (3) Per-turn
+  (re-evaluated each iteration); later turn can widen. (4) Test: hook returns <code>["chart"]</code> →
+  only <code>chart</code> sent.</li>
+</ul>
+<h3 id="11-a37a5a65753-per-session-tool-overrides-rmi-067-l">11. <code>a37a5a65753</code> — Per-session tool overrides · RMI-067 · <strong>L</strong><a class="headerlink" href="#11-a37a5a65753-per-session-tool-overrides-rmi-067-l" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> A session carries <code>ToolOverrides</code> (MCP servers on/off, per-tool deny, skills
+  on/off, web-search on/off) applied to that session's tool set.</li>
+<li><strong>Go target:</strong> <code>sessions/session.go</code> (new <code>ToolOverrides</code> struct + field); session-scoped
+  tool resolution at <code>agent/agent.go:310</code>; MCP deny filter in <code>skills/remote/mcp/skill.go</code>;
+  a gateway path to set overrides (<code>gateway/handlers.go</code>).</li>
+<li><strong>Why it matters:</strong> <code>Session</code> has no overrides field; tools resolved globally, not per
+  session; MCP <code>Tools()</code> returns all server tools with no deny filter.</li>
+<li><strong>Acceptance:</strong> (1) <code>Session</code> persists <code>ToolOverrides</code> (round-trips through store JSON).
+  (2) Disabled server / denied tool / disabled skill / web-search=false excluded for that
+  session only. (3) Two concurrent sessions with different overrides get different tool sets.
+  (4) Gateway path to set overrides.</li>
+<li><strong>Prereq:</strong> session-scoped tool resolution (shared with 066); <code>mcpToolsDeny</code> needs 068's MCP
+  identity. Sequence 066 → 067 → 068.</li>
+</ul>
+<h3 id="12-73b5e7aab49-save-memory-on-automatic-session-rollover-rmi-061-l">12. <code>73b5e7aab49</code> — Save memory on automatic session rollover · RMI-061 · <strong>L</strong><a class="headerlink" href="#12-73b5e7aab49-save-memory-on-automatic-session-rollover-rmi-061-l" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> When a session ends <em>automatically</em> (daily/idle), persist its context to
+  memory (not just on manual reset).</li>
+<li><strong>Go target:</strong> net-new: a rollover trigger in <code>sessions/</code> (e.g. <code>sessions/rollover.go</code>);
+  a new <code>session.rollover</code> event in <code>hooks/event.go</code> carrying a <code>Reason</code>; a
+  memory-persistence hook writing the ended session via omnimemory
+  (<code>skills/memory/memory.go:276</code> <code>client.Add</code>).</li>
+<li><strong>Why it matters:</strong> no rollover/auto-reset mechanism exists (sessions expire silently via
+  TTL — <code>sessions/store.go:18-19</code>); no session-lifecycle end event; memory is tool-driven,
+  never fired from a session event.</li>
+<li><strong>Acceptance:</strong> (1) Auto rollover emits a lifecycle event with ended session + reason.
+  (2) A subscribed hook writes ended-session context to omnimemory, tagged with reason, no
+  double-write on manual clear. (3) Manual clears unchanged. (4) Test: one memory write per
+  rollover with correct reason.</li>
+<li><strong>Prereq:</strong> heavy — build auto-rollover + lifecycle event first (synergy with #8
+  <code>agent_end</code>). Port the <em>behavior</em> (persist-on-auto-boundary), not the Markdown file layout.
+  RMI-062 (timezone) rides on this as an S add-on.</li>
+</ul>
+<h3 id="13-eee5e029e36-persist-last-used-session-model-as-default-gap-l-blocked">13. <code>eee5e029e36</code> — Persist last-used session model as default · gap · <strong>L (blocked)</strong><a class="headerlink" href="#13-eee5e029e36-persist-last-used-session-model-as-default-gap-l-blocked" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Behavior:</strong> An admin-scoped session model change persists as the agent's sticky default,
+  best-effort, skipped when config is immutable.</li>
+<li><strong>Go target:</strong> <code>Model</code> field on <code>sessions.Session</code>; a gateway session-model-patch path;
+  a config write-back for <code>agent.Config.Model</code> (<code>agent/agent.go:61</code>).</li>
+<li><strong>Blocked on:</strong> omniagent has <strong>no per-session model selection at all</strong> (<code>Config.Model</code> is a
+  static construction-time string; config is load-only — <code>config/loader.go</code>). Recommend a
+  prerequisite RMI (per-session model selection + writable config) before this.</li>
+</ul>
+<hr />
+<h2 id="n-a-items-strike-or-rescope-in-planmd">N-A items (strike or rescope in PLAN.md)<a class="headerlink" href="#n-a-items-strike-or-rescope-in-planmd" title="Permanent link">&para;</a></h2>
+<p>Verified against the source — these target OpenClaw subsystems omniagent doesn't implement,
+or fix defects that cannot occur in Go. Not gaps; annotate the plan so they stop reading as
+unfinished parity work.</p>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>RMI</th>
+<th>Reason N-A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>d9525663852</code></td>
+<td><strong>060</strong></td>
+<td>No <code>MEMORY.md</code> promotion/budget-compaction subsystem. (<code>context/</code> compaction is conversation-history summarization — different concept.) Blocked on porting the whole feature.</td>
+</tr>
+<tr>
+<td><code>82af1bf7d40</code></td>
+<td><strong>063</strong></td>
+<td>No restart catch-up / missed-slot state machine; <code>UpdateJob</code> already recomputes next run from now.</td>
+</tr>
+<tr>
+<td><code>5496cff9653</code></td>
+<td><strong>065</strong></td>
+<td>No cron failure-alert/notification subsystem to enrich. (<code>ExecutionResult.StartedAt</code> already exists; nothing consumes it.)</td>
+</tr>
+<tr>
+<td><code>9560e171855</code></td>
+<td><strong>069</strong></td>
+<td>No inbound hook→agent-session gateway. The one external-trigger path (cron) is already implicitly persistent with no isolated mode.</td>
+</tr>
+<tr>
+<td><code>3f918d4b3ca</code></td>
+<td><strong>062</strong></td>
+<td>Only refines the not-yet-ported session-memory handler. Rides on 061 as an S add-on.</td>
+</tr>
+<tr>
+<td><code>e5cee36b46c</code></td>
+<td>—</td>
+<td>No async queued/coalesced session-sync path; <code>Save</code> is synchronous, no queue to retry.</td>
+</tr>
+<tr>
+<td><code>280c1627533</code></td>
+<td>—</td>
+<td>No Quicksilver sideband subsystem. (16 MiB <code>SetReadLimit</code> already caps payload.)</td>
+</tr>
+<tr>
+<td><code>6b37d46b179</code></td>
+<td>—</td>
+<td>No delegation/consult broker; the analogous function-call path is already single-flight.</td>
+</tr>
+<tr>
+<td><code>ad1dc602594</code></td>
+<td>—</td>
+<td>Pure JS block-scoping hygiene; Go <code>switch</code> cases are independently scoped — moot.</td>
+</tr>
+<tr>
+<td><code>750dc999038</code></td>
+<td>—</td>
+<td>No playback-mark/barge-in subsystem. (But see the adjacent readLoop-drop PORT item.)</td>
+</tr>
+<tr>
+<td><code>29497b4e1e8</code></td>
+<td>—</td>
+<td>UTF-16 <code>.slice</code> surrogate split can't occur on Go UTF-8 strings; no run-ID masking exists.</td>
+</tr>
+<tr>
+<td><code>46ec7a43a8a</code></td>
+<td>—</td>
+<td>No bundled static model catalog / plugin-metadata snapshot; models are direct config-string passthrough.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="recommended-rmi-changes">Recommended RMI changes<a class="headerlink" href="#recommended-rmi-changes" title="Permanent link">&para;</a></h2>
+<p><strong>Strike / rescope (4 N-A + 1 rider):</strong></p>
+<ul>
+<li>RMI-060, 063, 065, 069 → mark <strong>N-A / blocked</strong> with the reason above (or rescope 060/065
+  to include building their prerequisite subsystem, which is much larger than a port).</li>
+<li>RMI-062 → fold into RMI-061 as an acceptance criterion.</li>
+</ul>
+<p><strong>Keep, rescope in place (3):</strong></p>
+<ul>
+<li>RMI-064 → narrow to "prevent duplicate concurrent cron runs" (drop the stalled-slot /
+  heartbeat language — N-A).</li>
+<li>RMI-066, 067, 068 → keep, but add the shared-substrate prereq (synchronous return-value
+  hook stage + session-scoped tool resolution) and the sequence 066 → 067 → 068.</li>
+</ul>
+<p><strong>New RMIs to file (the real gaps the plan missed):</strong></p>
+<ul>
+<li><strong>[security]</strong> cron fail-closed on removed account (<code>cee6203f448</code>, L) — highest priority.</li>
+<li><strong>[security]</strong> auth-failure escalating delay (<code>ea967be0df6</code>, M).</li>
+<li><strong>[bug]</strong> pre-tool assistant text drop (<code>c661061d4a7</code>, M).</li>
+<li><strong>[bug]</strong> session cache release on Close (<code>c63fdc631f0</code>, S).</li>
+<li><strong>[bug]</strong> realtime readLoop silent event drop (<code>omni-openai</code>, M).</li>
+<li><strong>[correctness]</strong> temporal context in system prompt (<code>54e273e6953</code>, M).</li>
+<li><strong>[enabling]</strong> <code>agent_end</code> lifecycle event (<code>8fefe62ba41</code>, L) — substrate for 061.</li>
+<li><strong>[feature, blocked]</strong> per-session model selection → then sticky default (<code>eee5e029e36</code>, L).</li>
+</ul>
+<h2 id="sequencing-dependencies">Sequencing / dependencies<a class="headerlink" href="#sequencing-dependencies" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>security/bugs (independent, do first):
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  cee6203f448  c661061d4a7  c63fdc631f0  ea967be0df6  readLoop-drop  54e273e6953  a877fe1b32a(064)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>lifecycle chain:
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  8fefe62ba41 (agent_end event) ──▶ 73b5e7aab49 (061 rollover memory) ──▶ 3f918d4b3ca (062 tz)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>tool-scoping chain (shared substrate: sync hook stage + per-session tool resolution):
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>  42e23c11e0f (066) ──▶ a37a5a65753 (067) ──▶ adf3178ae6c (068 deniedBySession)
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                                              adf3178ae6c (068 MCP identity)  ── independent
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>model chain:
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  [new] per-session model selection ──▶ eee5e029e36 (sticky default)
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/plexusone/omniagent" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
