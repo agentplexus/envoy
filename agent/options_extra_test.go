@@ -358,7 +358,10 @@ func TestWithCompiledSkill(t *testing.T) {
 // was supplied via WithSkillManager) including the secret-gating filter.
 func TestInitSkillManager_CustomManager(t *testing.T) {
 	a := &Agent{logger: slog.Default()}
-	mgr := skills.NewManager(skills.ManagerConfig{})
+	// An empty ManagerConfig.Dirs falls back to skills.DefaultSearchPaths(),
+	// which includes ~/.omniagent/skills — pointing at an empty temp dir
+	// keeps this test from picking up a developer's real installed skills.
+	mgr := skills.NewManager(skills.ManagerConfig{Dirs: []string{t.TempDir()}})
 	if err := mgr.Load(); err != nil {
 		t.Fatalf("mgr.Load: %v", err)
 	}
