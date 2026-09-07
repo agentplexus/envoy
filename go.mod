@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	entgo.io/ent v0.14.6
 	github.com/bdpiprava/scalar-go v0.13.0
-	github.com/coreos/go-oidc/v3 v3.20.0
+	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/danielgtaylor/huma/v2 v2.39.1
 	github.com/getkin/kin-openapi v0.149.0
 	github.com/go-chi/chi/v5 v5.3.2
